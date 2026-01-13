@@ -127,6 +127,7 @@ export function PhotoUpload({ restaurantId, onUploadComplete }: PhotoUploadProps
             >
                 <input
                     ref={fileInputRef}
+                    data-testid="file-upload"
                     type="file"
                     accept="image/*"
                     multiple

@@ -8,8 +8,11 @@ import type { Restaurant } from '../../lib/types';
 
 // Mock Google Maps
 jest.mock('@react-google-maps/api', () => ({
-    GoogleMap: ({ children }: { children: React.ReactNode }) => <div data-testid="google-map">{children}</div>,
+    GoogleMap: ({ children }: any) => <div data-testid="google-map">{children}</div>,
     MarkerF: () => <div data-testid="map-marker" />,
+    Marker: ({ onClick }: any) => <div data-testid="map-marker" onClick={onClick} />,
+    InfoWindow: ({ children }: any) => <div data-testid="info-window">{children}</div>,
+    Circle: () => <div data-testid="map-circle" />,
     useJsApiLoader: () => ({ isLoaded: true }),
 }));
 

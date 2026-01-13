@@ -36,13 +36,11 @@ describe('PhotoUpload Component', () => {
         render(<PhotoUpload restaurantId="123" onUploadComplete={mockOnComplete} />);
 
         const file = new File(['(⌐□_□)'], 'chucknorris.png', { type: 'image/png' });
-        const fileInput = screen.getByLabelText(/upload photos/i); // Fixed selector
+        const fileInput = screen.getByTestId('file-upload');
 
         expect(fileInput).toBeInTheDocument();
 
-        if (fileInput) {
-            await fireEvent.change(fileInput, { target: { files: [file] } });
-        }
+        await fireEvent.change(fileInput, { target: { files: [file] } });
 
         // Wait for the files to be processed and state updated
         await waitFor(() => {
