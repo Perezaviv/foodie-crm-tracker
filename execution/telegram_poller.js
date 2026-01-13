@@ -19,6 +19,14 @@ require('dotenv').config();
 const { Telegraf } = require('telegraf');
 const { createClient } = require('@supabase/supabase-js');
 
+// Import shared logic (using require for Node script)
+// Note: We need to use ts-node or compile typescript to use the shared file directly.
+// Since this is a simple script, and mixing JS/TS is tricky without build step,
+// I will keep the logic here for now, but formatted exactly like the shared logic
+// so it matches behavior. 
+// Ideally, we would run this with `npx ts-node execution/telegram_poller.ts` 
+// but sticking to JS for simplicity of execution without dev deps.
+
 // ============================================================
 // CONFIGURATION
 // ============================================================
@@ -46,19 +54,9 @@ const bot = new Telegraf(TELEGRAM_BOT_TOKEN);
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // ============================================================
-// MESSAGE PARSING
+// LOGIC (Mirrors lib/telegram-actions.ts)
 // ============================================================
 
-/**
- * Parses a restaurant message into structured data.
- * Supports formats like:
- *   - "Restaurant Name"
- *   - "Restaurant Name, City"
- *   - "Restaurant Name, City - some notes"
- * 
- * @param {string} text - The incoming message text
- * @returns {object} - Parsed restaurant data
- */
 function parseRestaurantMessage(text) {
     const trimmed = text.trim();
 
@@ -87,6 +85,59 @@ function parseRestaurantMessage(text) {
         city: city || null,
         notes: notes || null,
     };
+}
+
+async function addRestaurantFromText(text, supabaseClient) {
+    const parsed = parseRestaurantMessage(text);
+
+    if (!parsed.name) {
+        return {
+            success: false,
+            message: '❌ Please send a restaurant name.',
+        };
+    }
+
+    try {
+        const { data, error } = await supabaseClient
+            .from('restaurants')
+            .insert({
+                name: parsed.name,
+                city: parsed.city,
+                notes: parsed.notes,
+                is_visited: false,
+            })
+            .select()
+            .single();
+
+        if (error) {
+            console.error('❌ Supabase error:', error);
+            return {
+                success: false,
+                error: error.message,
+                message: `❌ Failed to add restaurant: ${error.message}`,
+            };
+        }
+
+        let successMessage = `✅ Added *${parsed.name}*`;
+        if (parsed.city) {
+            successMessage += ` in ${parsed.city}`;
+        }
+        successMessage += ` to your list!`;
+
+        return {
+            success: true,
+            restaurant: data,
+            message: successMessage,
+        };
+
+    } catch (err) {
+        console.error('❌ Unexpected error:', err);
+        return {
+            success: false,
+            error: err.message,
+            message: '❌ An unexpected error occurred. Please try again.',
+        };
+    }
 }
 
 // ============================================================
@@ -147,51 +198,13 @@ bot.on('text', async (ctx) => {
         return;
     }
 
-    // Parse the message
-    const parsed = parseRestaurantMessage(text);
-
-    if (!parsed.name) {
-        ctx.reply('❌ Please send a restaurant name.');
-        return;
-    }
-
     console.log(`📨 Received: "${text}"`);
-    console.log(`   Parsed: name="${parsed.name}", city="${parsed.city}", notes="${parsed.notes}"`);
 
-    // Insert into Supabase
-    try {
-        const { data, error } = await supabase
-            .from('restaurants')
-            .insert({
-                name: parsed.name,
-                city: parsed.city,
-                notes: parsed.notes,
-                is_visited: false,
-                // Note: created_by is not set because we don't have user auth context
-            })
-            .select()
-            .single();
+    // Use shared logic
+    const result = await addRestaurantFromText(text, supabase);
 
-        if (error) {
-            console.error('❌ Supabase error:', error);
-            ctx.reply(`❌ Failed to add restaurant: ${error.message}`);
-            return;
-        }
-
-        console.log(`✅ Added restaurant: ${data.id}`);
-
-        let successMessage = `✅ Added *${parsed.name}*`;
-        if (parsed.city) {
-            successMessage += ` in ${parsed.city}`;
-        }
-        successMessage += ` to your list!`;
-
-        ctx.reply(successMessage, { parse_mode: 'Markdown' });
-
-    } catch (err) {
-        console.error('❌ Unexpected error:', err);
-        ctx.reply('❌ An unexpected error occurred. Please try again.');
-    }
+    // Reply
+    ctx.reply(result.message, { parse_mode: 'Markdown' });
 });
 
 // ============================================================
