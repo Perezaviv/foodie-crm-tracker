@@ -26,7 +26,9 @@ const itemVariants = {
     show: { opacity: 1, y: 0 }
 };
 
-export function RestaurantList({ restaurants, onRestaurantClick }: RestaurantListProps) {
+export function RestaurantList({ restaurants = [], onRestaurantClick }: RestaurantListProps) {
+    // console.log('RestaurantList rendered with:', restaurants); 
+    // Commented out log to keep production clean, but keeping default prop to prevent crash
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedCity, setSelectedCity] = useState<string | null>(null);
     const [selectedCuisine, setSelectedCuisine] = useState<string | null>(null);

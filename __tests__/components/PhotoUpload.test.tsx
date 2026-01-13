@@ -13,6 +13,13 @@ jest.mock('sonner', () => ({
     }
 }));
 
+jest.mock('lucide-react', () => ({
+    Upload: () => <div data-testid="upload-icon" />,
+    X: () => <div data-testid="close-icon" />,
+    Loader2: () => <div data-testid="loader-icon" />,
+    Check: () => <div data-testid="check-icon" />,
+}));
+
 // Mock fetch
 global.fetch = jest.fn();
 
@@ -21,9 +28,9 @@ describe('PhotoUpload Component', () => {
         jest.clearAllMocks();
     });
 
-    it('renders upload button', () => {
-        render(<PhotoUpload restaurantId="123" onUploadComplete={jest.fn()} />);
-        expect(screen.getByText(/Upload Photos/i)).toBeInTheDocument();
+    it('renders upload container', () => {
+        render(<PhotoUpload restaurantId="123" />);
+        expect(screen.getByText(/Drop photos here/i)).toBeInTheDocument();
     });
 
     it('handles file selection and upload success', async () => {
@@ -40,7 +47,14 @@ describe('PhotoUpload Component', () => {
 
         expect(fileInput).toBeInTheDocument();
 
+        // Verify URL mock is working
+        expect(URL.createObjectURL).toBeDefined();
+
+        // Use fireEvent as it is often more reliable for hidden inputs in jsdom
         await fireEvent.change(fileInput, { target: { files: [file] } });
+
+        // Verify mock was called
+        expect(URL.createObjectURL).toHaveBeenCalledWith(file);
 
         // Wait for the files to be processed and state updated
         await waitFor(() => {
@@ -68,11 +82,11 @@ describe('PhotoUpload Component', () => {
         render(<PhotoUpload restaurantId="123" onUploadComplete={jest.fn()} />);
 
         const file = new File(['fail'], 'bad.png', { type: 'image/png' });
-        const fileInput = document.querySelector('input[type="file"]');
+        const fileInput = screen.getByTestId('file-upload');
 
-        if (fileInput) {
-            await fireEvent.change(fileInput, { target: { files: [file] } });
-        }
+        expect(fileInput).toBeInTheDocument();
+
+        await fireEvent.change(fileInput, { target: { files: [file] } });
 
         // Wait and find the button that appears
         const uploadButton = await screen.findByText(/Upload 1 photo/i);

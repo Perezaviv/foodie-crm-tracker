@@ -8,12 +8,21 @@ import type { Restaurant } from '../../lib/types';
 
 // Mock Google Maps
 jest.mock('@react-google-maps/api', () => ({
-    GoogleMap: ({ children }: any) => <div data-testid="google-map">{children}</div>,
+    GoogleMap: ({ children }: { children: React.ReactNode }) => <div data-testid="google-map">{children}</div>,
     MarkerF: () => <div data-testid="map-marker" />,
-    Marker: ({ onClick }: any) => <div data-testid="map-marker" onClick={onClick} />,
-    InfoWindow: ({ children }: any) => <div data-testid="info-window">{children}</div>,
+    Marker: ({ onClick }: { onClick: () => void }) => <div data-testid="map-marker" onClick={onClick} />,
+    InfoWindow: ({ children }: { children: React.ReactNode }) => <div data-testid="info-window">{children}</div>,
     Circle: () => <div data-testid="map-circle" />,
     useJsApiLoader: () => ({ isLoaded: true }),
+}));
+
+jest.mock('lucide-react', () => ({
+    Utensils: () => <div data-testid="utensils-icon" />,
+    Loader2: () => <div data-testid="loader-icon" />,
+    ExternalLink: () => <div data-testid="external-link" />,
+    Locate: () => <div data-testid="locate-icon" />,
+    MapPin: () => <div data-testid="map-pin" />,
+    ChevronRight: () => <div data-testid="chevron-right" />,
 }));
 
 // Mock current location hook if used inside, or props.
