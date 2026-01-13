@@ -2,6 +2,7 @@
  * Seed database with real Tel Aviv restaurants
  * Usage: node execution/seed_restaurants.js
  */
+/* eslint-disable @typescript-eslint/no-require-imports */
 require('dotenv').config();
 const { createClient } = require('@supabase/supabase-js');
 

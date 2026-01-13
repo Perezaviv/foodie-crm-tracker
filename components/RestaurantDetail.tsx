@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Drawer } from 'vaul';
-import { MapPin, ExternalLink, Star, Camera, Clock, Edit2, Upload, Trash2, X } from 'lucide-react';
+import { MapPin, ExternalLink, Star, Clock, Edit2, Upload, Trash2, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { PhotoUpload } from './PhotoUpload';
 import { PhotoGallery } from './PhotoGallery';

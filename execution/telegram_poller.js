@@ -13,6 +13,8 @@
  *   - NEXT_PUBLIC_SUPABASE_ANON_KEY
  */
 
+/* eslint-disable @typescript-eslint/no-require-imports */
+
 require('dotenv').config();
 const { Telegraf } = require('telegraf');
 const { createClient } = require('@supabase/supabase-js');

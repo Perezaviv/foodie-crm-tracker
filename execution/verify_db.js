@@ -2,6 +2,7 @@
  * Verify Supabase Connection and Schema
  * Usage: node execution/verify_db.js
  */
+/* eslint-disable @typescript-eslint/no-require-imports */
 require('dotenv').config();
 const { createClient } = require('@supabase/supabase-js');
 
@@ -20,7 +21,7 @@ async function verify() {
 
     // 1. Check restaurants table
     console.log('\nChecking "restaurants" table...');
-    const { data: restaurants, error: rError } = await supabase
+    const { error: rError } = await supabase
         .from('restaurants')
         .select('count')
         .limit(1)
@@ -34,7 +35,7 @@ async function verify() {
 
     // 2. Check photos table
     console.log('\nChecking "photos" table...');
-    const { data: photos, error: pError } = await supabase
+    const { error: pError } = await supabase
         .from('photos')
         .select('count')
         .limit(1)

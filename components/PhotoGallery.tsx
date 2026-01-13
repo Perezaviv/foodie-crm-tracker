@@ -1,8 +1,6 @@
-'use client';
-
-import { useState, useEffect } from 'react';
+import Image from 'next/image';
+import { useState, useEffect, useCallback } from 'react';
 import { X, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
-import { cn } from '@/lib/utils';
 
 interface PhotoGalleryProps {
     restaurantId: string;
@@ -22,11 +20,7 @@ export function PhotoGallery({ restaurantId }: PhotoGalleryProps) {
     const [error, setError] = useState<string | null>(null);
     const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
 
-    useEffect(() => {
-        fetchPhotos();
-    }, [restaurantId]);
-
-    const fetchPhotos = async () => {
+    const fetchPhotos = useCallback(async () => {
         setIsLoading(true);
         setError(null);
 
@@ -45,7 +39,11 @@ export function PhotoGallery({ restaurantId }: PhotoGalleryProps) {
         } finally {
             setIsLoading(false);
         }
-    };
+    }, [restaurantId]);
+
+    useEffect(() => {
+        fetchPhotos();
+    }, [fetchPhotos]);
 
     const openLightbox = (index: number) => {
         setSelectedIndex(index);
@@ -101,11 +99,12 @@ export function PhotoGallery({ restaurantId }: PhotoGalleryProps) {
                         onClick={() => openLightbox(index)}
                         className="aspect-square relative overflow-hidden bg-muted hover:opacity-90 transition-base"
                     >
-                        <img
+                        <Image
                             src={photo.url}
                             alt={photo.caption || `Photo ${index + 1}`}
-                            className="w-full h-full object-cover"
-                            loading="lazy"
+                            fill
+                            className="object-cover"
+                            sizes="(max-width: 768px) 33vw, 20vw"
                         />
                     </button>
                 ))}
@@ -141,11 +140,15 @@ export function PhotoGallery({ restaurantId }: PhotoGalleryProps) {
                     )}
 
                     {/* Image */}
-                    <img
-                        src={photos[selectedIndex].url}
-                        alt={photos[selectedIndex].caption || `Photo ${selectedIndex + 1}`}
-                        className="max-w-full max-h-full object-contain"
-                    />
+                    <div className="relative w-full h-full max-w-4xl max-h-[80vh] mx-4">
+                        <Image
+                            src={photos[selectedIndex].url}
+                            alt={photos[selectedIndex].caption || `Photo ${selectedIndex + 1}`}
+                            fill
+                            className="object-contain"
+                            unoptimized // Since we don't know dimensions and it's a lightbox
+                        />
+                    </div>
 
                     {/* Counter */}
                     <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-white text-sm bg-black/50 px-3 py-1 rounded-full">

@@ -1,7 +1,8 @@
 'use client';
 
+import Image from 'next/image';
 import { useState, useRef, useCallback } from 'react';
-import { Upload, X, Image as ImageIcon, Loader2, Check } from 'lucide-react';
+import { Upload, X, Loader2, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface PhotoUploadProps {
@@ -153,10 +154,11 @@ export function PhotoUpload({ restaurantId, onUploadComplete }: PhotoUploadProps
                                 key={index}
                                 className="relative aspect-square rounded-xl overflow-hidden bg-muted"
                             >
-                                <img
+                                <Image
                                     src={f.preview}
                                     alt={`Preview ${index + 1}`}
-                                    className="w-full h-full object-cover"
+                                    fill
+                                    className="object-cover"
                                 />
 
                                 {/* Status Overlay */}
