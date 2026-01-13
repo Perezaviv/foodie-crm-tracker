@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient, isSupabaseConfigured } from '@/lib/supabase';
+import { mockRestaurants, generateDemoId } from '@/lib/mockData';
 import type { Restaurant } from '@/lib/types';
 
 // Force dynamic rendering for API routes
@@ -25,14 +26,53 @@ export interface SaveResponse {
     success: boolean;
     restaurant?: Restaurant;
     error?: string;
+    demo?: boolean;
 }
 
 export async function POST(request: NextRequest): Promise<NextResponse<SaveResponse>> {
+    // Demo mode: simulate success
     if (!isSupabaseConfigured()) {
-        return NextResponse.json({
-            success: false,
-            error: 'Database not configured. Please set up Supabase credentials in .env.local',
-        }, { status: 503 });
+        try {
+            const body: SaveRequest = await request.json();
+
+            if (!body.restaurant || !body.restaurant.name) {
+                return NextResponse.json(
+                    { success: false, error: 'Restaurant data is required' },
+                    { status: 400 }
+                );
+            }
+
+            // Return a simulated restaurant with demo ID
+            const demoRestaurant: Restaurant = {
+                id: generateDemoId(),
+                name: body.restaurant.name,
+                cuisine: body.restaurant.cuisine ?? null,
+                city: body.restaurant.city ?? null,
+                address: body.restaurant.address ?? null,
+                lat: body.restaurant.lat ?? null,
+                lng: body.restaurant.lng ?? null,
+                booking_link: body.restaurant.booking_link ?? null,
+                social_link: body.restaurant.social_link ?? null,
+                notes: body.restaurant.notes ?? null,
+                is_visited: body.restaurant.is_visited ?? false,
+                rating: body.restaurant.rating ?? null,
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+                created_by: null,
+            };
+
+            return NextResponse.json({
+                success: true,
+                restaurant: demoRestaurant,
+                demo: true,
+            });
+        } catch (error) {
+            console.error('Demo mode POST error:', error);
+            return NextResponse.json(
+                { success: false, error: 'Invalid request' },
+                { status: 400 }
+            );
+        }
     }
 
     try {
@@ -90,12 +130,13 @@ export async function POST(request: NextRequest): Promise<NextResponse<SaveRespo
 }
 
 export async function GET(): Promise<NextResponse> {
+    // Demo mode: return mock data
     if (!isSupabaseConfigured()) {
         return NextResponse.json({
-            success: false,
-            error: 'Database not configured. Please set up Supabase credentials in .env.local',
-            restaurants: [],
-        }, { status: 503 });
+            success: true,
+            restaurants: mockRestaurants,
+            demo: true,
+        });
     }
 
     try {

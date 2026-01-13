@@ -7,6 +7,7 @@ interface UseRestaurantsReturn {
     restaurants: Restaurant[];
     isLoading: boolean;
     error: string | null;
+    isDemoMode: boolean;
     refresh: () => Promise<void>;
 }
 
@@ -14,6 +15,7 @@ export function useRestaurants(): UseRestaurantsReturn {
     const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [isDemoMode, setIsDemoMode] = useState(false);
 
     const refresh = useCallback(async () => {
         setIsLoading(true);
@@ -29,6 +31,7 @@ export function useRestaurants(): UseRestaurantsReturn {
             }
 
             setRestaurants(data.restaurants || []);
+            setIsDemoMode(data.demo === true);
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Network error');
         } finally {
@@ -40,5 +43,6 @@ export function useRestaurants(): UseRestaurantsReturn {
         refresh();
     }, [refresh]);
 
-    return { restaurants, isLoading, error, refresh };
+    return { restaurants, isLoading, error, isDemoMode, refresh };
 }
+

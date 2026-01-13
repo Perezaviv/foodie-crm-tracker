@@ -1,8 +1,10 @@
 'use client';
 
 import { useCallback, useState, useEffect, useRef } from 'react';
-import { GoogleMap, useJsApiLoader, Marker, InfoWindow, Circle } from '@react-google-maps/api';
+import { GoogleMap, useJsApiLoader, InfoWindow, Circle, Marker } from '@react-google-maps/api';
+import { MarkerClusterer } from '@googlemaps/markerclusterer';
 import { Utensils, Loader2, ExternalLink, Locate, MapPin, ChevronRight } from 'lucide-react';
+import { toast } from 'sonner';
 import type { Restaurant } from '@/lib/types';
 
 interface RestaurantMapProps {
@@ -57,11 +59,13 @@ function createEmojiMarkerIcon(): string {
 export function RestaurantMap({ restaurants, onRestaurantClick }: RestaurantMapProps) {
     const [selectedRestaurant, setSelectedRestaurant] = useState<Restaurant | null>(null);
     const [userLocation, setUserLocation] = useState<UserLocation | null>(null);
-    const [locationError, setLocationError] = useState<string | null>(null);
     const [isLocating, setIsLocating] = useState(false);
     const [zoomLevel, setZoomLevel] = useState(12);
     const mapRef = useRef<google.maps.Map | null>(null);
     const zoomTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const clustererRef = useRef<MarkerClusterer | null>(null);
+    const markersRef = useRef<google.maps.Marker[]>([]);
+    const restaurantMapRef = useRef<Map<google.maps.Marker, Restaurant>>(new Map());
 
     // Calculate marker size based on zoom level (scales from 20px at zoom 8 to 48px at zoom 18)
     const getMarkerSize = useCallback((zoom: number) => {
@@ -103,10 +107,9 @@ export function RestaurantMap({ restaurants, onRestaurantClick }: RestaurantMapP
     // Function to center map on user's location
     const centerOnUserLocation = useCallback(() => {
         setIsLocating(true);
-        setLocationError(null);
 
         if (!navigator.geolocation) {
-            setLocationError('Geolocation is not supported by your browser');
+            toast.error('Geolocation is not supported by your browser');
             setIsLocating(false);
             return;
         }
@@ -128,22 +131,21 @@ export function RestaurantMap({ restaurants, onRestaurantClick }: RestaurantMapP
             },
             (error) => {
                 setIsLocating(false);
+                let errorMessage = 'Unable to get location';
                 switch (error.code) {
                     case error.PERMISSION_DENIED:
-                        setLocationError('Location access denied');
+                        errorMessage = 'Location access denied. Please enable location permissions.';
                         break;
                     case error.POSITION_UNAVAILABLE:
-                        setLocationError('Location unavailable');
+                        errorMessage = 'Location unavailable. Please try again.';
                         break;
                     case error.TIMEOUT:
-                        setLocationError('Location request timed out');
+                        errorMessage = 'Location request timed out. Please try again.';
                         break;
-                    default:
-                        setLocationError('Unable to get location');
                 }
-                setTimeout(() => setLocationError(null), 3000);
+                toast.error(errorMessage);
             },
-            { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+            { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
         );
     }, []);
 
@@ -164,6 +166,91 @@ export function RestaurantMap({ restaurants, onRestaurantClick }: RestaurantMapP
         });
     }, []);
 
+    // Setup marker clustering
+    useEffect(() => {
+        if (!mapRef.current || !isLoaded) return;
+
+        const map = mapRef.current;
+        const markerIcon = createEmojiMarkerIcon();
+        const size = getMarkerSize(zoomLevel);
+
+        // Clear previous markers
+        markersRef.current.forEach(marker => marker.setMap(null));
+        markersRef.current = [];
+        restaurantMapRef.current.clear();
+
+        // Clear previous clusterer
+        if (clustererRef.current) {
+            clustererRef.current.clearMarkers();
+        }
+
+        // Create new markers
+        const newMarkers = restaurantsWithCoords.map(restaurant => {
+            const marker = new google.maps.Marker({
+                position: { lat: restaurant.lat!, lng: restaurant.lng! },
+                icon: {
+                    url: markerIcon,
+                    scaledSize: new google.maps.Size(size, size),
+                    anchor: new google.maps.Point(size / 2, size * 0.9),
+                },
+            });
+
+            // Store restaurant reference
+            restaurantMapRef.current.set(marker, restaurant);
+
+            // Add click listener
+            marker.addListener('click', () => {
+                const clickedRestaurant = restaurantMapRef.current.get(marker);
+                if (clickedRestaurant) {
+                    setSelectedRestaurant(clickedRestaurant);
+                }
+            });
+
+            return marker;
+        });
+
+        markersRef.current = newMarkers;
+
+        // Create clusterer
+        clustererRef.current = new MarkerClusterer({
+            map,
+            markers: newMarkers,
+            renderer: {
+                render: ({ count, position }) => {
+                    return new google.maps.Marker({
+                        position,
+                        icon: {
+                            path: google.maps.SymbolPath.CIRCLE,
+                            scale: 18 + Math.min(count, 10) * 2,
+                            fillColor: '#e11d48',
+                            fillOpacity: 1,
+                            strokeColor: '#ffffff',
+                            strokeWeight: 3,
+                        },
+                        label: {
+                            text: String(count),
+                            color: 'white',
+                            fontWeight: 'bold',
+                            fontSize: '12px',
+                        },
+                        zIndex: Number(google.maps.Marker.MAX_ZINDEX) + count,
+                    });
+                },
+            },
+        });
+
+        // Cleanup
+        return () => {
+            markersRef.current.forEach(marker => {
+                google.maps.event.clearInstanceListeners(marker);
+                marker.setMap(null);
+            });
+            if (clustererRef.current) {
+                clustererRef.current.clearMarkers();
+            }
+        };
+    }, [isLoaded, restaurantsWithCoords, zoomLevel, getMarkerSize]);
+
     const getCenter = useCallback(() => {
         if (restaurantsWithCoords.length === 1) {
             return { lat: restaurantsWithCoords[0].lat!, lng: restaurantsWithCoords[0].lng! };
@@ -181,12 +268,6 @@ export function RestaurantMap({ restaurants, onRestaurantClick }: RestaurantMapP
         return 12;
     }, [restaurantsWithCoords]);
 
-    // Handle marker click with single/double click detection
-    // Handle marker click - Instant (removed double click delay)
-    const handleMarkerClick = useCallback((restaurant: Restaurant) => {
-        setSelectedRestaurant(restaurant);
-    }, []);
-
     // Handle "View Details" button in popup
     const handleViewDetails = useCallback((restaurant: Restaurant) => {
         setSelectedRestaurant(null);
@@ -194,9 +275,67 @@ export function RestaurantMap({ restaurants, onRestaurantClick }: RestaurantMapP
     }, [onRestaurantClick]);
 
     if (loadError) {
+        // Demo mode map fallback - show a simulated map with restaurant list
         return (
-            <div className="flex flex-col items-center justify-center h-full bg-muted/50 p-6">
-                <p className="text-red-500">Failed to load Google Maps</p>
+            <div className="relative h-full w-full bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-900 overflow-auto">
+                {/* Simulated map background */}
+                <div className="absolute inset-0 opacity-20">
+                    <div className="w-full h-full" style={{
+                        backgroundImage: 'radial-gradient(circle, #94a3b8 1px, transparent 1px)',
+                        backgroundSize: '20px 20px'
+                    }} />
+                </div>
+
+                {/* Demo mode notice */}
+                <div className="absolute top-4 left-4 right-4 z-10">
+                    <div className="bg-amber-100 dark:bg-amber-900/50 border border-amber-300 dark:border-amber-700 rounded-xl p-3 shadow-lg">
+                        <p className="text-amber-800 dark:text-amber-200 text-sm text-center font-medium">
+                            🗺️ Map preview unavailable – Google Maps API key required
+                        </p>
+                    </div>
+                </div>
+
+                {/* Restaurant markers as cards */}
+                <div className="pt-20 pb-4 px-4 space-y-3">
+                    {restaurantsWithCoords.length > 0 ? (
+                        restaurantsWithCoords.map((restaurant) => (
+                            <button
+                                key={restaurant.id}
+                                onClick={() => onRestaurantClick?.(restaurant)}
+                                className="w-full bg-white dark:bg-slate-800 rounded-xl p-4 shadow-md border border-slate-200 dark:border-slate-700 text-left hover:shadow-lg hover:border-primary-400 transition-all"
+                            >
+                                <div className="flex items-start gap-3">
+                                    <div className="w-10 h-10 rounded-lg bg-primary-100 dark:bg-primary-900 flex items-center justify-center flex-shrink-0">
+                                        <span className="text-lg">🍽️</span>
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <h3 className="font-bold text-foreground truncate">{restaurant.name}</h3>
+                                        {restaurant.cuisine && (
+                                            <span className="inline-block text-xs px-2 py-0.5 rounded-full bg-primary-100 dark:bg-primary-900 text-primary-700 dark:text-primary-300 font-medium mt-1">
+                                                {restaurant.cuisine}
+                                            </span>
+                                        )}
+                                        {restaurant.address && (
+                                            <p className="text-xs text-muted-foreground flex items-center gap-1 mt-2">
+                                                <MapPin size={12} className="flex-shrink-0" />
+                                                <span className="truncate">{restaurant.address}</span>
+                                            </p>
+                                        )}
+                                    </div>
+                                    <ChevronRight size={20} className="text-muted-foreground flex-shrink-0" />
+                                </div>
+                            </button>
+                        ))
+                    ) : (
+                        <div className="flex flex-col items-center justify-center py-12 text-center">
+                            <Utensils size={48} className="text-muted-foreground mb-4" />
+                            <p className="text-muted-foreground">
+                                No restaurants with locations yet.<br />
+                                Add restaurants to see them here!
+                            </p>
+                        </div>
+                    )}
+                </div>
             </div>
         );
     }
@@ -208,8 +347,6 @@ export function RestaurantMap({ restaurants, onRestaurantClick }: RestaurantMapP
             </div>
         );
     }
-
-    const markerIcon = createEmojiMarkerIcon();
 
     return (
         <div className="relative h-full w-full">
@@ -227,21 +364,7 @@ export function RestaurantMap({ restaurants, onRestaurantClick }: RestaurantMapP
                     fullscreenControl: true,
                 }}
             >
-                {restaurantsWithCoords.map((restaurant) => {
-                    const size = getMarkerSize(zoomLevel);
-                    return (
-                        <Marker
-                            key={restaurant.id}
-                            position={{ lat: restaurant.lat!, lng: restaurant.lng! }}
-                            onClick={() => handleMarkerClick(restaurant)}
-                            icon={{
-                                url: markerIcon,
-                                scaledSize: new google.maps.Size(size, size),
-                                anchor: new google.maps.Point(size / 2, size * 0.9),
-                            }}
-                        />
-                    );
-                })}
+                {/* Markers are now managed by the clusterer in useEffect */}
 
                 {selectedRestaurant && selectedRestaurant.lat && selectedRestaurant.lng && (
                     <InfoWindow
@@ -337,13 +460,6 @@ export function RestaurantMap({ restaurants, onRestaurantClick }: RestaurantMapP
                     <Locate size={24} className="text-blue-500" />
                 )}
             </button>
-
-            {/* Location error toast */}
-            {locationError && (
-                <div className="absolute bottom-20 right-4 z-10 bg-red-500 text-white px-4 py-2 rounded-lg shadow-lg text-sm animate-slide-up">
-                    {locationError}
-                </div>
-            )}
 
             {restaurantsWithCoords.length === 0 && (
                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">

@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
+    "@googlemaps/markerclusterer": "^2.6.2",
     "@react-google-maps/api": "^2.20.8",
     "@supabase/supabase-js": "^2.90.1",
     "@types/canvas-confetti": "^1.9.0",

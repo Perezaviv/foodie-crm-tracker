@@ -13,7 +13,7 @@ export interface ParsedRestaurant {
 
 export interface AddRestaurantResult {
     success: boolean;
-    restaurant?: any; // typed as any to avoid tight coupling with Database types for now, or use Database['public']['Tables']['restaurants']['Row']
+    restaurant?: Database['public']['Tables']['restaurants']['Row'];
     error?: string;
     message: string;
 }

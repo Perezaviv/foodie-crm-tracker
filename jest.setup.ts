@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable @typescript-eslint/ban-ts-comment */
-/* eslint-disable @typescript-eslint/no-unused-vars */
+ 
+ 
 import React from 'react';
 import '@testing-library/jest-dom'
 import { TextEncoder, TextDecoder } from 'util'
@@ -8,15 +8,15 @@ import { TextEncoder, TextDecoder } from 'util'
 // Mock next/image
 jest.mock('next/image', () => ({
     __esModule: true,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     default: (props: any) => {
-        // eslint-disable-next-line @next/next/no-img-element
+         
         return React.createElement('img', props);
     },
 }))
 
 global.TextEncoder = TextEncoder
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+ 
 global.TextDecoder = TextDecoder as any
 
 // Mock ResizeObserver

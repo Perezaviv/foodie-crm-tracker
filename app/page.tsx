@@ -17,7 +17,7 @@ export default function Home() {
   const [activeView, setActiveView] = useState<View>('list');
   const [selectedRestaurant, setSelectedRestaurant] = useState<Restaurant | null>(null);
   const [isAddDrawerOpen, setIsAddDrawerOpen] = useState(false);
-  const { restaurants, isLoading: restaurantsLoading, refresh } = useRestaurants();
+  const { restaurants, isLoading: restaurantsLoading, isDemoMode, refresh } = useRestaurants();
 
   const handleRestaurantAdded = () => {
     refresh();
@@ -68,6 +68,14 @@ export default function Home() {
           </div>
         </div>
       </header>
+
+      {/* Demo Mode Banner */}
+      {isDemoMode && (
+        <div className="bg-gradient-to-r from-amber-500 to-orange-500 text-white px-4 py-2 text-center text-sm font-medium shadow-md z-30">
+          <span className="mr-2">🎭</span>
+          <span>Demo Mode – Using sample data. Configure environment variables for full functionality.</span>
+        </div>
+      )}
 
       {/* Main Content Area */}
       <div className="flex-1 overflow-hidden relative z-0">
