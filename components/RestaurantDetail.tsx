@@ -124,15 +124,27 @@ export function RestaurantDetail({ restaurant, onClose, onEdit, onDelete }: Rest
                                     {/* Action Buttons */}
                                     <div className="grid grid-cols-2 gap-3">
                                         {restaurant.booking_link ? (
-                                            <a
-                                                href={restaurant.booking_link}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="col-span-2 py-3 px-4 rounded-xl bg-gradient-to-r from-primary-500 to-primary-600 text-white font-semibold text-center shadow-lg shadow-primary-500/25 hover:shadow-xl active:scale-[0.98] transition-base flex items-center justify-center gap-2"
-                                            >
-                                                Book a Table
-                                                <ExternalLink size={16} />
-                                            </a>
+                                            (() => {
+                                                const getBookingProvider = (url: string) => {
+                                                    const lowerUrl = url.toLowerCase();
+                                                    if (lowerUrl.includes('tabit')) return 'Tabit';
+                                                    if (lowerUrl.includes('ontopo')) return 'Ontopo';
+                                                    return 'Table';
+                                                };
+                                                const provider = getBookingProvider(restaurant.booking_link);
+
+                                                return (
+                                                    <a
+                                                        href={restaurant.booking_link}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="col-span-2 py-3 px-4 rounded-xl bg-gradient-to-r from-primary-500 to-primary-600 text-white font-semibold text-center shadow-lg shadow-primary-500/25 hover:shadow-xl active:scale-[0.98] transition-base flex items-center justify-center gap-2"
+                                                    >
+                                                        Book on {provider}
+                                                        <ExternalLink size={16} />
+                                                    </a>
+                                                );
+                                            })()
                                         ) : (
                                             <div className="col-span-2 py-3 px-4 rounded-xl bg-muted text-muted-foreground text-center text-sm font-medium">
                                                 No booking link available
