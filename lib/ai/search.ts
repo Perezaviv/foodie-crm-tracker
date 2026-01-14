@@ -1,3 +1,5 @@
+import { cleanAddressForGeocoding } from '../geocoding';
+
 /**
  * Search service for restaurant enrichment
  * Uses Tavily API for web search to find addresses, booking links, and geocoding
@@ -13,6 +15,8 @@ export interface SearchResult {
     phone?: string;
     rating?: number;
     priceLevel?: string;
+    socialLink?: string;
+    cuisine?: string;
 }
 
 export interface EnrichmentResult {
@@ -72,7 +76,8 @@ export async function searchRestaurant(
         // Auto-geocode results if they have address but missing coordinates
         for (const result of results) {
             if (result.address && (!result.lat || !result.lng)) {
-                const coords = await geocodeAddress(result.address);
+                const cleanedAddress = cleanAddressForGeocoding(result.address, city);
+                const coords = await geocodeAddress(cleanedAddress);
                 if (coords) {
                     result.lat = coords.lat;
                     result.lng = coords.lng;

@@ -1,7 +1,7 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 import { Database } from './types';
 import { getSession, updateSession, clearSession, TelegramStep, TelegramSession } from './telegram-session';
-import { searchRestaurant, SearchResult } from './ai';
+import { searchRestaurant, SearchResult, extractRestaurantInfo } from './ai';
 import { createAdminClient } from './supabase';
 
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
@@ -238,22 +238,40 @@ async function handleDonePhotos(chatId: number, session: TelegramSession, queryO
 async function startSearch(chatId: number, text: string, nextStep: TelegramStep) {
     await sendMessage(chatId, '🔎 Searching...');
 
-    // Parse name/city
-    const parsed = parseRestaurantMessage(text);
-    const queryName = parsed.name || text;
+    // 1. AI Extraction (Gemini)
+    const parseResult = await extractRestaurantInfo(text);
+    let queryName = text;
+    let city: string | undefined = undefined;
 
-    const result = await searchRestaurant(queryName, parsed.city || undefined);
+    if (parseResult.success && parseResult.data) {
+        queryName = parseResult.data.name;
+        city = parseResult.data.city || undefined;
+    } else {
+        // Fallback to simple parse
+        const parsed = parseRestaurantMessage(text);
+        queryName = parsed.name || text;
+        city = parsed.city || undefined;
+    }
+
+    const result = await searchRestaurant(queryName, city);
 
     if (!result.success || result.results.length === 0) {
         await sendMessage(chatId, '❌ No restaurants found. Try a different name.');
         return;
     }
 
+    // Merge AI extracted info into results if missing
+    const enrichedResults = result.results.map(r => ({
+        ...r,
+        socialLink: r.socialLink || (parseResult.data?.socialLink),
+        cuisine: r.cuisine || (parseResult.data?.cuisine),
+    }));
+
     // If exactly 1 match
     if (result.results.length === 1) {
         if (nextStep === 'SELECTING_RESTAURANT') {
             // Auto-add
-            await addRestaurantToDb(chatId, result.results[0]);
+            await addRestaurantToDb(chatId, enrichedResults[0]);
             // Don't clear session if we want to allow immediate photo upload? 
             // But usually we clear. User can start sending photos now.
             await clearSession(chatId);
@@ -261,7 +279,7 @@ async function startSearch(chatId: number, text: string, nextStep: TelegramStep)
             // For photos, we need confirmation or just do it?
             // Let's ask to be safe or just do it.
             // "Found X. Attaching photos..."
-            const restaurant = await addRestaurantToDb(chatId, result.results[0], true);
+            const restaurant = await addRestaurantToDb(chatId, enrichedResults[0], true);
             if (restaurant) {
                 const session = await getSession(chatId);
                 await processPendingPhotos(chatId, restaurant.id, session?.metadata?.pending_photos || []);
@@ -286,7 +304,7 @@ async function startSearch(chatId: number, text: string, nextStep: TelegramStep)
 
     await updateSession(chatId, nextStep, {
         ...blankMeta,
-        searchResults: result.results
+        searchResults: enrichedResults
     });
 
     await sendMessage(chatId, '🤔 internal I found multiple places. Please choose one:', {
@@ -305,9 +323,11 @@ async function addRestaurantToDb(chatId: number, data: SearchResult, silent = fa
         lat: data.lat,
         lng: data.lng,
         booking_link: data.bookingLink,
+        social_link: data.socialLink,
+        cuisine: data.cuisine,
         rating: data.rating,
         is_visited: false,
-        city: undefined // We could try to extract city from address if needed
+        city: data.address?.toLowerCase().includes('tel aviv') ? 'Tel Aviv' : (data.address?.split(',')[1]?.trim() || undefined)
     };
 
     const { data: rest, error } = await supabase
