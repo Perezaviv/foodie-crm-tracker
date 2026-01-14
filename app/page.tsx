@@ -64,7 +64,7 @@ export default function Home() {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-background overflow-hidden relative">
+    <div className="flex flex-col h-full bg-background overflow-hidden relative">
       <div className="absolute inset-0 mesh-subtle pointer-events-none z-0" />
 
       {/* Header */}
@@ -125,8 +125,8 @@ export default function Home() {
       </div>
 
       {/* Bottom Navigation */}
-      <nav className="glass border-t safe-bottom sticky bottom-0 z-40">
-        <div className="flex items-center justify-around py-2 max-w-md mx-auto">
+      <nav className="glass border-t sticky bottom-0 z-40 pb-safe">
+        <div className="flex items-center justify-around pt-2 pb-6 safe-bottom max-w-md mx-auto">
           <NavButton
             icon={<Map size={24} />}
             label="Map"
