@@ -61,6 +61,7 @@ function createEmojiMarkerIcon(): string {
 
 export function RestaurantMap({ restaurants, isLoading = false, onRestaurantClick }: RestaurantMapProps) {
     const [selectedRestaurant, setSelectedRestaurant] = useState<Restaurant | null>(null);
+    const [selectedRestaurantPhotos, setSelectedRestaurantPhotos] = useState<any[]>([]);
     const [userLocation, setUserLocation] = useState<UserLocation | null>(null);
     const [isLocating, setIsLocating] = useState(false);
     const [zoomLevel, setZoomLevel] = useState(12);
@@ -118,6 +119,28 @@ export function RestaurantMap({ restaurants, isLoading = false, onRestaurantClic
             );
         }
     }, []);
+
+    // Fetch photos for the selected restaurant
+    useEffect(() => {
+        if (!selectedRestaurant) {
+            setSelectedRestaurantPhotos([]);
+            return;
+        }
+
+        const fetchPhotos = async () => {
+            try {
+                const res = await fetch(`/api/photos?restaurantId=${selectedRestaurant.id}`);
+                const data = await res.json();
+                if (data.success) {
+                    setSelectedRestaurantPhotos(data.photos || []);
+                }
+            } catch (err) {
+                console.error('Error fetching photos for marker:', err);
+            }
+        };
+
+        fetchPhotos();
+    }, [selectedRestaurant]);
 
     // Function to center map on user's location
     const getCenter = useCallback(() => {
@@ -255,7 +278,9 @@ export function RestaurantMap({ restaurants, isLoading = false, onRestaurantClic
             marker.addListener('click', () => {
                 const clickedRestaurant = restaurantMapRef.current.get(marker);
                 if (clickedRestaurant) {
-                    setSelectedRestaurant(clickedRestaurant);
+                    setSelectedRestaurant(current =>
+                        current?.id === clickedRestaurant.id ? null : clickedRestaurant
+                    );
                 }
             });
 
@@ -428,45 +453,76 @@ export function RestaurantMap({ restaurants, isLoading = false, onRestaurantClic
                             disableAutoPan: true // Don't move the map when selecting
                         }}
                     >
-                        <div style={{ minWidth: '200px', maxWidth: '280px', padding: '8px', backgroundColor: 'white' }}>
-                            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', marginBottom: '8px' }}>
-                                <div style={{ width: '40px', height: '40px', borderRadius: '8px', backgroundColor: '#fed7aa', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                                    <span style={{ fontSize: '18px' }}>🍽️</span>
-                                </div>
-                                <div style={{ flex: 1, minWidth: 0 }}>
-                                    <h3 style={{ fontWeight: 'bold', color: '#111827', fontSize: '16px', margin: 0, wordBreak: 'break-word' }}>{selectedRestaurant.name}</h3>
-                                    {selectedRestaurant.cuisine && (
-                                        <span style={{ display: 'inline-block', fontSize: '12px', padding: '2px 8px', borderRadius: '9999px', backgroundColor: '#fed7aa', color: '#c2410c', fontWeight: 500, marginTop: '4px' }}>
-                                            {selectedRestaurant.cuisine}
-                                        </span>
+                        <div style={{ minWidth: '220px', maxWidth: '280px', padding: '0px', backgroundColor: 'white', borderRadius: '12px', overflow: 'hidden' }}>
+                            {/* Photo Preview Section */}
+                            {selectedRestaurantPhotos && selectedRestaurantPhotos.length > 0 && (
+                                <div style={{ width: '100%', height: '120px', overflow: 'hidden', backgroundColor: '#f3f4f6', position: 'relative' }}>
+                                    <div style={{ display: 'flex', overflowX: 'auto', scrollSnapType: 'x mandatory', scrollbarWidth: 'none', height: '100%' }}>
+                                        {selectedRestaurantPhotos.map((photo, i) => (
+                                            <img
+                                                key={photo.id}
+                                                src={photo.url}
+                                                alt={`${selectedRestaurant.name} - ${i + 1}`}
+                                                style={{
+                                                    width: '100%',
+                                                    height: '100%',
+                                                    objectFit: 'cover',
+                                                    flexShrink: 0,
+                                                    scrollSnapAlign: 'start'
+                                                }}
+                                            />
+                                        ))}
+                                    </div>
+                                    {selectedRestaurantPhotos.length > 1 && (
+                                        <div style={{ position: 'absolute', bottom: '8px', right: '8px', backgroundColor: 'rgba(0,0,0,0.6)', color: 'white', fontSize: '10px', padding: '3px 8px', borderRadius: '20px', fontWeight: 'bold', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                            <span>Swipe</span>
+                                            <span style={{ opacity: 0.7 }}>•</span>
+                                            <span>{selectedRestaurantPhotos.length} photos</span>
+                                        </div>
                                     )}
                                 </div>
-                            </div>
-
-                            {selectedRestaurant.address && (
-                                <p style={{ fontSize: '12px', color: '#6b7280', display: 'flex', alignItems: 'flex-start', gap: '4px', marginBottom: '8px', margin: 0 }}>
-                                    <MapPin size={12} style={{ flexShrink: 0, marginTop: '2px', color: '#f97316' }} />
-                                    <span style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{selectedRestaurant.address}</span>
-                                </p>
                             )}
 
-                            <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
-                                <button
-                                    onClick={() => handleViewDetails(selectedRestaurant)}
-                                    style={{ flex: 1, padding: '8px 12px', borderRadius: '8px', backgroundColor: '#f97316', color: 'white', fontSize: '12px', fontWeight: 600, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}
-                                >
-                                    View Details <ChevronRight size={14} />
-                                </button>
-                                {selectedRestaurant.booking_link && (
-                                    <a
-                                        href={selectedRestaurant.booking_link}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid #e5e7eb', color: '#374151', fontSize: '12px', fontWeight: 500, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '4px' }}
-                                    >
-                                        Book <ExternalLink size={12} />
-                                    </a>
+                            <div style={{ padding: '12px' }}>
+                                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', marginBottom: '8px' }}>
+                                    <div style={{ width: '40px', height: '40px', borderRadius: '8px', backgroundColor: '#fed7aa', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                        <span style={{ fontSize: '18px' }}>🍽️</span>
+                                    </div>
+                                    <div style={{ flex: 1, minWidth: 0 }}>
+                                        <h3 style={{ fontWeight: 'bold', color: '#111827', fontSize: '16px', margin: 0, wordBreak: 'break-word' }}>{selectedRestaurant.name}</h3>
+                                        {selectedRestaurant.cuisine && (
+                                            <span style={{ display: 'inline-block', fontSize: '12px', padding: '2px 8px', borderRadius: '9999px', backgroundColor: '#fed7aa', color: '#c2410c', fontWeight: 500, marginTop: '4px' }}>
+                                                {selectedRestaurant.cuisine}
+                                            </span>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {selectedRestaurant.address && (
+                                    <p style={{ fontSize: '12px', color: '#6b7280', display: 'flex', alignItems: 'flex-start', gap: '4px', marginBottom: '8px', margin: 0 }}>
+                                        <MapPin size={12} style={{ flexShrink: 0, marginTop: '2px', color: '#f97316' }} />
+                                        <span style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{selectedRestaurant.address}</span>
+                                    </p>
                                 )}
+
+                                <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
+                                    <button
+                                        onClick={() => handleViewDetails(selectedRestaurant)}
+                                        style={{ flex: 1, padding: '8px 12px', borderRadius: '8px', backgroundColor: '#f97316', color: 'white', fontSize: '12px', fontWeight: 600, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}
+                                    >
+                                        View Details <ChevronRight size={14} />
+                                    </button>
+                                    {selectedRestaurant.booking_link && (
+                                        <a
+                                            href={selectedRestaurant.booking_link}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid #e5e7eb', color: '#374151', fontSize: '12px', fontWeight: 500, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '4px' }}
+                                        >
+                                            Book <ExternalLink size={12} />
+                                        </a>
+                                    )}
+                                </div>
                             </div>
                         </div>
                     </InfoWindow>
