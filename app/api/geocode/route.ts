@@ -12,15 +12,27 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ success: false, error: 'Address required' }, { status: 400 });
         }
 
+        console.log(`[API/Geocode] Request for: "${address}"`);
+
         const coords = await geocodeAddress(address);
 
         if (!coords) {
-            return NextResponse.json({ success: false, error: 'Geocoding failed' });
+            console.log(`[API/Geocode] Failed for: "${address}"`);
+            return NextResponse.json({
+                success: false,
+                error: 'Geocoding failed - check server logs for details',
+                address: address
+            });
         }
 
+        console.log(`[API/Geocode] Success: ${coords.lat}, ${coords.lng}`);
         return NextResponse.json({ success: true, ...coords });
 
     } catch (error) {
-        return NextResponse.json({ success: false, error: 'Internal error' }, { status: 500 });
+        console.error('[API/Geocode] Error:', error);
+        return NextResponse.json({
+            success: false,
+            error: error instanceof Error ? error.message : 'Internal error'
+        }, { status: 500 });
     }
 }

@@ -343,25 +343,34 @@ function getLinkScore(link: string, name: string): number {
  * Geocode an address using Google Geocoding API
  */
 export async function geocodeAddress(address: string): Promise<{ lat: number; lng: number } | null> {
-    const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+    // Try server-side key first, fall back to public key
+    const apiKey = process.env.GOOGLE_MAPS_API_KEY || process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
 
     if (!apiKey) {
-        console.error('Google Maps API key not configured');
+        console.error('[Geocode] ERROR: Google Maps API key not configured. Check GOOGLE_MAPS_API_KEY or NEXT_PUBLIC_GOOGLE_MAPS_API_KEY');
         return null;
     }
 
+    console.log(`[Geocode] Attempting to geocode: "${address}"`);
+    console.log(`[Geocode] Using API key: ${apiKey.substring(0, 10)}...`);
+
     try {
         const encoded = encodeURIComponent(address);
-        const response = await fetch(
-            `https://maps.googleapis.com/maps/api/geocode/json?address=${encoded}&key=${apiKey}&region=il`
-        );
+        const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encoded}&key=${apiKey}&region=il`;
 
-        if (!response.ok) return null;
+        const response = await fetch(url);
+
+        if (!response.ok) {
+            console.error(`[Geocode] HTTP error: ${response.status} ${response.statusText}`);
+            return null;
+        }
 
         const data = await response.json();
 
+        console.log(`[Geocode] Google API Response - Status: ${data.status}, Error: ${data.error_message || 'none'}`);
+
         if (data.status !== 'OK' || !data.results || data.results.length === 0) {
-            console.warn(`[Geocode] Failed for address "${address}". Status: ${data.status}`);
+            console.warn(`[Geocode] Failed for address "${address}". Status: ${data.status}, Error: ${data.error_message || 'No results'}`);
             return null;
         }
 
