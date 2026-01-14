@@ -525,9 +525,37 @@ export function RestaurantMap({ restaurants, onRestaurantClick }: RestaurantMapP
 
                                         console.log('[Auto-Fix] Starting fix for', missing.length, 'restaurants');
 
-                                        // Helper to clean noisy addresses (strip "It is known for..." etc)
-                                        const cleanAddress = (addr: string) => {
-                                            return addr.split(/[\.!\?]/)[0].trim(); // Take first sentence only
+                                        // Helper to clean noisy addresses
+                                        const cleanAddress = (addr: string, city?: string | null) => {
+                                            // Remove newlines and extra whitespace
+                                            let cleaned = addr.replace(/\n/g, ' ').replace(/\s+/g, ' ').trim();
+
+                                            // Take only the first sentence (before common noise patterns)
+                                            const noisePhrases = [
+                                                /\.\s*(To book|It is known|Book a table|Booking|Instagram|Call|Phone)/i,
+                                                /\.\s*[A-Z]/,  // Any sentence after first
+                                            ];
+                                            for (const pattern of noisePhrases) {
+                                                const match = cleaned.match(pattern);
+                                                if (match && match.index) {
+                                                    cleaned = cleaned.substring(0, match.index).trim();
+                                                }
+                                            }
+
+                                            // Remove trailing period
+                                            cleaned = cleaned.replace(/\.$/, '').trim();
+
+                                            // If no city in address and city is provided, append it
+                                            if (city && !cleaned.toLowerCase().includes(city.toLowerCase()) && !cleaned.toLowerCase().includes('tel aviv')) {
+                                                cleaned = `${cleaned}, ${city}`;
+                                            }
+
+                                            // Add Israel for better geocoding accuracy
+                                            if (!cleaned.toLowerCase().includes('israel')) {
+                                                cleaned = `${cleaned}, Israel`;
+                                            }
+
+                                            return cleaned;
                                         };
 
                                         for (const r of missing) {
@@ -537,7 +565,7 @@ export function RestaurantMap({ restaurants, onRestaurantClick }: RestaurantMapP
                                                 continue;
                                             }
                                             try {
-                                                const cleaned = cleanAddress(r.address);
+                                                const cleaned = cleanAddress(r.address, r.city);
                                                 console.log(`[Auto-Fix] Geocoding "${r.name}" with address: "${cleaned}"`);
                                                 let coords: { lat: number, lng: number } | null = null;
 
