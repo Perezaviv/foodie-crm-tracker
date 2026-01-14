@@ -25,13 +25,16 @@ export function PhotoUpload({ restaurantId, onUploadComplete }: PhotoUploadProps
     const handleFileSelect = useCallback((selectedFiles: FileList | null) => {
         if (!selectedFiles) return;
 
+        console.log(`[PhotoUpload] Selected ${selectedFiles.length} files`);
         const newFiles: SelectedFile[] = [];
 
         for (let i = 0; i < selectedFiles.length; i++) {
             const file = selectedFiles[i];
+            console.log(`[PhotoUpload] File: ${file.name}, type: ${file.type}`);
 
             // Validate file type
             if (!file.type.startsWith('image/')) {
+                console.warn(`[PhotoUpload] Skipping non-image: ${file.name}`);
                 continue;
             }
 
@@ -46,6 +49,7 @@ export function PhotoUpload({ restaurantId, onUploadComplete }: PhotoUploadProps
 
     const handleDrop = useCallback((e: React.DragEvent) => {
         e.preventDefault();
+        console.log('[PhotoUpload] Files dropped');
         handleFileSelect(e.dataTransfer.files);
     }, [handleFileSelect]);
 

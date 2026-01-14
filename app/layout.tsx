@@ -75,10 +75,10 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
       <body
-        className="antialiased min-h-screen bg-background text-foreground"
+        className="antialiased h-full w-full bg-background text-foreground overflow-hidden fixed inset-0 touch-none"
         suppressHydrationWarning
       >
-        <main className="flex flex-col min-h-screen safe-top safe-bottom">
+        <main className="h-full w-full overflow-hidden safe-top">
           {children}
         </main>
         <Toaster position="top-center" richColors closeButton />

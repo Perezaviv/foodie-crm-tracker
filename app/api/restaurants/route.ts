@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase';
+import { geocodeAddress } from '@/lib/ai';
 import type { Restaurant } from '@/lib/types';
 
 // Force dynamic rendering for API routes
@@ -39,19 +40,36 @@ export async function POST(request: NextRequest): Promise<NextResponse<SaveRespo
         }
 
         const supabase = createServerClient();
+        const restaurantData = body.restaurant;
+
+        // GEOLOCATION FALLBACK:
+        // If we have an address but no coordinates (common when selecting from ambiguity list),
+        // fetch them now so the map works.
+        if (restaurantData.address && (!restaurantData.lat || !restaurantData.lng)) {
+            try {
+                const coords = await geocodeAddress(restaurantData.address);
+                if (coords) {
+                    restaurantData.lat = coords.lat;
+                    restaurantData.lng = coords.lng;
+                }
+            } catch (geoError) {
+                console.warn('Geocoding fallback failed:', geoError);
+                // Proceed without coords
+            }
+        }
 
         const insertData = {
-            name: body.restaurant.name,
-            cuisine: body.restaurant.cuisine ?? null,
-            city: body.restaurant.city ?? null,
-            address: body.restaurant.address ?? null,
-            lat: body.restaurant.lat ?? null,
-            lng: body.restaurant.lng ?? null,
-            booking_link: body.restaurant.booking_link ?? null,
-            social_link: body.restaurant.social_link ?? null,
-            notes: body.restaurant.notes ?? null,
-            is_visited: body.restaurant.is_visited ?? false,
-            rating: body.restaurant.rating ?? null,
+            name: restaurantData.name,
+            cuisine: restaurantData.cuisine ?? null,
+            city: restaurantData.city ?? null,
+            address: restaurantData.address ?? null,
+            lat: restaurantData.lat ?? null,
+            lng: restaurantData.lng ?? null,
+            booking_link: restaurantData.booking_link ?? null,
+            social_link: restaurantData.social_link ?? null,
+            notes: restaurantData.notes ?? null,
+            is_visited: restaurantData.is_visited ?? false,
+            rating: restaurantData.rating ?? null,
         };
 
         const { data, error } = await supabase

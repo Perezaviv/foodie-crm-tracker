@@ -3,7 +3,7 @@
 import { useCallback, useState, useEffect, useRef } from 'react';
 import { GoogleMap, useJsApiLoader, InfoWindow, Circle, Marker } from '@react-google-maps/api';
 import { MarkerClusterer } from '@googlemaps/markerclusterer';
-import { Utensils, Loader2, ExternalLink, Locate, MapPin, ChevronRight } from 'lucide-react';
+import { Utensils, Loader2, ExternalLink, Locate, MapPin, ChevronRight, X } from 'lucide-react';
 import { toast } from 'sonner';
 import type { Restaurant } from '@/lib/types';
 
@@ -469,6 +469,72 @@ export function RestaurantMap({ restaurants, onRestaurantClick }: RestaurantMapP
                             No restaurants with locations yet.<br />
                             Add restaurants with addresses to see them on the map!
                         </p>
+                    </div>
+                </div>
+            )}
+
+            {/* Warning for restaurants without coordinates */}
+            {restaurants.length > restaurantsWithCoords.length && (
+                <div className="absolute top-4 right-4 z-10 max-w-[250px]">
+                    <div className="bg-amber-50 dark:bg-amber-950/80 backdrop-blur-sm border border-amber-200 dark:border-amber-800 rounded-lg p-3 shadow-lg flex flex-col gap-2">
+                        <div className="flex items-start gap-2">
+                            <div className="p-1 rounded-full bg-amber-100 dark:bg-amber-900/50 text-amber-600 dark:text-amber-400 flex-shrink-0">
+                                <MapPin size={14} className="opacity-50" />
+                            </div>
+                            <div>
+                                <p className="text-xs font-medium text-amber-800 dark:text-amber-200">
+                                    {restaurants.length - restaurantsWithCoords.length} restaurants missing location
+                                </p>
+                                <button
+                                    onClick={async (e) => {
+                                        const btn = e.currentTarget;
+                                        btn.textContent = 'Fixing...';
+                                        btn.disabled = true;
+
+                                        let fixedCount = 0;
+                                        const missing = restaurants.filter(r => !r.lat || !r.lng);
+
+                                        for (const r of missing) {
+                                            if (!r.address) continue;
+                                            try {
+                                                const res = await fetch('/api/geocode', {
+                                                    method: 'POST',
+                                                    body: JSON.stringify({ address: r.address })
+                                                });
+                                                const data = await res.json();
+                                                if (data.success) {
+                                                    await fetch(`/api/restaurants/${r.id}`, {
+                                                        method: 'PATCH',
+                                                        body: JSON.stringify({ lat: data.lat, lng: data.lng })
+                                                    });
+                                                    fixedCount++;
+                                                }
+                                            } catch (err) { console.error(err); }
+                                        }
+
+                                        if (fixedCount > 0) {
+                                            toast.success(`Fixed ${fixedCount} locations! Refreshing...`);
+                                            window.location.reload();
+                                        } else {
+                                            toast.error('Could not auto-fix locations. Check addresses.');
+                                            btn.textContent = 'Retry Auto-Fix';
+                                            btn.disabled = false;
+                                        }
+                                    }}
+                                    className="text-[10px] bg-amber-200 hover:bg-amber-300 dark:bg-amber-800 dark:hover:bg-amber-700 text-amber-800 dark:text-amber-100 px-2 py-0.5 rounded-full mt-1 transition-colors"
+                                >
+                                    Auto-Fix Locations
+                                </button>
+                            </div>
+                            <button
+                                onClick={(e) => {
+                                    e.currentTarget.parentElement?.parentElement?.remove(); // Simple dismiss
+                                }}
+                                className="text-amber-500 hover:text-amber-700 ml-auto"
+                            >
+                                <X size={14} />
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}

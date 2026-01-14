@@ -1,6 +1,6 @@
 import Image from 'next/image';
 import { useState, useEffect, useCallback } from 'react';
-import { X, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { X, Loader2, ChevronLeft, ChevronRight, Trash2 } from 'lucide-react';
 
 interface PhotoGalleryProps {
     restaurantId: string;
@@ -44,6 +44,27 @@ export function PhotoGallery({ restaurantId }: PhotoGalleryProps) {
     useEffect(() => {
         fetchPhotos();
     }, [fetchPhotos]);
+
+    const handleDelete = async (photo: Photo, e: React.MouseEvent) => {
+        e.stopPropagation();
+        if (!confirm('Delete this photo?')) return;
+
+        try {
+            const response = await fetch(`/api/photos?id=${photo.id}&path=${encodeURIComponent(photo.storage_path)}`, {
+                method: 'DELETE',
+            });
+
+            if (response.ok) {
+                setPhotos(prev => prev.filter(p => p.id !== photo.id));
+                if (selectedIndex !== null) closeLightbox();
+            } else {
+                alert('Failed to delete photo');
+            }
+        } catch (error) {
+            console.error('Delete error:', error);
+            alert('Failed to delete photo');
+        }
+    };
 
     const openLightbox = (index: number) => {
         setSelectedIndex(index);
@@ -97,7 +118,7 @@ export function PhotoGallery({ restaurantId }: PhotoGalleryProps) {
                     <button
                         key={photo.id}
                         onClick={() => openLightbox(index)}
-                        className="aspect-square relative overflow-hidden bg-muted hover:opacity-90 transition-base"
+                        className="aspect-square relative overflow-hidden bg-muted hover:opacity-90 transition-base group"
                     >
                         <Image
                             src={photo.url}
@@ -106,6 +127,13 @@ export function PhotoGallery({ restaurantId }: PhotoGalleryProps) {
                             className="object-cover"
                             sizes="(max-width: 768px) 33vw, 20vw"
                         />
+                        <button
+                            onClick={(e) => handleDelete(photo, e)}
+                            className="absolute top-2 right-2 p-1.5 rounded-full bg-black/50 text-white opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500"
+                            title="Delete photo"
+                        >
+                            <Trash2 size={14} />
+                        </button>
                     </button>
                 ))}
             </div>
@@ -113,6 +141,15 @@ export function PhotoGallery({ restaurantId }: PhotoGalleryProps) {
             {/* Lightbox */}
             {selectedIndex !== null && (
                 <div className="fixed inset-0 z-50 bg-black flex items-center justify-center">
+                    {/* Delete button (Lightbox) */}
+                    <button
+                        onClick={(e) => handleDelete(photos[selectedIndex], e)}
+                        className="absolute top-4 right-16 z-10 w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-red-500/50 transition-base"
+                        title="Delete photo"
+                    >
+                        <Trash2 size={20} />
+                    </button>
+
                     {/* Close button */}
                     <button
                         onClick={closeLightbox}
@@ -146,7 +183,7 @@ export function PhotoGallery({ restaurantId }: PhotoGalleryProps) {
                             alt={photos[selectedIndex].caption || `Photo ${selectedIndex + 1}`}
                             fill
                             className="object-contain"
-                            unoptimized // Since we don't know dimensions and it's a lightbox
+                            unoptimized
                         />
                     </div>
 
