@@ -200,6 +200,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
             };
         });
 
+
         return NextResponse.json({
             success: true,
             photos: photosWithUrls,
@@ -209,6 +210,74 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
         console.error('Get photos error:', error);
         return NextResponse.json(
             { success: false, error: 'Internal server error', photos: [] },
+            { status: 500 }
+        );
+    }
+}
+
+export async function DELETE(request: NextRequest): Promise<NextResponse> {
+    if (!isSupabaseConfigured()) {
+        return NextResponse.json({
+            success: false,
+            error: 'Storage not configured',
+        }, { status: 503 });
+    }
+
+    try {
+        const { searchParams } = new URL(request.url);
+        const id = searchParams.get('id');
+        const storagePath = searchParams.get('path');
+
+        if (!id || !storagePath) {
+            return NextResponse.json(
+                { success: false, error: 'Photo ID and path are required' },
+                { status: 400 }
+            );
+        }
+
+        const supabase = createAdminClient();
+
+        console.log(`[Photos API] Deleting photo: ${id}, path: ${storagePath}`);
+
+        // 1. Delete from Database first (to prevent orphaned records if storage fails)
+        // Actually, deleting from storage first is often better to avoid "ghost files",
+        // but foreign keys might be an issue. Let's try storage first.
+
+        // 1. Delete from Storage
+        const { error: storageError } = await supabase.storage
+            .from('photos')
+            .remove([storagePath]);
+
+        if (storageError) {
+            console.error('[Photos API] Storage delete error:', storageError);
+            // We'll continue to try deleting the DB record even if storage fails, 
+            // or we could return early. Ideally we want both gone.
+            // If the file is already gone, this might error or might success. 
+            // Let's assume we proceed.
+        }
+
+        // 2. Delete from Database
+        const { error: dbError } = await supabase
+            .from('photos')
+            .delete()
+            .eq('id', id);
+
+        if (dbError) {
+            console.error('[Photos API] Database delete error:', dbError);
+            return NextResponse.json({
+                success: false,
+                error: dbError.message,
+            });
+        }
+
+        return NextResponse.json({
+            success: true,
+        });
+
+    } catch (error) {
+        console.error('Delete photo error:', error);
+        return NextResponse.json(
+            { success: false, error: 'Internal server error' },
             { status: 500 }
         );
     }
