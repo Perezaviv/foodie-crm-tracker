@@ -512,7 +512,7 @@ bot.on('photo', async (ctx) => {
 
     // Set new timeout to prompt user after 5 seconds of silence
     userSessions[ctx.chat.id].timeout = setTimeout(() => {
-        ctx.reply(`📸 Received ${count} photo(s).\nPlease enter restaurant name and city:`);
+        ctx.reply(`📸 Received ${count} photo(s).\nPlease enter only the restaurant name :`);
         userSessions[ctx.chat.id].timeout = null;
     }, 5000);
 });
