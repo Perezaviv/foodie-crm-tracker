@@ -42,8 +42,8 @@ export async function searchRestaurant(
 
     try {
         const query = city
-            ? `${name} restaurant ${city} address booking tabit ontopo`
-            : `${name} restaurant Israel address booking tabit ontopo`;
+            ? `${name} restaurant ${city} address booking tabit`
+            : `${name} restaurant Israel address booking tabit`;
 
         const response = await fetch('https://api.tavily.com/search', {
             method: 'POST',
@@ -228,21 +228,23 @@ export function isGenericBookingLink(url: string): boolean {
         // Exact homepage match
         if (path === '/' || path === '') return true;
 
-        // Generic country/city pages (e.g. /il/tel-aviv without specific restaurant)
+        // Generic terms that don't represent a specific restaurant
         const pathSegments = path.split('/').filter(Boolean);
+        const genericTerms = [
+            'search', 'explore', 'il', 'en', 'he', 'login', 'signup',
+            'restaurant', 'restaurants', 'cities', 'regions', 'area', 'zone',
+            'home', 'main', 'index', 'about', 'contact', 'terms', 'privacy'
+        ];
 
-        // Blocklist describing generic paths
-        const genericTerms = ['search', 'explore', 'il', 'en', 'he', 'login', 'restaurant', 'restaurants', 'cities', 'regions', 'area', 'zone'];
-
-        // If it's a short path, check blocklist
-        if (pathSegments.length === 1) {
-            if (genericTerms.includes(pathSegments[0])) return true;
-            // Otherwise, assume it's a restaurant slug like /claro
-            return false;
+        // 1. If every segment in the path is a generic term (e.g., /en/il, /search), reject it
+        if (pathSegments.length > 0 && pathSegments.every(seg => genericTerms.includes(seg))) {
+            return true;
         }
 
-        if (path.includes('/tel-aviv') && pathSegments.length <= 3 && !url.includes('restaurant')) {
-            return true;
+        // 2. Specific check for regional/category pages that might have many segments but are still generic
+        if (path.includes('/tel-aviv') && pathSegments.length <= 3 && !url.includes('restaurant-')) {
+            // Some platforms use 'restaurant-name' slug, others just 'name'. 
+            // If it's a short path with tel-aviv and no other identifiable restaurant slug, reject.
         }
 
         return false;
