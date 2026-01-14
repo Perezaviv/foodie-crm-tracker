@@ -50,10 +50,6 @@ const bot = new Telegraf(TELEGRAM_BOT_TOKEN);
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // ============================================================
-// HELPERS (Adapted from lib/ai/search.ts)
-// ============================================================
-
-// ============================================================
 // HELPERS (Address Cleaning)
 // ============================================================
 
@@ -174,23 +170,19 @@ function parseSearchResults(data, restaurantName) {
     let bestAddress;
     const bookingLinks = [];
 
-    // 1. Check direct answer
     if (data.answer) {
         const addressMatch = data.answer.match(/(?:located at|address[:\s]+)([^,\n]+(?:,[^,\n]+)?)/i);
         if (addressMatch) bestAddress = addressMatch[1].trim();
     }
 
-    // 2. Iterate results
     for (const result of data.results || []) {
         const url = result.url;
         const content = result.content || '';
 
-        // Booking Links - Strategy 1: Main URL
         if (isBookingPlatform(url) && !isGenericBookingLink(url)) {
             bookingLinks.push(url);
         }
 
-        // Booking Links - Strategy 2: Content match
         const tabitMatch = content.match(/https:\/\/(?:www\.)?(?:tabit\.cloud|tabitisrael\.co\.il)\/[^\s"']+/g);
         if (tabitMatch) {
             tabitMatch.forEach(link => {
@@ -199,7 +191,6 @@ function parseSearchResults(data, restaurantName) {
             });
         }
 
-        // Address
         if (!bestAddress) {
             const addressPatterns = [
                 /(\d+\s+[A-Za-z\u0590-\u05FF]+\s+(?:Street|St|Road|Rd|Ave|Avenue|Blvd|Boulevard)[^,]*(?:,\s*[A-Za-z\u0590-\u05FF\s]+)?)/i,
@@ -258,9 +249,7 @@ async function searchRestaurant(name, city) {
 // STATE MANAGEMENT (Pending Photos)
 // ============================================================
 
-const userSessions = {}; // { chatId: { photos: [{fileId, caption}], timestamp } }
-
-// { chatId: { photos: [], timestamp: number, timeout: NodeJS.Timeout } }
+const userSessions = {}; // { chatId: { photos: [], timestamp: number, timeout: NodeJS.Timeout } }
 
 function addPendingPhoto(chatId, fileId, caption) {
     let session = userSessions[chatId];
@@ -288,7 +277,17 @@ function addPendingPhoto(chatId, fileId, caption) {
     return session;
 }
 
-// ... existing getPendingPhotos ...
+function getPendingPhotos(chatId) {
+    const session = userSessions[chatId];
+    if (!session) return [];
+
+    if (Date.now() - session.timestamp > 10 * 60 * 1000) {
+        delete userSessions[chatId];
+        return [];
+    }
+
+    return session.photos;
+}
 
 function clearPendingPhotos(chatId) {
     const session = userSessions[chatId];
@@ -296,7 +295,182 @@ function clearPendingPhotos(chatId) {
     delete userSessions[chatId];
 }
 
-// ... existing handlers ...
+async function uploadPhotosForRestaurant(chatId, restaurantId, supabase) {
+    const photos = getPendingPhotos(chatId);
+    if (photos.length === 0) return 0;
+
+    console.log(`📸 Uploading ${photos.length} photos for ${restaurantId}...`);
+    let successCount = 0;
+
+    for (const p of photos) {
+        try {
+            const fileLink = await bot.telegram.getFileLink(p.fileId);
+            const res = await fetchFn(fileLink);
+            const buffer = await res.arrayBuffer();
+
+            const fileName = `${restaurantId}/${Date.now()}_${p.fileId}.jpg`;
+            const { error: uploadError } = await supabase.storage
+                .from('restaurant-photos')
+                .upload(fileName, buffer, { contentType: 'image/jpeg' });
+
+            if (uploadError) {
+                console.error('Upload error:', uploadError);
+                continue;
+            }
+
+            const { data: { publicUrl } } = supabase.storage
+                .from('restaurant-photos')
+                .getPublicUrl(fileName);
+
+            const { error: dbError } = await supabase
+                .from('photos')
+                .insert({
+                    restaurant_id: restaurantId,
+                    url: publicUrl,
+                    caption: p.caption || ''
+                });
+
+            if (!dbError) successCount++;
+        } catch (e) {
+            console.error('Photo processing error:', e);
+        }
+    }
+
+    clearPendingPhotos(chatId);
+    return successCount;
+}
+
+// ============================================================
+// MAIN LOGIC
+// ============================================================
+
+function parseRestaurantMessage(text) {
+    const trimmed = text.trim();
+    let mainPart = trimmed;
+    let notes = null;
+    const dashIndex = trimmed.indexOf(' - ');
+    if (dashIndex !== -1) {
+        mainPart = trimmed.substring(0, dashIndex).trim();
+        notes = trimmed.substring(dashIndex + 3).trim();
+    }
+    let name = mainPart;
+    let city = null;
+    const commaIndex = mainPart.indexOf(',');
+    if (commaIndex !== -1) {
+        name = mainPart.substring(0, commaIndex).trim();
+        city = mainPart.substring(commaIndex + 1).trim();
+    }
+    return { name, city, notes };
+}
+
+async function addRestaurantFromText(text, supabaseClient) {
+    console.log('🔄 Parsing text:', text);
+    const parsed = parseRestaurantMessage(text);
+    console.log('✅ Parsed basic info:', parsed);
+
+    if (!parsed.name) {
+        return { success: false, message: '❌ Please send a restaurant name.' };
+    }
+
+    // --- ENRICHMENT STEP ---
+    let enrichedData = {
+        name: parsed.name,
+        city: parsed.city,
+        notes: parsed.notes,
+        address: null,
+        lat: null,
+        lng: null,
+        booking_link: null
+    };
+
+    let searchFeedback = '';
+
+    try {
+        const searchResult = await searchRestaurant(parsed.name, parsed.city);
+
+        if (searchResult.found) {
+            console.log('✨ Found details:', searchResult);
+            if (searchResult.address) {
+                const rawAddress = searchResult.address;
+                const cleanedAddress = cleanAddressForGeocoding(rawAddress, parsed.city);
+                console.log(`🧹 Address cleaned: "${rawAddress}" -> "${cleanedAddress}"`);
+                enrichedData.address = cleanedAddress;
+            }
+            if (searchResult.bookingLink) enrichedData.booking_link = searchResult.bookingLink;
+
+            if (enrichedData.address) {
+                console.log('🌍 Geocoding address:', enrichedData.address);
+                const coords = await geocodeAddress(enrichedData.address);
+                if (coords) {
+                    enrichedData.lat = coords.lat;
+                    enrichedData.lng = coords.lng;
+                    console.log('📍 Geocoded:', coords);
+                }
+            }
+        } else {
+            console.log('⚠️ No extra details found, using basic info.');
+            searchFeedback = '\n_(No extra details found, verification recommended)_';
+        }
+    } catch (e) { console.error('Error during enrichment:', e); }
+
+    // --- INSERTION STEP ---
+    try {
+        console.log('🔄 Inserting into Supabase...');
+        const { data, error } = await supabaseClient
+            .from('restaurants')
+            .insert({ ...enrichedData, is_visited: false })
+            .select()
+            .single();
+
+        if (error) {
+            console.error('❌ Supabase error:', error);
+            return {
+                success: false,
+                message: `❌ Failed to add restaurant: ${error.message}`,
+            };
+        }
+
+        console.log('✅ Insert successful:', data.name);
+
+        let successMessage = `✅ Added *${data.name}*`;
+        if (data.city) successMessage += ` in ${data.city}`;
+
+        const extras = [];
+        if (data.address) extras.push(`📍 ${data.address}`);
+        if (data.booking_link) extras.push(`📅 [Book Table](${data.booking_link})`);
+
+        if (extras.length > 0) {
+            successMessage += `\n\n${extras.join('\n')}`;
+        }
+        successMessage += searchFeedback;
+
+        return {
+            success: true,
+            message: successMessage,
+            restaurant: data
+        };
+
+    } catch (err) {
+        console.error('❌ Unexpected error:', err);
+        return { success: false, message: '❌ An unexpected error occurred.' };
+    }
+}
+
+// ============================================================
+// BOT HANDLERS
+// ============================================================
+
+bot.start((ctx) => {
+    ctx.reply(
+        `❤️‍🔥 *Welcome to Burnt On Food!*
+        
+*How to use:*
+1. Send me photos 📸
+2. Then type the restaurant name 🍔
+I'll add the spot and attach your pics automatically!`,
+        { parse_mode: 'Markdown' }
+    );
+});
 
 bot.on('photo', async (ctx) => {
     const photos = ctx.message.photo;
@@ -316,13 +490,10 @@ bot.on('text', async (ctx) => {
     const text = ctx.message.text;
     if (text.startsWith('/')) return;
 
-    // Acknowledgement
     const thinkingMsg = await ctx.reply(`🔎 Searching for "${text}"...`);
 
-    // Add Restaurant
     const result = await addRestaurantFromText(text, supabase);
 
-    // If successful, check for pending photos and attach them
     if (result.success && result.restaurant) {
         const photoCount = await uploadPhotosForRestaurant(ctx.chat.id, result.restaurant.id, supabase);
         if (photoCount > 0) {
@@ -330,10 +501,8 @@ bot.on('text', async (ctx) => {
         }
     }
 
-    // Cleanup UI
     try { await ctx.deleteMessage(thinkingMsg.message_id); } catch (e) { }
 
-    // Final Reply
     try {
         await ctx.reply(result.message, { parse_mode: 'Markdown', disable_web_page_preview: true });
     } catch (e) {
