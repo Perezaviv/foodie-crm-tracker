@@ -1,0 +1,62 @@
+import { createAdminClient } from './supabase';
+
+export type TelegramStep =
+    | 'IDLE'
+    | 'SELECTING_RESTAURANT'
+    | 'WAITING_FOR_PHOTOS'
+    | 'REVIEWING_PHOTOS';
+
+export interface TelegramSession {
+    chat_id: number;
+    step: TelegramStep;
+    metadata: any;
+    updated_at: string;
+}
+
+export async function getSession(chatId: number): Promise<TelegramSession | null> {
+    const supabase = createAdminClient();
+    const { data, error } = await supabase
+        .from('telegram_sessions')
+        .select('*')
+        .eq('chat_id', chatId)
+        .single();
+
+    if (error) {
+        if (error.code === 'PGRST116') return null; // Not found
+        console.error('Error fetching telegram session:', error);
+        return null;
+    }
+
+    return data as TelegramSession;
+}
+
+export async function updateSession(chatId: number, step: TelegramStep, metadata: any = {}) {
+    const supabase = createAdminClient();
+    const { error } = await supabase
+        .from('telegram_sessions')
+        .upsert({
+            chat_id: chatId,
+            step,
+            metadata
+        });
+
+    if (error) {
+        console.error('Error updating telegram session:', error);
+        throw error;
+    }
+}
+
+export async function clearSession(chatId: number) {
+    const supabase = createAdminClient();
+    const { error } = await supabase
+        .from('telegram_sessions')
+        .update({
+            step: 'IDLE',
+            metadata: {}
+        })
+        .eq('chat_id', chatId);
+
+    if (error) {
+        console.error('Error clearing telegram session:', error);
+    }
+}
