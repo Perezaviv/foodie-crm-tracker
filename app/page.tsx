@@ -101,6 +101,7 @@ export default function Home() {
             >
               <RestaurantMap
                 restaurants={restaurants}
+                isLoading={restaurantsLoading}
                 onRestaurantClick={handleRestaurantClick}
               />
             </motion.div>
@@ -115,6 +116,7 @@ export default function Home() {
             >
               <RestaurantList
                 restaurants={restaurants}
+                isLoading={restaurantsLoading}
                 onRestaurantClick={handleRestaurantClick}
                 onDelete={handleDeleteRestaurant}
               />

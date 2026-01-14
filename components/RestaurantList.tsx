@@ -8,6 +8,7 @@ import type { Restaurant } from '@/lib/types';
 
 interface RestaurantListProps {
     restaurants: Restaurant[];
+    isLoading?: boolean;
     onRestaurantClick?: (restaurant: Restaurant) => void;
     onDelete?: (id: string) => void;
 }
@@ -27,7 +28,7 @@ const itemVariants = {
     show: { opacity: 1, y: 0 }
 };
 
-export function RestaurantList({ restaurants = [], onRestaurantClick, onDelete }: RestaurantListProps) {
+export function RestaurantList({ restaurants = [], isLoading = false, onRestaurantClick, onDelete }: RestaurantListProps) {
     // console.log('RestaurantList rendered with:', restaurants); 
     // Commented out log to keep production clean, but keeping default prop to prevent crash
     const [searchQuery, setSearchQuery] = useState('');
@@ -70,6 +71,20 @@ export function RestaurantList({ restaurants = [], onRestaurantClick, onDelete }
         setSelectedCuisine(null);
         setSearchQuery('');
     };
+
+    if (isLoading) {
+        return (
+            <div className="flex flex-col items-center justify-center h-full bg-background/50 backdrop-blur-sm">
+                <div className="relative">
+                    <div className="w-16 h-16 rounded-full border-4 border-primary-200 border-t-primary-500 animate-spin" />
+                    <Utensils size={24} className="absolute inset-0 m-auto text-primary-500 animate-pulse" />
+                </div>
+                <p className="mt-4 text-sm font-medium text-muted-foreground animate-pulse">
+                    Setting the table...
+                </p>
+            </div>
+        );
+    }
 
     if (restaurants.length === 0) {
         return (

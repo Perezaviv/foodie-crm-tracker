@@ -11,6 +11,7 @@ import { cleanAddressForGeocoding } from '@/lib/geocoding';
 
 interface RestaurantMapProps {
     restaurants: Restaurant[];
+    isLoading?: boolean;
     onRestaurantClick?: (restaurant: Restaurant) => void;
 }
 
@@ -58,7 +59,7 @@ function createEmojiMarkerIcon(): string {
     return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
 }
 
-export function RestaurantMap({ restaurants, onRestaurantClick }: RestaurantMapProps) {
+export function RestaurantMap({ restaurants, isLoading = false, onRestaurantClick }: RestaurantMapProps) {
     const [selectedRestaurant, setSelectedRestaurant] = useState<Restaurant | null>(null);
     const [userLocation, setUserLocation] = useState<UserLocation | null>(null);
     const [isLocating, setIsLocating] = useState(false);
@@ -389,10 +390,13 @@ export function RestaurantMap({ restaurants, onRestaurantClick }: RestaurantMapP
         );
     }
 
-    if (!isLoaded) {
+    if (!isLoaded || isLoading) {
         return (
             <div className="flex items-center justify-center h-full bg-muted/50">
-                <Loader2 size={32} className="animate-spin text-primary-500" />
+                <div className="flex flex-col items-center gap-2">
+                    <Loader2 size={32} className="animate-spin text-primary-500" />
+                    <p className="text-sm font-medium text-muted-foreground animate-pulse">Loading map...</p>
+                </div>
             </div>
         );
     }
