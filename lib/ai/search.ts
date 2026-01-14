@@ -42,8 +42,8 @@ export async function searchRestaurant(
 
     try {
         const query = city
-            ? `${name} restaurant ${city} address booking tabit`
-            : `${name} restaurant Israel address booking tabit`;
+            ? `${name} restaurant ${city} address booking tabit ontopo`
+            : `${name} restaurant Israel address booking tabit ontopo`;
 
         const response = await fetch('https://api.tavily.com/search', {
             method: 'POST',
@@ -68,6 +68,17 @@ export async function searchRestaurant(
 
         // Parse search results to extract restaurant info
         const results = parseSearchResults(data, name);
+
+        // Auto-geocode results if they have address but missing coordinates
+        for (const result of results) {
+            if (result.address && (!result.lat || !result.lng)) {
+                const coords = await geocodeAddress(result.address);
+                if (coords) {
+                    result.lat = coords.lat;
+                    result.lng = coords.lng;
+                }
+            }
+        }
 
         return {
             success: true,
@@ -209,7 +220,7 @@ function isBookingPlatform(url: string): boolean {
 /**
  * Check if a booking URL is just a generic landing page
  */
-function isGenericBookingLink(url: string): boolean {
+export function isGenericBookingLink(url: string): boolean {
     try {
         const urlObj = new URL(url);
         const path = urlObj.pathname.toLowerCase();
@@ -220,8 +231,16 @@ function isGenericBookingLink(url: string): boolean {
         // Generic country/city pages (e.g. /il/tel-aviv without specific restaurant)
         const pathSegments = path.split('/').filter(Boolean);
 
-        // If it's just /en, /he, /il or /en/il/tel-aviv, it's generic
-        if (pathSegments.length <= 1) return true;
+        // Blocklist describing generic paths
+        const genericTerms = ['search', 'explore', 'il', 'en', 'he', 'login', 'restaurant', 'restaurants', 'cities', 'regions', 'area', 'zone'];
+
+        // If it's a short path, check blocklist
+        if (pathSegments.length === 1) {
+            if (genericTerms.includes(pathSegments[0])) return true;
+            // Otherwise, assume it's a restaurant slug like /claro
+            return false;
+        }
+
         if (path.includes('/tel-aviv') && pathSegments.length <= 3 && !url.includes('restaurant')) {
             return true;
         }
