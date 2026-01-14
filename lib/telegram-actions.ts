@@ -315,6 +315,12 @@ async function startSearch(chatId: number, text: string, nextStep: TelegramStep)
 async function addRestaurantToDb(chatId: number, data: SearchResult, silent = false) {
     const supabase = createAdminClient();
 
+    // Debug logging
+    console.log(`[Telegram] Adding restaurant: "${data.name}"`);
+    console.log(`[Telegram]   Address: ${data.address || '(none)'}`);
+    console.log(`[Telegram]   Coordinates: ${data.lat}, ${data.lng}`);
+    console.log(`[Telegram]   Booking: ${data.bookingLink || '(none)'}`);
+
     // Check duplicates? (omitted for now, relying on user or DB constraints)
 
     const insertPayload = {

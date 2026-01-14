@@ -85,7 +85,7 @@ export function RestaurantMap({ restaurants, isLoading = false, onRestaurantClic
 
     const { isLoaded, loadError } = useGoogleMaps();
 
-    const restaurantsWithCoords = restaurants.filter(r => r.lat && r.lng);
+    const restaurantsWithCoords = restaurants.filter(r => r.lat !== null && r.lng !== null && typeof r.lat === 'number' && typeof r.lng === 'number');
 
     // Debug logging for map loading and restaurant data
     useEffect(() => {
@@ -444,7 +444,7 @@ export function RestaurantMap({ restaurants, isLoading = false, onRestaurantClic
             >
                 {/* Markers are now managed by the clusterer in useEffect */}
 
-                {selectedRestaurant && selectedRestaurant.lat && selectedRestaurant.lng && (
+                {selectedRestaurant && selectedRestaurant.lat !== null && selectedRestaurant.lng !== null && (
                     <InfoWindow
                         position={{ lat: selectedRestaurant.lat, lng: selectedRestaurant.lng }}
                         onCloseClick={() => setSelectedRestaurant(null)}
@@ -606,13 +606,19 @@ export function RestaurantMap({ restaurants, isLoading = false, onRestaurantClic
                                         targetBtn.innerText = 'Fixing...';
 
                                         try {
-                                            const missing = restaurants.filter(r => !r.lat || !r.lng);
+                                            const missing = restaurants.filter(r => r.lat === null || r.lng === null);
+                                            console.log(`[Auto-Fix] Found ${missing.length} restaurants missing location`);
                                             let fixed = 0;
 
                                             for (const rest of missing) {
-                                                if (!rest.address) continue;
+                                                if (!rest.address) {
+                                                    console.warn(`[Auto-Fix] Skipping "${rest.name}" - no address`);
+                                                    continue;
+                                                }
 
                                                 const cleaned = cleanAddressForGeocoding(rest.address, rest.city);
+                                                console.log(`[Auto-Fix] Trying geocode for "${rest.name}" at "${cleaned}"`);
+
                                                 const res = await fetch('/api/geocode', {
                                                     method: 'POST',
                                                     headers: { 'Content-Type': 'application/json' },
@@ -621,28 +627,37 @@ export function RestaurantMap({ restaurants, isLoading = false, onRestaurantClic
 
                                                 const coords = await res.json();
                                                 if (coords.success) {
-                                                    await fetch(`/api/restaurants/${rest.id}`, {
+                                                    console.log(`[Auto-Fix] Success for "${rest.name}": ${coords.lat}, ${coords.lng}. Updating DB...`);
+                                                    const patchRes = await fetch(`/api/restaurants/${rest.id}`, {
                                                         method: 'PATCH',
                                                         headers: { 'Content-Type': 'application/json' },
                                                         body: JSON.stringify({
-                                                            lat: coords.lat,
-                                                            lng: coords.lng
+                                                            lat: Number(coords.lat),
+                                                            lng: Number(coords.lng)
                                                         })
                                                     });
-                                                    fixed++;
+
+                                                    if (patchRes.ok) {
+                                                        fixed++;
+                                                    } else {
+                                                        const patchData = await patchRes.json();
+                                                        console.error(`[Auto-Fix] PATCH failed for "${rest.name}":`, patchData.error);
+                                                        toast.error(`Permission denied fixing "${rest.name}". Make sure you ran the SQL snippet.`);
+                                                    }
+                                                } else {
+                                                    console.warn(`[Auto-Fix] Geocoding failed for "${rest.name}":`, coords.error);
                                                 }
                                             }
 
                                             if (fixed > 0) {
                                                 toast.success(`Successfully fixed ${fixed} locations!`);
-                                                // Refresh page to show new markers
                                                 window.location.reload();
                                             } else {
-                                                toast.info('Could not find coordinates for these addresses.');
+                                                toast.info('Could not find coordinates for these addresses. Check console logs.');
                                             }
                                         } catch (err) {
                                             console.error('Auto-fix error:', err);
-                                            toast.error('Failed to fix locations.');
+                                            toast.error('Failed to fix locations. See console.');
                                         } finally {
                                             targetBtn.disabled = false;
                                             targetBtn.innerText = originalText;

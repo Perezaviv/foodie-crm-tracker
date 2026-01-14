@@ -71,16 +71,30 @@ export async function searchRestaurant(
         const data = await response.json();
 
         // Parse search results to extract restaurant info
-        const results = parseSearchResults(data, name);
+        const results = parseSearchResults(data, name, city);
 
         // Auto-geocode results if they have address but missing coordinates
+        // Also attempt fallback geocoding if no address but we have city
         for (const result of results) {
             if (result.address && (!result.lat || !result.lng)) {
                 const cleanedAddress = cleanAddressForGeocoding(result.address, city);
+                console.log(`[Search] Geocoding address: "${cleanedAddress}"`);
                 const coords = await geocodeAddress(cleanedAddress);
                 if (coords) {
                     result.lat = coords.lat;
                     result.lng = coords.lng;
+                }
+            } else if (!result.address && city && (!result.lat || !result.lng)) {
+                // Fallback: try geocoding with restaurant name + city
+                const fallbackQuery = `${name}, ${city}, Israel`;
+                console.log(`[Search] No address found, trying fallback geocoding: "${fallbackQuery}"`);
+                const coords = await geocodeAddress(fallbackQuery);
+                if (coords) {
+                    result.lat = coords.lat;
+                    result.lng = coords.lng;
+                    // Set a constructed address for display
+                    result.address = `${city}, Israel`;
+                    console.log(`[Search] Fallback geocoding succeeded for "${name}"`);
                 }
             }
         }
@@ -104,7 +118,7 @@ export async function searchRestaurant(
 /**
  * Parse Tavily search results into structured restaurant data
  */
-export function parseSearchResults(data: TavilyResponse, restaurantName: string): SearchResult[] {
+export function parseSearchResults(data: TavilyResponse, restaurantName: string, city?: string): SearchResult[] {
     const results: SearchResult[] = [];
 
     // Pools of collected info
@@ -114,11 +128,19 @@ export function parseSearchResults(data: TavilyResponse, restaurantName: string)
 
     const seenAddresses = new Set<string>();
 
-    // 1. Check direct answer for address
+    // 1. Check direct answer for address - Enhanced with more patterns
     if (data.answer) {
-        const addressMatch = data.answer.match(/(?:located at|address[:\s]+)([^,\n]+(?:,[^,\n]+)?)/i);
-        if (addressMatch) {
-            bestAddress = addressMatch[1].trim();
+        const answerPatterns = [
+            /(?:located at|address[:\s]+|found at|situated at)([^.\n]+)/i,
+            /(\d+\s+[A-Za-z\u0590-\u05FF\s]+,\s*(?:Tel Aviv|Jerusalem|Haifa|Herzliya|Netanya|Jaffa|Eilat|Ramat Gan|Rishon|Petah Tikva)[^.\n]*)/i,
+            /([A-Za-z\u0590-\u05FF]+\s+\d+[^,]*,\s*(?:Tel Aviv|Jerusalem|Haifa|Herzliya|Netanya|Jaffa|Eilat|Ramat Gan)[^.\n]*)/i,
+        ];
+        for (const pattern of answerPatterns) {
+            const match = data.answer.match(pattern);
+            if (match) {
+                bestAddress = match[1].trim();
+                break;
+            }
         }
     }
     if (bestAddress) seenAddresses.add(bestAddress.toLowerCase());
@@ -127,6 +149,7 @@ export function parseSearchResults(data: TavilyResponse, restaurantName: string)
     for (const result of data.results || []) {
         const url = result.url;
         const content = result.content || '';
+        const title = result.title || '';
 
         // --- Booking Link Extraction ---
 
@@ -163,19 +186,37 @@ export function parseSearchResults(data: TavilyResponse, restaurantName: string)
             } catch (e) { }
         }
 
-        // --- Address Extraction ---
+        // --- Address Extraction (Enhanced) ---
         if (!bestAddress) {
             const addressPatterns = [
+                // Classic format: 123 Main Street, City
                 /(\d+\s+[A-Za-z\u0590-\u05FF]+\s+(?:Street|St|Road|Rd|Ave|Avenue|Blvd|Boulevard)[^,]*(?:,\s*[A-Za-z\u0590-\u05FF\s]+)?)/i,
+                // Hebrew with prefix: רחוב דיזנגוף 99
                 /(?:רחוב|רח')\s+([^\d,]+\s*\d+[^,]*)/,
+                // Street Name + Number + City: "Montefiore 12, Tel Aviv"
+                /([A-Za-z\u0590-\u05FF]+\s+\d+[^,]*,\s*(?:Tel Aviv|Jerusalem|Haifa|Herzliya|Netanya|Jaffa|Eilat|Ramat Gan|Rishon LeZion|Petah Tikva|Beer Sheva|Bat Yam)[^.]*)/i,
+                // Number + Street Name: "12 Rothschild Blvd"
+                /(\d+\s+[A-Za-z\u0590-\u05FF][A-Za-z\u0590-\u05FF\s]+(?:,\s*[A-Za-z\u0590-\u05FF\s]+)?)/i,
+                // Hebrew street without prefix: "דיזנגוף 99, תל אביב"
+                /([א-ת]+\s+\d+[^,]*,\s*[א-ת\s]+)/,
+                // City mention in content near restaurant name
+                new RegExp(`${restaurantName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}[^.]*?(\\d+[^,]+,\\s*(?:Tel Aviv|Jerusalem|Haifa)[^.]*)`, 'i'),
             ];
 
+            // Search in both content and title
+            const searchText = `${title} ${content}`;
+
             for (const pattern of addressPatterns) {
-                const match = content.match(pattern);
-                if (match) {
-                    bestAddress = match[1].trim();
-                    seenAddresses.add(bestAddress.toLowerCase());
-                    break;
+                const match = searchText.match(pattern);
+                if (match && match[1]) {
+                    const candidate = match[1].trim();
+                    // Validate it looks like an address (has a number or city name)
+                    if (/\d/.test(candidate) || /Tel Aviv|Jerusalem|Haifa|תל אביב|ירושלים|חיפה/i.test(candidate)) {
+                        bestAddress = candidate;
+                        seenAddresses.add(bestAddress.toLowerCase());
+                        console.log(`[Search] Found address: "${bestAddress}" from pattern`);
+                        break;
+                    }
                 }
             }
         }
@@ -187,13 +228,19 @@ export function parseSearchResults(data: TavilyResponse, restaurantName: string)
     const bestBookingLink = selectBestBookingLink(bookingLinks, restaurantName);
 
     // 4. Construct the primary result
-    // If we found anything useful, create a result
-    if (bestAddress || bestBookingLink) {
+    // Always create a result so geocoding can still be attempted with name+city
+    // Even if no address found, we can try geocoding with restaurant name + city
+    if (bestAddress || bestBookingLink || city) {
         results.push({
             name: restaurantName,
             address: bestAddress,
             bookingLink: bestBookingLink,
         });
+    }
+
+    // 5. If no address but we have city, log for debugging
+    if (!bestAddress && city) {
+        console.log(`[Search] No address extracted for "${restaurantName}" in "${city}" - will attempt name-based geocoding`);
     }
 
     return results;
@@ -304,7 +351,7 @@ export async function geocodeAddress(address: string): Promise<{ lat: number; ln
     try {
         const encoded = encodeURIComponent(address);
         const response = await fetch(
-            `https://maps.googleapis.com/maps/api/geocode/json?address=${encoded}&key=${apiKey}`
+            `https://maps.googleapis.com/maps/api/geocode/json?address=${encoded}&key=${apiKey}&region=il`
         );
 
         if (!response.ok) return null;
