@@ -306,33 +306,39 @@ async function uploadPhotosForRestaurant(chatId, restaurantId, supabase) {
         try {
             const fileLink = await bot.telegram.getFileLink(p.fileId);
             const res = await fetchFn(fileLink);
-            const buffer = await res.arrayBuffer();
+            const arrayBuffer = await res.arrayBuffer();
+            const buffer = Buffer.from(arrayBuffer);
 
             const fileName = `${restaurantId}/${Date.now()}_${p.fileId}.jpg`;
             const { error: uploadError } = await supabase.storage
-                .from('restaurant-photos')
+                .from('photos') // Changed from 'restaurant-photos' to 'photos'
                 .upload(fileName, buffer, { contentType: 'image/jpeg' });
 
             if (uploadError) {
                 console.error('Upload error:', uploadError);
+                await bot.telegram.sendMessage(chatId, `❌ Failed to upload photo: ${uploadError.message}`);
                 continue;
             }
-
-            const { data: { publicUrl } } = supabase.storage
-                .from('restaurant-photos')
-                .getPublicUrl(fileName);
 
             const { error: dbError } = await supabase
                 .from('photos')
                 .insert({
                     restaurant_id: restaurantId,
-                    url: publicUrl,
+                    storage_path: fileName, // Changed from 'url' to 'storage_path'
                     caption: p.caption || ''
                 });
 
-            if (!dbError) successCount++;
+            if (!dbError) {
+                successCount++;
+            } else {
+                console.error('DB Insert Error:', dbError);
+                await bot.telegram.sendMessage(chatId, `❌ DB Error: ${dbError.message}`);
+            }
         } catch (e) {
             console.error('Photo processing error:', e);
+            try {
+                await bot.telegram.sendMessage(chatId, `❌ Error processing photo: ${e.message}`);
+            } catch (ignore) { }
         }
     }
 
@@ -412,6 +418,31 @@ async function addRestaurantFromText(text, supabaseClient) {
             searchFeedback = '\n_(No extra details found, verification recommended)_';
         }
     } catch (e) { console.error('Error during enrichment:', e); }
+
+    // --- CHECK FOR DUPLICATES ---
+    try {
+        // Try to find a close match
+        // We check if the Name column matches the input (case-insensitive)
+        const { data: existing } = await supabaseClient
+            .from('restaurants')
+            .select('*')
+            .ilike('name', enrichedData.name)
+            .limit(1)
+            .maybeSingle();
+
+        if (existing) {
+            console.log('🔄 Found existing restaurant:', existing.name);
+
+            // Optional: Update with new enriched data if missing? 
+            // For now, let's just return it to attach photos, to avoid overwriting good data with bad.
+
+            return {
+                success: true,
+                message: `✅ Found existing *${existing.name}*.`,
+                restaurant: existing
+            };
+        }
+    } catch (e) { console.error('Duplicate check error:', e); }
 
     // --- INSERTION STEP ---
     try {
@@ -497,7 +528,7 @@ bot.on('text', async (ctx) => {
     if (result.success && result.restaurant) {
         const photoCount = await uploadPhotosForRestaurant(ctx.chat.id, result.restaurant.id, supabase);
         if (photoCount > 0) {
-            result.message += `\n\n📸 *Attached ${photoCount} photo(s) successfully!*`;
+            result.message += `\n\nPhotos were linked to *${result.restaurant.name}* successfully! ❤️‍🔥`;
         }
     }
 
