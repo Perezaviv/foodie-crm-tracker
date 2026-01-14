@@ -133,12 +133,6 @@ export default function Home() {
             active={activeView === 'map'}
             onClick={() => setActiveView('map')}
           />
-          <NavButton
-            icon={<List size={24} />}
-            label="List"
-            active={activeView === 'list'}
-            onClick={() => setActiveView('list')}
-          />
 
           <button
             onClick={() => setIsAddDrawerOpen(true)}
@@ -149,6 +143,13 @@ export default function Home() {
             </div>
             <span className="text-xs font-semibold mt-1 block text-primary-600 dark:text-primary-400">Add</span>
           </button>
+
+          <NavButton
+            icon={<List size={24} />}
+            label="List"
+            active={activeView === 'list'}
+            onClick={() => setActiveView('list')}
+          />
 
 
         </div>
