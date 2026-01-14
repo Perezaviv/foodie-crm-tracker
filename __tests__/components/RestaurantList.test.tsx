@@ -20,12 +20,30 @@ jest.mock('lucide-react', () => ({
 }));
 
 // Mock framer-motion to avoid animation issues in tests
-jest.mock('framer-motion', () => ({
-    motion: {
-        div: ({ children, ...props }: { children: React.ReactNode;[key: string]: unknown }) => <div {...props}>{children}</div>,
-    },
-    AnimatePresence: ({ children }: { children: React.ReactNode }) => <>{children}</>,
-}));
+// Filter function MUST be inside the factory to work with Jest hoisting
+jest.mock('framer-motion', () => {
+    const filterMotionProps = (props: Record<string, unknown>) => {
+        const motionProps = ['layout', 'whileHover', 'whileTap', 'variants', 'initial', 'animate', 'exit', 'transition', 'whileFocus', 'whileInView', 'drag', 'dragConstraints'];
+        const filtered: Record<string, unknown> = {};
+        for (const key in props) {
+            if (!motionProps.includes(key) && !key.startsWith('onAnimation') && !key.startsWith('onDrag')) {
+                filtered[key] = props[key];
+            }
+        }
+        return filtered;
+    };
+
+    const React = require('react');
+    return {
+        motion: {
+            div: ({ children, ...props }: { children: React.ReactNode;[key: string]: unknown }) =>
+                React.createElement('div', filterMotionProps(props), children),
+            a: ({ children, ...props }: { children: React.ReactNode;[key: string]: unknown }) =>
+                React.createElement('a', filterMotionProps(props), children),
+        },
+        AnimatePresence: ({ children }: { children: React.ReactNode }) => children,
+    };
+});
 
 describe('RestaurantList Component', () => {
     it('renders list of restaurants', () => {

@@ -17,7 +17,7 @@ export default function Home() {
   const [activeView, setActiveView] = useState<View>('list');
   const [selectedRestaurant, setSelectedRestaurant] = useState<Restaurant | null>(null);
   const [isAddDrawerOpen, setIsAddDrawerOpen] = useState(false);
-  const { restaurants, isLoading: restaurantsLoading, isDemoMode, refresh } = useRestaurants();
+  const { restaurants, isLoading: restaurantsLoading, refresh } = useRestaurants();
 
   const handleRestaurantAdded = () => {
     refresh();
@@ -68,14 +68,6 @@ export default function Home() {
           </div>
         </div>
       </header>
-
-      {/* Demo Mode Banner */}
-      {isDemoMode && (
-        <div className="bg-gradient-to-r from-amber-500 to-orange-500 text-white px-4 py-2 text-center text-sm font-medium shadow-md z-30">
-          <span className="mr-2">🎭</span>
-          <span>Demo Mode – Using sample data. Configure environment variables for full functionality.</span>
-        </div>
-      )}
 
       {/* Main Content Area */}
       <div className="flex-1 overflow-hidden relative z-0">
@@ -236,7 +228,15 @@ function AddDrawer({ open, onOpenChange, onSuccess }: { open: boolean, onOpenCha
     <Drawer.Root open={open} onOpenChange={onOpenChange} shouldScaleBackground>
       <Drawer.Portal>
         <Drawer.Overlay className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50" />
-        <Drawer.Content className="bg-background flex flex-col rounded-t-[10px] h-[90%] mt-24 fixed bottom-0 left-0 right-0 z-50 focus:outline-none">
+        <Drawer.Content
+          className="bg-background flex flex-col rounded-t-[10px] h-[90%] mt-24 fixed bottom-0 left-0 right-0 z-50 focus:outline-none"
+          aria-describedby="add-drawer-description"
+        >
+          {/* Accessibility: Visually hidden title for screen readers */}
+          <Drawer.Title className="sr-only">Add a New Restaurant</Drawer.Title>
+          <p id="add-drawer-description" className="sr-only">
+            Enter a restaurant name or paste a link to add a new restaurant to your collection.
+          </p>
           <div className="mx-auto w-12 h-1.5 flex-shrink-0 rounded-full bg-muted-foreground/20 mt-4 mb-4" />
 
           <div className="flex-1 overflow-y-auto px-4 pb-8 max-w-md mx-auto w-full">

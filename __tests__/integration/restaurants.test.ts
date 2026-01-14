@@ -40,10 +40,14 @@ describe('/api/restaurants Integration', () => {
     });
 
     describe('GET', () => {
-        it('returns 503 if Supabase is not configured', async () => {
+        it('returns demo data when Supabase is not configured', async () => {
             (isSupabaseConfigured as jest.Mock).mockReturnValue(false);
             const res = await GET();
-            expect(res.status).toBe(503);
+            const json = await res.json();
+            expect(res.status).toBe(200);
+            expect(json.demo).toBe(true);
+            expect(json.success).toBe(true);
+            expect(json.restaurants).toBeDefined();
         });
 
         it('returns a list of restaurants on success', async () => {
