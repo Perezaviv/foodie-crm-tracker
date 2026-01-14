@@ -26,7 +26,7 @@ export default function Home() {
       particleCount: 100,
       spread: 70,
       origin: { y: 0.6 },
-      colors: ['#f97316', '#ea580c', '#fb923c', '#ffffff']
+      colors: ['#dc2626', '#b91c1c', '#f87171', '#fbbf24']
     });
     toast.success('Restaurant saved!', {
       description: 'Time to plan your next meal 🍽️',
@@ -72,10 +72,10 @@ export default function Home() {
         <div className="flex items-center justify-between max-w-7xl mx-auto">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center shadow-lg shadow-primary-500/20">
-              <span className="text-white font-bold text-sm">🍽️</span>
+              <span className="text-white font-bold text-sm">❤️‍🔥</span>
             </div>
             <h1 className="text-lg font-bold bg-gradient-to-r from-primary-500 to-primary-700 bg-clip-text text-transparent">
-              Foodie CRM
+              Burnt On Food
             </h1>
           </div>
           <div className="text-sm text-muted-foreground font-medium bg-muted/50 px-3 py-1 rounded-full">

@@ -1,5 +1,5 @@
 /**
- * Telegram Bot Poller for Foodie CRM
+ * Telegram Bot Poller for Burnt On Food
  * 
  * This script connects to Telegram via long polling and listens for messages.
  * When a user sends a message, it parses the content and adds a restaurant
@@ -147,9 +147,9 @@ async function addRestaurantFromText(text, supabaseClient) {
 // /start command
 bot.start((ctx) => {
     const welcomeMessage = `
-🍽️ *Welcome to Foodie CRM Bot!*
+❤️‍🔥 *Welcome to Burnt On Food!*
 
-Send me a restaurant name and I'll add it to your list.
+Send me a restaurant name and I'll add it to your smashes.
 
 *Formats I understand:*
 • \`Restaurant Name\`
@@ -166,7 +166,7 @@ Send me a restaurant name and I'll add it to your list.
 // /help command
 bot.help((ctx) => {
     const helpMessage = `
-🆘 *Foodie CRM Bot Help*
+❤️‍🔥 *Burnt On Food Help*
 
 *Commands:*
 /start - Welcome message
@@ -211,7 +211,7 @@ bot.on('text', async (ctx) => {
 // START BOT
 // ============================================================
 
-console.log('🚀 Starting Foodie CRM Telegram Bot...');
+console.log('🚀 Starting Burnt On Food Telegram Bot...');
 console.log(`   Supabase URL: ${SUPABASE_URL}`);
 
 bot.launch()

@@ -1,19 +1,19 @@
 import { test, expect } from '@playwright/test';
 
-test.describe('Foodie CRM E2E', () => {
+test.describe('Burnt On Food E2E', () => {
 
     test.beforeEach(async ({ page }) => {
         await page.goto('/');
     });
 
     test('has title', async ({ page }) => {
-        await expect(page).toHaveTitle(/Foodie CRM/);
+        await expect(page).toHaveTitle(/Burnt On Food/);
     });
 
     test('can see empty state or list', async ({ page }) => {
-        // Check for "No Restaurants Yet" or "foodie crm" header to ensure load
+        // Check for "No Restaurants Yet" or "Burnt On Food" header to ensure load
         // Also check for the header to be sure page loaded
-        await expect(page.locator('text=Foodie CRM')).toBeVisible();
+        await expect(page.locator('text=Burnt On Food')).toBeVisible();
 
         // Check if either exists (list of items or empty state)
         // We can't easily check for "either" with simple expect, but we can check if content area is present.

@@ -15,13 +15,13 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Foodie CRM - Your Restaurant Tracker",
-  description: "A smart restaurant tracker for food lovers. Save, organize, and discover your favorite dining spots.",
-  keywords: ["restaurant", "food", "tracker", "booking", "dining"],
-  authors: [{ name: "Foodie CRM" }],
+  title: "Burnt On Food - All of my Smashes",
+  description: "A fun, sexy app for couples to track and discover amazing restaurants together. Your shared dining journey starts here.",
+  keywords: ["restaurant", "couples", "dating", "food", "tracker", "booking", "dining", "date night"],
+  authors: [{ name: "Burnt On Food" }],
   openGraph: {
-    title: "Foodie CRM - Your Restaurant Tracker",
-    description: "A smart restaurant tracker for food lovers",
+    title: "Burnt On Food - All of my Smashes",
+    description: "A fun, sexy app for couples to track dining spots together",
     type: "website",
   },
 };

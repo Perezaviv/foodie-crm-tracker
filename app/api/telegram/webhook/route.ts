@@ -27,9 +27,9 @@ export async function POST(request: NextRequest) {
             // For now, let's keep it simple and ignore commands to avoid conflict with other command handlers if we had them.
             if (message.text === '/start' || message.text === '/help') {
                 await sendTelegramMessage(message.chat.id,
-                    `🍽️ *Welcome to Foodie CRM Bot!*
+                    `❤️‍🔥 *Welcome to Burnt On Food!*
 
-Send me a restaurant name to add it.
+Send me a restaurant name to add it to your smashes.
 Examples:
 • \`Miznon\`
 • \`Miznon, Tel Aviv\`
