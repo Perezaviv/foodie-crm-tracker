@@ -68,6 +68,7 @@ export function RestaurantMap({ restaurants, onRestaurantClick }: RestaurantMapP
     const clustererRef = useRef<MarkerClusterer | null>(null);
     const markersRef = useRef<google.maps.Marker[]>([]);
     const restaurantMapRef = useRef<Map<google.maps.Marker, Restaurant>>(new Map());
+    const initialCenterRef = useRef(false);
 
     // Calculate marker size based on zoom level (scales from 20px at zoom 8 to 48px at zoom 18)
     const getMarkerSize = useCallback((zoom: number) => {
@@ -116,6 +117,24 @@ export function RestaurantMap({ restaurants, onRestaurantClick }: RestaurantMapP
             );
         }
     }, []);
+
+    // Function to center map on user's location
+    const getCenter = useCallback(() => {
+        if (restaurantsWithCoords.length === 1) {
+            return { lat: restaurantsWithCoords[0].lat!, lng: restaurantsWithCoords[0].lng! };
+        } else if (restaurantsWithCoords.length > 1) {
+            const avgLat = restaurantsWithCoords.reduce((sum, r) => sum + r.lat!, 0) / restaurantsWithCoords.length;
+            const avgLng = restaurantsWithCoords.reduce((sum, r) => sum + r.lng!, 0) / restaurantsWithCoords.length;
+            return { lat: avgLat, lng: avgLng };
+        }
+        return DEFAULT_CENTER;
+    }, [restaurantsWithCoords]);
+
+    const getZoom = useCallback(() => {
+        if (restaurantsWithCoords.length === 1) return 14;
+        if (restaurantsWithCoords.length > 1) return 11;
+        return 12;
+    }, [restaurantsWithCoords]);
 
     // Function to center map on user's location
     const centerOnUserLocation = useCallback(() => {
@@ -167,6 +186,15 @@ export function RestaurantMap({ restaurants, onRestaurantClick }: RestaurantMapP
         // Set initial zoom level
         setZoomLevel(map.getZoom() || 12);
 
+        // Perform initial centering
+        if (!initialCenterRef.current && restaurantsWithCoords.length > 0) {
+            const center = getCenter();
+            const zoom = getZoom();
+            map.setCenter(center);
+            map.setZoom(zoom);
+            initialCenterRef.current = true;
+        }
+
         // Listen for zoom changes with debounce to prevent thrashing
         map.addListener('zoom_changed', () => {
             if (zoomTimeoutRef.current) {
@@ -177,7 +205,18 @@ export function RestaurantMap({ restaurants, onRestaurantClick }: RestaurantMapP
                 if (newZoom) setZoomLevel(newZoom);
             }, 100); // Wait 100ms after zooming stops
         });
-    }, []);
+    }, [getCenter, getZoom, restaurantsWithCoords.length]);
+
+    // Re-center only when restaurant count changes meaningfully
+    useEffect(() => {
+        if (mapRef.current && restaurantsWithCoords.length > 0 && initialCenterRef.current) {
+            // Only re-center automatically if this is the first time we have restaurants
+            // or if the length changed (meaning one was added/deleted)
+            // But actually, maybe we should ONLY do it on first load and manual "Locate Me"
+            // Let's decide: if the length changes, we might want to pan to include the new one.
+            // For now, let's keep it minimal to satisfy the user's "stay in the same place" request.
+        }
+    }, [restaurantsWithCoords.length]);
 
     // Setup marker clustering
     useEffect(() => {
@@ -263,23 +302,6 @@ export function RestaurantMap({ restaurants, onRestaurantClick }: RestaurantMapP
             }
         };
     }, [isLoaded, restaurantsWithCoords, zoomLevel, getMarkerSize]);
-
-    const getCenter = useCallback(() => {
-        if (restaurantsWithCoords.length === 1) {
-            return { lat: restaurantsWithCoords[0].lat!, lng: restaurantsWithCoords[0].lng! };
-        } else if (restaurantsWithCoords.length > 1) {
-            const avgLat = restaurantsWithCoords.reduce((sum, r) => sum + r.lat!, 0) / restaurantsWithCoords.length;
-            const avgLng = restaurantsWithCoords.reduce((sum, r) => sum + r.lng!, 0) / restaurantsWithCoords.length;
-            return { lat: avgLat, lng: avgLng };
-        }
-        return DEFAULT_CENTER;
-    }, [restaurantsWithCoords]);
-
-    const getZoom = useCallback(() => {
-        if (restaurantsWithCoords.length === 1) return 14;
-        if (restaurantsWithCoords.length > 1) return 11;
-        return 12;
-    }, [restaurantsWithCoords]);
 
     // Handle "View Details" button in popup
     const handleViewDetails = useCallback((restaurant: Restaurant) => {
@@ -379,8 +401,6 @@ export function RestaurantMap({ restaurants, onRestaurantClick }: RestaurantMapP
         <div className="relative h-full w-full">
             <GoogleMap
                 mapContainerStyle={containerStyle}
-                center={getCenter()}
-                zoom={getZoom()}
                 onLoad={onMapLoad}
                 options={{
                     styles: mapStyles,
@@ -389,6 +409,8 @@ export function RestaurantMap({ restaurants, onRestaurantClick }: RestaurantMapP
                     mapTypeControl: false,
                     streetViewControl: false,
                     fullscreenControl: true,
+                    gestureHandling: 'greedy', // Better for mobile
+                    clickableIcons: false,
                 }}
             >
                 {/* Markers are now managed by the clusterer in useEffect */}
@@ -397,7 +419,10 @@ export function RestaurantMap({ restaurants, onRestaurantClick }: RestaurantMapP
                     <InfoWindow
                         position={{ lat: selectedRestaurant.lat, lng: selectedRestaurant.lng }}
                         onCloseClick={() => setSelectedRestaurant(null)}
-                        options={{ pixelOffset: new google.maps.Size(0, -40) }}
+                        options={{
+                            pixelOffset: new google.maps.Size(0, -40),
+                            disableAutoPan: true // Don't move the map when selecting
+                        }}
                     >
                         <div style={{ minWidth: '200px', maxWidth: '280px', padding: '8px', backgroundColor: 'white' }}>
                             <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', marginBottom: '8px' }}>
