@@ -124,6 +124,27 @@ export type Database = {
                 }
                 Relationships: []
             }
+            telegram_sessions: {
+                Row: {
+                    chat_id: number
+                    step: string
+                    metadata: Json
+                    updated_at: string
+                }
+                Insert: {
+                    chat_id: number
+                    step?: string
+                    metadata?: Json
+                    updated_at?: string
+                }
+                Update: {
+                    chat_id?: number
+                    step?: string
+                    metadata?: Json
+                    updated_at?: string
+                }
+                Relationships: []
+            }
         }
         Views: {
             [_ in never]: never

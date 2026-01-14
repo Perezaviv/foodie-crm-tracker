@@ -3,6 +3,7 @@ import { createAdminClient } from './supabase';
 export type TelegramStep =
     | 'IDLE'
     | 'SELECTING_RESTAURANT'
+    | 'SELECTING_RESTAURANT_FOR_PHOTOS'
     | 'WAITING_FOR_PHOTOS'
     | 'REVIEWING_PHOTOS';
 
