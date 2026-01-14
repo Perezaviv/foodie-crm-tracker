@@ -77,7 +77,7 @@ export function RestaurantDetail({ restaurant, onClose, onEdit, onDelete }: Rest
                                 {onDelete && (
                                     <button
                                         onClick={handleDelete}
-                                        className="p-2 rounded-full hover:bg-red-100 dark:hover:bg-red-900/30 text-red-500 transition-base"
+                                        className="p-2 rounded-full hover:bg-red-100 text-red-500 transition-base"
                                     >
                                         <Trash2 size={20} />
                                     </button>
@@ -156,7 +156,7 @@ export function RestaurantDetail({ restaurant, onClose, onEdit, onDelete }: Rest
                                                 href={`https://www.google.com/maps/search/?api=1&query=${restaurant.lat},${restaurant.lng}`}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
-                                                className="py-3 px-4 rounded-xl border-2 border-primary-100 dark:border-primary-900 hover:border-primary-500 dark:hover:border-primary-500 text-primary-600 dark:text-primary-400 font-medium text-center transition-base flex items-center justify-center gap-2"
+                                                className="py-3 px-4 rounded-xl border-2 border-primary-100 hover:border-primary-500 text-primary-600 font-medium text-center transition-base flex items-center justify-center gap-2"
                                             >
                                                 <MapPin size={18} />
                                                 Directions
@@ -197,7 +197,7 @@ export function RestaurantDetail({ restaurant, onClose, onEdit, onDelete }: Rest
                                                                 />
                                                             ))}
                                                         </div>
-                                                        <span className="text-xs font-bold bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300 px-2 py-0.5 rounded-full">
+                                                        <span className="text-xs font-bold bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full">
                                                             {restaurant.rating}
                                                         </span>
                                                     </div>
@@ -219,8 +219,8 @@ export function RestaurantDetail({ restaurant, onClose, onEdit, onDelete }: Rest
                                                 <div className={cn(
                                                     "flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium",
                                                     restaurant.is_visited
-                                                        ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300"
-                                                        : "bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300"
+                                                        ? "bg-green-100 text-green-700"
+                                                        : "bg-orange-100 text-orange-700"
                                                 )}>
                                                     <Clock size={12} />
                                                     {restaurant.is_visited ? 'Visited' : 'Want to visit'}
@@ -230,12 +230,12 @@ export function RestaurantDetail({ restaurant, onClose, onEdit, onDelete }: Rest
 
                                         {/* Notes */}
                                         {restaurant.notes && (
-                                            <div className="bg-amber-50 dark:bg-amber-950/20 p-4 rounded-2xl border border-amber-100 dark:border-amber-900/30">
-                                                <span className="text-xs text-amber-700 dark:text-amber-400 uppercase tracking-wider font-semibold flex items-center gap-1.5 mb-2">
+                                            <div className="bg-amber-50 p-4 rounded-2xl border border-amber-100">
+                                                <span className="text-xs text-amber-700 uppercase tracking-wider font-semibold flex items-center gap-1.5 mb-2">
                                                     <Edit2 size={12} />
                                                     My Notes
                                                 </span>
-                                                <p className="text-sm text-amber-900 dark:text-amber-100 leading-relaxed">
+                                                <p className="text-sm text-amber-900 leading-relaxed">
                                                     {restaurant.notes}
                                                 </p>
                                             </div>
@@ -254,7 +254,7 @@ export function RestaurantDetail({ restaurant, onClose, onEdit, onDelete }: Rest
                                     {!showUpload && (
                                         <button
                                             onClick={() => setShowUpload(true)}
-                                            className="w-full py-4 px-4 rounded-2xl border-2 border-dashed border-muted hover:border-primary-500 bg-muted/20 hover:bg-primary-50/50 dark:hover:bg-primary-900/20 transition-base flex flex-col items-center justify-center gap-2 text-muted-foreground hover:text-primary-500 group"
+                                            className="w-full py-4 px-4 rounded-2xl border-2 border-dashed border-muted hover:border-primary-500 bg-muted/20 hover:bg-primary-50/50 transition-base flex flex-col items-center justify-center gap-2 text-muted-foreground hover:text-primary-500 group"
                                         >
                                             <div className="p-3 rounded-full bg-background shadow-sm group-hover:scale-110 transition-base">
                                                 <Upload size={24} />

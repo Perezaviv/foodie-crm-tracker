@@ -125,7 +125,7 @@ export function PhotoUpload({ restaurantId, onUploadComplete }: PhotoUploadProps
                 onClick={() => fileInputRef.current?.click()}
                 className={cn(
                     'rounded-2xl border-2 border-dashed p-8 text-center cursor-pointer transition-base',
-                    'hover:border-primary-500/50 hover:bg-primary-50/50 dark:hover:bg-primary-900/20',
+                    'hover:border-primary-500/50 hover:bg-primary-50/50',
                     files.length > 0 ? 'border-primary-300' : 'border-muted-foreground/20'
                 )}
             >
@@ -230,7 +230,7 @@ export function PhotoUpload({ restaurantId, onUploadComplete }: PhotoUploadProps
 
             {/* Error */}
             {error && (
-                <div className="bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded-xl p-3 text-sm">
+                <div className="bg-red-100 text-red-700 rounded-xl p-3 text-sm">
                     {error}
                 </div>
             )}

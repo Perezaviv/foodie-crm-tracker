@@ -32,34 +32,9 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#fafafa" },
-    { media: "(prefers-color-scheme: dark)", color: "#0a0a0a" },
-  ],
-  colorScheme: "light dark",
+  themeColor: "#fafafa",
+  colorScheme: "light",
 };
-
-// Script to apply dark class based on system preference (runs before React hydration)
-const themeScript = `
-  (function() {
-    try {
-      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      if (prefersDark) {
-        document.documentElement.classList.add('dark');
-      } else {
-        document.documentElement.classList.remove('dark');
-      }
-      // Listen for changes
-      window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
-        if (e.matches) {
-          document.documentElement.classList.add('dark');
-        } else {
-          document.documentElement.classList.remove('dark');
-        }
-      });
-    } catch (e) {}
-  })();
-`;
 
 export default function RootLayout({
   children,
@@ -70,14 +45,10 @@ export default function RootLayout({
     <html
       lang="en"
       className={cn(geistSans.variable, geistMono.variable)}
-      suppressHydrationWarning
     >
-      <head>
-        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
-      </head>
+      <head />
       <body
         className="antialiased h-full w-full bg-background text-foreground overflow-hidden fixed inset-0 touch-none"
-        suppressHydrationWarning
       >
         <GoogleMapsProvider>
           <main className="h-full w-full overflow-hidden safe-top">

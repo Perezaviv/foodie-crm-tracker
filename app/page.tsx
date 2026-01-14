@@ -138,12 +138,12 @@ export default function Home() {
 
           <button
             onClick={() => setIsAddDrawerOpen(true)}
-            className="relative -top-5"
+            className="flex flex-col items-center gap-1 -mt-2 transition-all duration-200 active:scale-90"
           >
-            <div className="w-14 h-14 rounded-full bg-gradient-to-br from-primary-500 to-primary-600 text-white flex flex-col items-center justify-center shadow-xl shadow-primary-500/30 animate-pulse-subtle hover:scale-105 active:scale-95 transition-transform">
-              <Plus size={28} />
+            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary-500 to-primary-600 text-white flex items-center justify-center shadow-lg shadow-primary-500/20 hover:scale-105 transition-transform">
+              <Plus size={24} />
             </div>
-            <span className="text-xs font-semibold mt-1 block text-primary-600 dark:text-primary-400">Add</span>
+            <span className="text-[10px] font-medium text-primary-600">Add</span>
           </button>
 
           <NavButton
@@ -202,7 +202,7 @@ function NavButton({
       <div className={cn("transition-transform duration-200", active && "scale-110")}>
         {icon}
       </div>
-      <span className={cn('text-[10px] font-medium transition-colors', active ? "text-primary-600 dark:text-primary-400" : "text-muted-foreground")}>
+      <span className={cn('text-[10px] font-medium transition-colors', active ? "text-primary-600" : "text-muted-foreground")}>
         {label}
       </span>
     </button>
@@ -355,7 +355,7 @@ function AddDrawer({ open, onOpenChange, onSuccess }: { open: boolean, onOpenCha
                 </div>
 
                 {error && (
-                  <div className="bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded-xl p-3 text-sm flex items-center gap-2">
+                  <div className="bg-red-100 text-red-700 rounded-xl p-3 text-sm flex items-center gap-2">
                     <X size={16} /> {error}
                   </div>
                 )}
@@ -374,7 +374,7 @@ function AddDrawer({ open, onOpenChange, onSuccess }: { open: boolean, onOpenCha
               // INPUT STATE
               <div className="space-y-6 animate-slide-up">
                 <div className="text-center space-y-2 mb-8">
-                  <div className="w-16 h-16 rounded-full bg-primary-100 dark:bg-primary-900/40 text-primary-600 dark:text-primary-400 flex items-center justify-center mx-auto mb-4 animate-pulse-subtle">
+                  <div className="w-16 h-16 rounded-full bg-primary-100 text-primary-600 flex items-center justify-center mx-auto mb-4 animate-pulse-subtle">
                     <Utensils size={32} />
                   </div>
                   <h2 className="text-2xl font-bold bg-gradient-to-r from-primary-500 to-primary-700 bg-clip-text text-transparent">
@@ -404,7 +404,7 @@ function AddDrawer({ open, onOpenChange, onSuccess }: { open: boolean, onOpenCha
                   </div>
 
                   {error && (
-                    <div className="bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded-xl p-3 text-sm">
+                    <div className="bg-red-100 text-red-700 rounded-xl p-3 text-sm">
                       {error}
                     </div>
                   )}

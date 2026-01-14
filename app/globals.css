@@ -45,46 +45,7 @@
   --text-disabled: #a3a3a3;
 }
 
-/* Dark theme - Using class-based for more control */
-.dark {
-  --background: #0a0a0a;
-  --foreground: #fafafa;
-  --card: #171717;
-  --card-foreground: #fafafa;
-  --muted: #262626;
-  --muted-foreground: #d4d4d4;
-  --accent: #7c2d12;
-  --accent-foreground: #fed7aa;
-  --border: #404040;
-  --ring: #fb923c;
 
-  /* Text colors for dark mode - brighter for readability */
-  --text-primary: #fafafa;
-  --text-secondary: #e5e5e5;
-  --text-muted: #d4d4d4;
-  --text-disabled: #737373;
-}
-
-/* Also support system preference */
-@media (prefers-color-scheme: dark) {
-  :root:not(.light) {
-    --background: #0a0a0a;
-    --foreground: #fafafa;
-    --card: #171717;
-    --card-foreground: #fafafa;
-    --muted: #262626;
-    --muted-foreground: #d4d4d4;
-    --accent: #7c2d12;
-    --accent-foreground: #fed7aa;
-    --border: #404040;
-    --ring: #fb923c;
-
-    --text-primary: #fafafa;
-    --text-secondary: #e5e5e5;
-    --text-muted: #d4d4d4;
-    --text-disabled: #737373;
-  }
-}
 
 @theme inline {
   --color-background: var(--background);
@@ -180,17 +141,7 @@ a {
   border-bottom: 1px solid rgba(0, 0, 0, 0.05);
 }
 
-@media (prefers-color-scheme: dark) {
-  .glass {
-    background: rgba(10, 10, 10, 0.7);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-  }
-}
 
-.dark .glass {
-  background: rgba(10, 10, 10, 0.7);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-}
 
 /* Smooth transitions */
 .transition-base {
@@ -256,10 +207,7 @@ button {
   opacity: 0.4;
 }
 
-.dark .mesh-subtle {
-  background-image: radial-gradient(circle at center, var(--primary-900) 0%, transparent 70%);
-  opacity: 0.2;
-}
+
 
 /* Animations */
 @keyframes pulse-subtle {

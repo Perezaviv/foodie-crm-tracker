@@ -93,7 +93,7 @@ export function RestaurantList({ restaurants = [], isLoading = false, onRestaura
                 animate={{ opacity: 1, scale: 1 }}
                 className="flex flex-col items-center justify-center h-full bg-muted/50 p-6"
             >
-                <div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary-100 to-primary-200 dark:from-primary-900 dark:to-primary-800 flex items-center justify-center mb-4 shadow-inner">
+                <div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary-100 to-primary-200 flex items-center justify-center mb-4 shadow-inner">
                     <Utensils size={40} className="text-primary-500" />
                 </div>
                 <h2 className="text-xl font-semibold mb-2">No Restaurants Yet</h2>
@@ -135,7 +135,7 @@ export function RestaurantList({ restaurants = [], isLoading = false, onRestaura
                         className={cn(
                             'flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm transition-all active:scale-95',
                             showFilters || hasActiveFilters
-                                ? 'bg-primary-100 dark:bg-primary-900 text-primary-700 dark:text-primary-300 shadow-sm'
+                                ? 'bg-primary-100 text-primary-700 shadow-sm'
                                 : 'bg-muted hover:bg-muted/80'
                         )}
                     >
@@ -240,32 +240,32 @@ function RestaurantCard({ restaurant, onClick, onDelete }: { restaurant: Restaur
             onClick={onClick}
             whileHover={{ scale: 1.01 }}
             whileTap={{ scale: 0.99 }}
-            className="group bg-white dark:bg-neutral-900 rounded-2xl border-2 border-neutral-200 dark:border-neutral-700 p-4 shadow-md hover:shadow-xl transition-all duration-300 ease-out cursor-pointer hover:border-primary-400 dark:hover:border-primary-500 relative"
+            className="group bg-white rounded-2xl border-2 border-neutral-200 p-4 shadow-md hover:shadow-xl transition-all duration-300 ease-out cursor-pointer hover:border-primary-400 relative"
         >
             <div className="flex items-start justify-between">
                 <div className="flex-1 min-w-0 pr-8">
-                    <h3 className="font-bold text-lg truncate text-neutral-900 dark:text-white">
+                    <h3 className="font-bold text-lg truncate text-neutral-900">
                         {restaurant.name}
                     </h3>
                     <div className="flex flex-wrap gap-2 mt-2">
                         {restaurant.cuisine && (
-                            <span className="text-xs px-2.5 py-1 rounded-full bg-primary-100 dark:bg-primary-900/60 text-primary-800 dark:text-primary-200 font-semibold border border-primary-200 dark:border-primary-700">
+                            <span className="text-xs px-2.5 py-1 rounded-full bg-primary-100 text-primary-800 font-semibold border border-primary-200">
                                 {restaurant.cuisine}
                             </span>
                         )}
                         {restaurant.city && (
-                            <span className="text-xs px-2.5 py-1 rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 font-medium border border-neutral-200 dark:border-neutral-600">
+                            <span className="text-xs px-2.5 py-1 rounded-full bg-neutral-100 text-neutral-700 font-medium border border-neutral-200">
                                 📍 {restaurant.city}
                             </span>
                         )}
                         {restaurant.is_visited && (
-                            <span className="text-xs px-2.5 py-1 rounded-full bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-200 font-semibold border border-green-200 dark:border-green-700">
+                            <span className="text-xs px-2.5 py-1 rounded-full bg-green-100 text-green-800 font-semibold border border-green-200">
                                 ✓ Visited
                             </span>
                         )}
                     </div>
                     {restaurant.address && (
-                        <p className="text-sm text-neutral-600 dark:text-neutral-400 mt-3 flex items-start gap-1.5 font-medium">
+                        <p className="text-sm text-neutral-600 mt-3 flex items-start gap-1.5 font-medium">
                             <MapPin size={14} className="flex-shrink-0 mt-0.5 text-primary-500" />
                             <span className="truncate">{restaurant.address}</span>
                         </p>
@@ -298,7 +298,7 @@ function RestaurantCard({ restaurant, onClick, onDelete }: { restaurant: Restaur
                             }}
                             whileHover={{ scale: 1.1, backgroundColor: 'rgba(239, 68, 68, 0.1)' }}
                             whileTap={{ scale: 0.9 }}
-                            className="p-2.5 rounded-xl bg-white dark:bg-neutral-800 text-red-500 border-2 border-transparent hover:border-red-200 dark:hover:border-red-900 hover:text-red-600 shadow-sm flex items-center justify-center transition-all z-10"
+                            className="p-2.5 rounded-xl bg-white text-red-500 border-2 border-transparent hover:border-red-200 hover:text-red-600 shadow-sm flex items-center justify-center transition-all z-10"
                             title="Delete"
                         >
                             <Trash2 size={18} />
