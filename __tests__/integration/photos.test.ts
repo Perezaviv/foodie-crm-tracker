@@ -5,12 +5,13 @@
  * @jest-environment node
  */
 import { POST, GET } from '../../app/api/photos/route';
-import { createServerClient, isSupabaseConfigured } from '../../lib/supabase';
+import { createServerClient, createAdminClient, isSupabaseConfigured } from '../../lib/supabase';
 import { NextRequest } from 'next/server';
 
 // Mock lib/supabase
 jest.mock('../../lib/supabase', () => ({
     createServerClient: jest.fn(),
+    createAdminClient: jest.fn(),
     isSupabaseConfigured: jest.fn(),
 }));
 
@@ -36,6 +37,7 @@ describe('/api/photos Integration', () => {
         jest.clearAllMocks();
         (isSupabaseConfigured as jest.Mock).mockReturnValue(true);
         (createServerClient as jest.Mock).mockReturnValue(mockSupabase);
+        (createAdminClient as jest.Mock).mockReturnValue(mockSupabase);
 
         // Mock Database Chain
         mockFrom.mockReturnValue({
@@ -127,7 +129,7 @@ describe('/api/photos Integration', () => {
 
             // Since we loop through files and continue on error, if all fail, it returns "No photos were uploaded successfully"
             expect(json.success).toBe(false);
-            expect(json.error).toBe('No photos were uploaded successfully');
+            expect(json.error).toContain('Failed to upload test.jpg: Upload Denied');
         });
     });
 

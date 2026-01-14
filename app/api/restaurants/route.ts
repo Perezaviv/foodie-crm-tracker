@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerClient } from '@/lib/supabase';
+import { createServerClient, isSupabaseConfigured } from '@/lib/supabase';
 import { geocodeAddress } from '@/lib/ai';
 import { cleanAddressForGeocoding } from '@/lib/geocoding';
 import type { Restaurant } from '@/lib/types';
