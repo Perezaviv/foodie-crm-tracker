@@ -16,7 +16,7 @@ export function cleanAddressForGeocoding(address: string, city?: string | null):
 
     // Remove common noise patterns (take only the first sentence before these phrases)
     const noisePhrases = [
-        /\.\s*(To book|It is known|Book a table|Booking|Instagram|Call|Phone)/i,
+        /\.\s*(To book|It is known|It is currently|Book a table|Booking|Instagram|Call|Phone)/i,
         /\.\s*[A-Z]/,  // Any sentence after first (starts with capital letter)
     ];
     for (const pattern of noisePhrases) {

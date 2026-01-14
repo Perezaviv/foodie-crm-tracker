@@ -100,10 +100,69 @@ export function useRestaurantParser(): UseRestaurantParserReturn {
         setError(null);
 
         try {
+            // Create a copy to potentially add coordinates
+            const restaurantToSave = { ...parsedRestaurant };
+
+            // Client-side geocoding if we have an address but no coordinates
+            if (restaurantToSave.address && (!restaurantToSave.lat || !restaurantToSave.lng)) {
+                console.log('[Save] Attempting client-side geocoding...');
+
+                // Clean the address before geocoding
+                const cleanAddress = (addr: string, city?: string | null): string => {
+                    let cleaned = addr.replace(/\n/g, ' ').replace(/\s+/g, ' ').trim();
+                    // Remove noise
+                    const noisePhrases = [
+                        /\.\s*(To book|It is known|Book a table|Booking|Instagram|Call|Phone|It is currently)/i,
+                        /\.\s*[A-Z]/,
+                    ];
+                    for (const pattern of noisePhrases) {
+                        const match = cleaned.match(pattern);
+                        if (match && match.index) {
+                            cleaned = cleaned.substring(0, match.index).trim();
+                        }
+                    }
+                    cleaned = cleaned.replace(/\.$/, '').trim();
+                    const lower = cleaned.toLowerCase();
+                    if (city && !lower.includes(city.toLowerCase()) && !lower.includes('tel aviv')) {
+                        cleaned = `${cleaned}, ${city}`;
+                    }
+                    if (!lower.includes('israel')) {
+                        cleaned = `${cleaned}, Israel`;
+                    }
+                    return cleaned;
+                };
+
+                const cleanedAddress = cleanAddress(restaurantToSave.address, restaurantToSave.city);
+                console.log(`[Save] Cleaned address: "${cleanedAddress}"`);
+
+                // Use client-side geocoder if available (Google Maps is loaded)
+                if (typeof window !== 'undefined' && window.google?.maps?.Geocoder) {
+                    try {
+                        const geocoder = new google.maps.Geocoder();
+                        const result = await new Promise<google.maps.GeocoderResult[] | null>((resolve) => {
+                            geocoder.geocode({ address: cleanedAddress }, (results, status) => {
+                                console.log(`[Save] Geocode status: ${status}`);
+                                if (status === 'OK' && results) resolve(results);
+                                else resolve(null);
+                            });
+                        });
+                        if (result && result[0]) {
+                            restaurantToSave.lat = result[0].geometry.location.lat();
+                            restaurantToSave.lng = result[0].geometry.location.lng();
+                            console.log(`[Save] Geocoded: ${restaurantToSave.lat}, ${restaurantToSave.lng}`);
+                        }
+                    } catch (geoError) {
+                        console.warn('[Save] Client geocoding error:', geoError);
+                    }
+                } else {
+                    console.warn('[Save] Google Maps Geocoder not available');
+                }
+            }
+
             const response = await fetch('/api/restaurants', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ restaurant: parsedRestaurant }),
+                body: JSON.stringify({ restaurant: restaurantToSave }),
             });
 
             const data = await response.json();
