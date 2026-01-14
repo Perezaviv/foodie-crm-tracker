@@ -113,9 +113,14 @@ function parseSearchResults(data: TavilyResponse, restaurantName: string): Searc
         const content = result.content || '';
 
         // Capture Booking Link (Priority: Ontopo/Tabit etc)
-        if (!bestBookingLink && isBookingPlatform(url)) {
+        // Exclude generic landing pages
+        const isGenericLink = url.includes('/en/il/tel-aviv') ||
+            url === 'https://tabit.cloud' ||
+            url === 'https://ontopo.com' ||
+            url === 'https://ontopo.co.il';
+
+        if (!bestBookingLink && isBookingPlatform(url) && !isGenericLink) {
             bestBookingLink = url;
-            // console.log('Found booking link:', url);
         }
 
         // Capture Website if not booking
@@ -195,6 +200,7 @@ export async function geocodeAddress(address: string): Promise<{ lat: number; ln
         const data = await response.json();
 
         if (data.status !== 'OK' || !data.results || data.results.length === 0) {
+            console.warn(`Geocoding failed for address "${address}":`, data.status);
             return null;
         }
 
@@ -204,7 +210,7 @@ export async function geocodeAddress(address: string): Promise<{ lat: number; ln
             lng: location.lng,
         };
     } catch (error) {
-        console.error('Geocoding error:', error);
+        console.error('Geocoding error for address:', address, error);
         return null;
     }
 }

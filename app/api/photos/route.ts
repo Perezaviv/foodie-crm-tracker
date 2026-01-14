@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerClient, isSupabaseConfigured } from '@/lib/supabase';
+import { createServerClient, createAdminClient, isSupabaseConfigured } from '@/lib/supabase';
 
 export const dynamic = 'force-dynamic';
 
@@ -40,7 +40,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<UploadRes
             );
         }
 
-        const supabase = createServerClient();
+        const supabase = createAdminClient();
         const uploadedPhotos: UploadResponse['photos'] = [];
 
         for (const file of files) {
