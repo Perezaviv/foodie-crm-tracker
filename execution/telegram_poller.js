@@ -2,15 +2,11 @@
  * Telegram Bot Poller for Burnt On Food
  * 
  * This script connects to Telegram via long polling and listens for messages.
- * When a user sends a message, it parses the content and adds a restaurant
- * to the Supabase database.
+ * When a user sends a message, it parses the content, SEARCHES for the restaurant
+ * using Tavily (for address/website) and Google Maps (for geocoding),
+ * and adds a rich restaurant entry to the Supabase database.
  * 
  * Usage: node execution/telegram_poller.js
- * 
- * Required environment variables:
- *   - TELEGRAM_BOT_TOKEN
- *   - NEXT_PUBLIC_SUPABASE_URL
- *   - NEXT_PUBLIC_SUPABASE_ANON_KEY
  */
 
 /* eslint-disable @typescript-eslint/no-require-imports */
@@ -18,14 +14,8 @@
 require('dotenv').config();
 const { Telegraf } = require('telegraf');
 const { createClient } = require('@supabase/supabase-js');
-
-// Import shared logic (using require for Node script)
-// Note: We need to use ts-node or compile typescript to use the shared file directly.
-// Since this is a simple script, and mixing JS/TS is tricky without build step,
-// I will keep the logic here for now, but formatted exactly like the shared logic
-// so it matches behavior. 
-// Ideally, we would run this with `npx ts-node execution/telegram_poller.ts` 
-// but sticking to JS for simplicity of execution without dev deps.
+// Node 18+ has native fetch, but we handle older envs just in case or use global
+const fetchFn = global.fetch || require('node-fetch');
 
 // ============================================================
 // CONFIGURATION
@@ -34,6 +24,8 @@ const { createClient } = require('@supabase/supabase-js');
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+const TAVILY_API_KEY = process.env.TAVILY_API_KEY;
+const GOOGLE_MAPS_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
 
 // Validate environment variables
 if (!TELEGRAM_BOT_TOKEN) {
@@ -46,6 +38,10 @@ if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
     process.exit(1);
 }
 
+if (!TAVILY_API_KEY) {
+    console.warn('⚠️ TAVILY_API_KEY not set. Smart search will be disabled.');
+}
+
 // ============================================================
 // INITIALIZE CLIENTS
 // ============================================================
@@ -54,56 +50,256 @@ const bot = new Telegraf(TELEGRAM_BOT_TOKEN);
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // ============================================================
-// LOGIC (Mirrors lib/telegram-actions.ts)
+// HELPERS (Adapted from lib/ai/search.ts)
+// ============================================================
+
+async function geocodeAddress(address) {
+    if (!GOOGLE_MAPS_API_KEY) return null;
+
+    try {
+        const encoded = encodeURIComponent(address);
+        const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encoded}&key=${GOOGLE_MAPS_API_KEY}`;
+        const response = await fetchFn(url);
+
+        if (!response.ok) return null;
+
+        const data = await response.json();
+
+        if (data.status !== 'OK' || !data.results || data.results.length === 0) {
+            return null;
+        }
+
+        const location = data.results[0].geometry.location;
+        return {
+            lat: location.lat,
+            lng: location.lng,
+        };
+    } catch (error) {
+        console.error('[Geocode] Error:', error);
+        return null;
+    }
+}
+
+function isBookingPlatform(url) {
+    const bookingDomains = [
+        'tabit.cloud', 'tabitisrael.co.il', 'ontopo.co.il', 'ontopo.com',
+        'opentable.com', 'resy.com', 'sevenrooms.com', 'yelp.com/reservations'
+    ];
+    try {
+        const hostname = new URL(url).hostname.toLowerCase();
+        return bookingDomains.some(domain => hostname.includes(domain));
+    } catch (e) { return false; }
+}
+
+function isGenericBookingLink(url) {
+    try {
+        const urlObj = new URL(url);
+        const path = urlObj.pathname.toLowerCase();
+        if (path === '/' || path === '') return true;
+        const pathSegments = path.split('/').filter(Boolean);
+        if (pathSegments.length <= 1) return true;
+        if (path.includes('/tel-aviv') && pathSegments.length <= 3 && !url.includes('restaurant')) return true;
+        return false;
+    } catch (e) { return true; }
+}
+
+function getLinkScore(link, name) {
+    let score = 0;
+    const lowerLink = link.toLowerCase();
+    if (lowerLink.includes('tabit.cloud')) score += 10;
+    else if (lowerLink.includes('ontopo')) score += 8;
+    else score += 1;
+
+    const simpleName = name.toLowerCase().replace(/[^a-z0-9]/g, '');
+    if (simpleName.length > 3 && lowerLink.replace(/[^a-z0-9]/g, '').includes(simpleName)) {
+        score += 5;
+    }
+    return score;
+}
+
+function selectBestBookingLink(links, restaurantName) {
+    if (links.length === 0) return undefined;
+    const uniqueLinks = Array.from(new Set(links));
+    return uniqueLinks.sort((a, b) => {
+        return getLinkScore(b, restaurantName) - getLinkScore(a, restaurantName);
+    })[0];
+}
+
+function parseSearchResults(data, restaurantName) {
+    let bestAddress;
+    const bookingLinks = [];
+
+    // 1. Check direct answer
+    if (data.answer) {
+        const addressMatch = data.answer.match(/(?:located at|address[:\s]+)([^,\n]+(?:,[^,\n]+)?)/i);
+        if (addressMatch) bestAddress = addressMatch[1].trim();
+    }
+
+    // 2. Iterate results
+    for (const result of data.results || []) {
+        const url = result.url;
+        const content = result.content || '';
+
+        // Booking Links - Strategy 1: Main URL
+        if (isBookingPlatform(url) && !isGenericBookingLink(url)) {
+            bookingLinks.push(url);
+        }
+
+        // Booking Links - Strategy 2: Content match
+        const tabitMatch = content.match(/https:\/\/(?:www\.)?(?:tabit\.cloud|tabitisrael\.co\.il)\/[^\s"']+/g);
+        if (tabitMatch) {
+            tabitMatch.forEach(link => {
+                const cleanLink = link.replace(/[.,)]+$/, '');
+                if (!isGenericBookingLink(cleanLink)) bookingLinks.push(cleanLink);
+            });
+        }
+
+        // Address
+        if (!bestAddress) {
+            const addressPatterns = [
+                /(\d+\s+[A-Za-z\u0590-\u05FF]+\s+(?:Street|St|Road|Rd|Ave|Avenue|Blvd|Boulevard)[^,]*(?:,\s*[A-Za-z\u0590-\u05FF\s]+)?)/i,
+                /(?:רחוב|רח')\s+([^\d,]+\s*\d+[^,]*)/,
+            ];
+            for (const pattern of addressPatterns) {
+                const match = content.match(pattern);
+                if (match) {
+                    bestAddress = match[1].trim();
+                    break;
+                }
+            }
+        }
+    }
+
+    return {
+        address: bestAddress,
+        bookingLink: selectBestBookingLink(bookingLinks, restaurantName),
+        found: !!(bestAddress || bookingLinks.length > 0)
+    };
+}
+
+async function searchRestaurant(name, city) {
+    if (!TAVILY_API_KEY) return { found: false };
+
+    try {
+        const query = city
+            ? `${name} restaurant ${city} address booking tabit`
+            : `${name} restaurant Israel address booking tabit`;
+
+        console.log(`🔎 Searching Tavily for: "${query}"`);
+
+        const response = await fetchFn('https://api.tavily.com/search', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                api_key: TAVILY_API_KEY,
+                query,
+                search_depth: 'advanced',
+                include_answer: true,
+                max_results: 5,
+            }),
+        });
+
+        if (!response.ok) throw new Error(`Tavily API error: ${response.status}`);
+        const data = await response.json();
+        return parseSearchResults(data, name);
+
+    } catch (error) {
+        console.error('Error searching:', error);
+        return { found: false };
+    }
+}
+
+// ============================================================
+// MAIN LOGIC
 // ============================================================
 
 function parseRestaurantMessage(text) {
     const trimmed = text.trim();
+    // Simple parser: check for "Name, City - Notes"
 
-    // Check for notes (after dash)
+    // First split by dash for notes
     let mainPart = trimmed;
     let notes = null;
-
     const dashIndex = trimmed.indexOf(' - ');
     if (dashIndex !== -1) {
         mainPart = trimmed.substring(0, dashIndex).trim();
         notes = trimmed.substring(dashIndex + 3).trim();
     }
 
-    // Check for city (after comma)
+    // Then split by comma for city
     let name = mainPart;
     let city = null;
-
     const commaIndex = mainPart.indexOf(',');
     if (commaIndex !== -1) {
         name = mainPart.substring(0, commaIndex).trim();
         city = mainPart.substring(commaIndex + 1).trim();
     }
 
-    return {
-        name: name || null,
-        city: city || null,
-        notes: notes || null,
-    };
+    return { name, city, notes };
 }
 
 async function addRestaurantFromText(text, supabaseClient) {
+    console.log('🔄 Parsing text:', text);
     const parsed = parseRestaurantMessage(text);
+    console.log('✅ Parsed basic info:', parsed);
 
     if (!parsed.name) {
-        return {
-            success: false,
-            message: '❌ Please send a restaurant name.',
-        };
+        return { success: false, message: '❌ Please send a restaurant name.' };
     }
 
+    // --- ENRICHMENT STEP ---
+    let enrichedData = {
+        name: parsed.name,
+        city: parsed.city,
+        notes: parsed.notes,
+        address: null,
+        lat: null,
+        lng: null,
+        booking_link: null
+    };
+
+    let searchFeedback = '';
+
     try {
+        const searchResult = await searchRestaurant(parsed.name, parsed.city);
+
+        if (searchResult.found) {
+            console.log('✨ Found details:', searchResult);
+            if (searchResult.address) enrichedData.address = searchResult.address;
+            if (searchResult.bookingLink) enrichedData.booking_link = searchResult.bookingLink;
+
+            // If we found an address, Geocode it!
+            if (enrichedData.address) {
+                console.log('🌍 Geocoding address:', enrichedData.address);
+                const coords = await geocodeAddress(enrichedData.address);
+                if (coords) {
+                    enrichedData.lat = coords.lat;
+                    enrichedData.lng = coords.lng;
+                    console.log('📍 Geocoded:', coords);
+                }
+            }
+        } else {
+            console.log('⚠️ No extra details found, using basic info.');
+            searchFeedback = '\n_(No extra details found, verify spelling?)_';
+        }
+
+    } catch (e) {
+        console.error('Error during enrichment:', e);
+    }
+
+    // --- INSERTION STEP ---
+    try {
+        console.log('🔄 Inserting into Supabase...');
         const { data, error } = await supabaseClient
             .from('restaurants')
             .insert({
-                name: parsed.name,
-                city: parsed.city,
-                notes: parsed.notes,
+                name: enrichedData.name,
+                city: enrichedData.city,
+                notes: enrichedData.notes,
+                address: enrichedData.address,
+                booking_link: enrichedData.booking_link,
+                lat: enrichedData.lat,
+                lng: enrichedData.lng,
                 is_visited: false,
             })
             .select()
@@ -113,30 +309,30 @@ async function addRestaurantFromText(text, supabaseClient) {
             console.error('❌ Supabase error:', error);
             return {
                 success: false,
-                error: error.message,
                 message: `❌ Failed to add restaurant: ${error.message}`,
             };
         }
 
-        let successMessage = `✅ Added *${parsed.name}*`;
-        if (parsed.city) {
-            successMessage += ` in ${parsed.city}`;
-        }
-        successMessage += ` to your list!`;
+        console.log('✅ Insert successful:', data.name);
 
-        return {
-            success: true,
-            restaurant: data,
-            message: successMessage,
-        };
+        let successMessage = `✅ Added *${data.name}*`;
+        if (data.city) successMessage += ` in ${data.city}`;
+
+        const extras = [];
+        if (data.address) extras.push(`📍 ${data.address}`);
+        if (data.booking_link) extras.push(`📅 [Book Table](${data.booking_link})`);
+
+        if (extras.length > 0) {
+            successMessage += `\n\n${extras.join('\n')}`;
+        }
+
+        successMessage += searchFeedback;
+
+        return { success: true, message: successMessage };
 
     } catch (err) {
         console.error('❌ Unexpected error:', err);
-        return {
-            success: false,
-            error: err.message,
-            message: '❌ An unexpected error occurred. Please try again.',
-        };
+        return { success: false, message: '❌ An unexpected error occurred.' };
     }
 }
 
@@ -144,84 +340,46 @@ async function addRestaurantFromText(text, supabaseClient) {
 // BOT HANDLERS
 // ============================================================
 
-// /start command
 bot.start((ctx) => {
-    const welcomeMessage = `
-❤️‍🔥 *Welcome to Burnt On Food!*
-
-Send me a restaurant name and I'll add it to your smashes.
-
-*Formats I understand:*
-• \`Restaurant Name\`
-• \`Restaurant Name, City\`
-• \`Restaurant Name, City - notes\`
-
-*Example:*
-\`Miznon, Tel Aviv - amazing pita!\`
-    `.trim();
-
-    ctx.reply(welcomeMessage, { parse_mode: 'Markdown' });
+    ctx.reply(
+        `❤️‍🔥 *Welcome to Burnt On Food!*
+        
+Send me a restaurant name (e.g. "Miznon, Tel Aviv") and I'll find its address, booking link, and add it to your map!`,
+        { parse_mode: 'Markdown' }
+    );
 });
 
-// /help command
-bot.help((ctx) => {
-    const helpMessage = `
-❤️‍🔥 *Burnt On Food Help*
-
-*Commands:*
-/start - Welcome message
-/help - This help message
-
-*To add a restaurant:*
-Just send a message with the restaurant name!
-
-*Formats:*
-• \`Name\` - Just the name
-• \`Name, City\` - Name with city
-• \`Name, City - notes\` - Full details
-
-*Examples:*
-• \`Sushi Samba\`
-• \`Carbone, New York\`
-• \`Dishoom, London - try the black daal\`
-    `.trim();
-
-    ctx.reply(helpMessage, { parse_mode: 'Markdown' });
-});
-
-// Handle text messages
 bot.on('text', async (ctx) => {
     const text = ctx.message.text;
+    if (text.startsWith('/')) return;
 
-    // Ignore commands (they're handled separately)
-    if (text.startsWith('/')) {
-        return;
-    }
+    // Quick echo to acknowledge
+    const thinkingMsg = await ctx.reply(`🔎 Searching for "${text}"...`);
 
-    console.log(`📨 Received: "${text}"`);
-
-    // Use shared logic
     const result = await addRestaurantFromText(text, supabase);
 
-    // Reply
-    ctx.reply(result.message, { parse_mode: 'Markdown' });
+    // Delete thinking message
+    try {
+        await ctx.deleteMessage(thinkingMsg.message_id);
+    } catch (e) { }
+
+    try {
+        await ctx.reply(result.message, { parse_mode: 'Markdown', disable_web_page_preview: true });
+    } catch (e) {
+        console.error('Reply failed:', e);
+    }
+});
+
+bot.catch((err, ctx) => {
+    console.error(`❌ Global error for ${ctx.updateType}`, err);
 });
 
 // ============================================================
 // START BOT
 // ============================================================
 
-console.log('🚀 Starting Burnt On Food Telegram Bot...');
-console.log(`   Supabase URL: ${SUPABASE_URL}`);
-
-bot.launch()
-    .then(() => {
-        console.log('✅ Bot is running! Send a message to your Telegram bot.');
-    })
-    .catch((err) => {
-        console.error('❌ Failed to start bot:', err);
-        process.exit(1);
-    });
+console.log('🚀 Starting Smart Telegram Bot...');
+bot.launch().then(() => console.log('✅ Bot is running!'));
 
 // Graceful shutdown
 process.once('SIGINT', () => bot.stop('SIGINT'));
