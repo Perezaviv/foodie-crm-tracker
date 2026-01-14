@@ -138,12 +138,17 @@ export default function Home() {
 
           <button
             onClick={() => setIsAddDrawerOpen(true)}
-            className="flex flex-col items-center gap-1 -mt-2 transition-all duration-200 active:scale-90"
+            className="flex flex-col items-center gap-1 -mt-4 transition-all duration-200 active:scale-95 group"
           >
-            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary-500 to-primary-600 text-white flex items-center justify-center shadow-lg shadow-primary-500/20 hover:scale-105 transition-transform">
-              <Plus size={24} />
+            <div className="relative">
+              {/* Depth shadow base */}
+              <div className="absolute inset-0 rounded-full bg-primary-800 translate-y-1.5 shadow-lg group-active:translate-y-0.5 transition-transform" />
+              {/* Main button surface */}
+              <div className="relative w-14 h-14 rounded-full bg-gradient-to-br from-primary-400 via-primary-500 to-primary-600 text-white flex items-center justify-center shadow-[inset_0_2px_4px_rgba(255,255,255,0.3)] border-t border-white/20 group-active:translate-y-1 transition-transform">
+                <Plus size={28} strokeWidth={3} />
+              </div>
             </div>
-            <span className="text-[10px] font-medium text-primary-600">Add</span>
+            <span className="text-[10px] font-bold text-primary-600 mt-1 uppercase tracking-wider">Add</span>
           </button>
 
           <NavButton
