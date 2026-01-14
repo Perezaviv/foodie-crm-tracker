@@ -298,7 +298,7 @@ function RestaurantCard({ restaurant, onClick, onDelete }: { restaurant: Restaur
                             }}
                             whileHover={{ scale: 1.1, backgroundColor: 'rgba(239, 68, 68, 0.1)' }}
                             whileTap={{ scale: 0.9 }}
-                            className="p-2.5 rounded-xl bg-white dark:bg-neutral-800 text-red-500 border-2 border-transparent hover:border-red-200 dark:hover:border-red-900 hover:text-red-600 shadow-sm flex items-center justify-center transition-all opacity-0 group-hover:opacity-100 focus:opacity-100"
+                            className="p-2.5 rounded-xl bg-white dark:bg-neutral-800 text-red-500 border-2 border-transparent hover:border-red-200 dark:hover:border-red-900 hover:text-red-600 shadow-sm flex items-center justify-center transition-all opacity-100 md:opacity-0 md:group-hover:opacity-100 focus:opacity-100"
                             title="Delete"
                         >
                             <X size={18} />

@@ -40,6 +40,8 @@ jest.mock('framer-motion', () => {
                 React.createElement('div', filterMotionProps(props), children),
             a: ({ children, ...props }: { children: React.ReactNode;[key: string]: unknown }) =>
                 React.createElement('a', filterMotionProps(props), children),
+            button: ({ children, ...props }: { children: React.ReactNode;[key: string]: unknown }) =>
+                React.createElement('button', filterMotionProps(props), children),
         },
         AnimatePresence: ({ children }: { children: React.ReactNode }) => children,
     };
