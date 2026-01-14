@@ -161,7 +161,7 @@ async function handleMessage(message: NonNullable<TelegramUpdate['message']>) {
         }
 
         const count = newPhotos.length;
-        await sendMessage(chatId, `📸 Received ${count} photo${count > 1 ? 's' : ''}. Send more or click Done.`, {
+        await sendMessage(chatId, `📸 Received ${count} photo${count > 1 ? 's' : ''}.\nPlease enter only the restaurant name :`, {
             inline_keyboard: [[{ text: '✅ Done', callback_data: 'done_photos' }, { text: '❌ Cancel', callback_data: 'cancel' }]]
         });
         return;
