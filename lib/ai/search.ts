@@ -218,14 +218,13 @@ function isGenericBookingLink(url: string): boolean {
         if (path === '/' || path === '') return true;
 
         // Generic country/city pages (e.g. /il/tel-aviv without specific restaurant)
-        // Adjust these patterns based on what we see. 
-        // Tabit: https://tabit.cloud/ is generic. https://tabit.cloud/il/place is specific.
-        if ((urlObj.hostname.includes('tabit.cloud') || urlObj.hostname.includes('ontopo')) &&
-            (path === '/il' || path === '/en' || path === '/he')) {
+        const pathSegments = path.split('/').filter(Boolean);
+
+        // If it's just /en, /he, /il or /en/il/tel-aviv, it's generic
+        if (pathSegments.length <= 1) return true;
+        if (path.includes('/tel-aviv') && pathSegments.length <= 3 && !url.includes('restaurant')) {
             return true;
         }
-
-        if (url.includes('/en/il/tel-aviv')) return true;
 
         return false;
     } catch (e) {
