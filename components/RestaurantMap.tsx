@@ -611,18 +611,26 @@ export function RestaurantMap({ restaurants, isLoading = false, onRestaurantClic
                                             let fixed = 0;
 
                                             for (const rest of missing) {
-                                                if (!rest.address) {
-                                                    console.warn(`[Auto-Fix] Skipping "${rest.name}" - no address`);
-                                                    continue;
-                                                }
+                                                let geocodeQuery: string;
 
-                                                const cleaned = cleanAddressForGeocoding(rest.address, rest.city);
-                                                console.log(`[Auto-Fix] Trying geocode for "${rest.name}" at "${cleaned}"`);
+                                                if (rest.address) {
+                                                    // Has address - use it
+                                                    geocodeQuery = cleanAddressForGeocoding(rest.address, rest.city);
+                                                    console.log(`[Auto-Fix] Trying geocode for "${rest.name}" with address: "${geocodeQuery}"`);
+                                                } else if (rest.city) {
+                                                    // No address but has city - try name + city
+                                                    geocodeQuery = `${rest.name}, ${rest.city}, Israel`;
+                                                    console.log(`[Auto-Fix] No address for "${rest.name}", trying name+city: "${geocodeQuery}"`);
+                                                } else {
+                                                    // No address and no city - try name + generic Israel
+                                                    geocodeQuery = `${rest.name} restaurant, Israel`;
+                                                    console.log(`[Auto-Fix] No address/city for "${rest.name}", trying name only: "${geocodeQuery}"`);
+                                                }
 
                                                 const res = await fetch('/api/geocode', {
                                                     method: 'POST',
                                                     headers: { 'Content-Type': 'application/json' },
-                                                    body: JSON.stringify({ address: cleaned })
+                                                    body: JSON.stringify({ address: geocodeQuery })
                                                 });
 
                                                 const coords = await res.json();

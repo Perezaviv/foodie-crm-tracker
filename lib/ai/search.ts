@@ -8,6 +8,7 @@ import { cleanAddressForGeocoding } from '../geocoding';
 export interface SearchResult {
     name: string;
     address?: string;
+    city?: string;
     lat?: number;
     lng?: number;
     bookingLink?: string;
@@ -234,6 +235,7 @@ export function parseSearchResults(data: TavilyResponse, restaurantName: string,
         results.push({
             name: restaurantName,
             address: bestAddress,
+            city: city,
             bookingLink: bestBookingLink,
         });
     }

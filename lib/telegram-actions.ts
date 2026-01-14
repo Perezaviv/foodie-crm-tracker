@@ -323,6 +323,19 @@ async function addRestaurantToDb(chatId: number, data: SearchResult, silent = fa
 
     // Check duplicates? (omitted for now, relying on user or DB constraints)
 
+    // Derive city - prefer from data.city, then try to extract from address
+    let derivedCity = data.city;
+    if (!derivedCity && data.address) {
+        if (data.address.toLowerCase().includes('tel aviv')) {
+            derivedCity = 'Tel Aviv';
+        } else {
+            const parts = data.address.split(',');
+            if (parts.length > 1) {
+                derivedCity = parts[1].trim();
+            }
+        }
+    }
+
     const insertPayload = {
         name: data.name,
         address: data.address,
@@ -333,7 +346,7 @@ async function addRestaurantToDb(chatId: number, data: SearchResult, silent = fa
         cuisine: data.cuisine,
         rating: data.rating,
         is_visited: false,
-        city: data.address?.toLowerCase().includes('tel aviv') ? 'Tel Aviv' : (data.address?.split(',')[1]?.trim() || undefined)
+        city: derivedCity
     };
 
     const { data: rest, error } = await supabase
