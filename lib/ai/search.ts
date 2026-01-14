@@ -233,18 +233,15 @@ export function isGenericBookingLink(url: string): boolean {
         const genericTerms = [
             'search', 'explore', 'il', 'en', 'he', 'login', 'signup',
             'restaurant', 'restaurants', 'cities', 'regions', 'area', 'zone',
-            'home', 'main', 'index', 'about', 'contact', 'terms', 'privacy'
+            'home', 'main', 'index', 'about', 'contact', 'terms', 'privacy',
+            'tel-aviv', 'jerusalem', 'haifa', 'herzliya', 'netanya', 'jaffa',
+            'eilat', 'telaviv', 'collection', 'collections', 'category', 'categories',
+            'restaurant-collection', 'restaurant-collections', 'best-restaurants'
         ];
 
-        // 1. If every segment in the path is a generic term (e.g., /en/il, /search), reject it
+        // 1. If every segment in the path is a generic term (e.g., /en/il/tel-aviv), reject it
         if (pathSegments.length > 0 && pathSegments.every(seg => genericTerms.includes(seg))) {
             return true;
-        }
-
-        // 2. Specific check for regional/category pages that might have many segments but are still generic
-        if (path.includes('/tel-aviv') && pathSegments.length <= 3 && !url.includes('restaurant-')) {
-            // Some platforms use 'restaurant-name' slug, others just 'name'. 
-            // If it's a short path with tel-aviv and no other identifiable restaurant slug, reject.
         }
 
         return false;
