@@ -90,70 +90,69 @@ export async function searchRestaurant(
  */
 function parseSearchResults(data: TavilyResponse, restaurantName: string): SearchResult[] {
     const results: SearchResult[] = [];
-    const seen = new Set<string>();
 
-    // Check if we have an answer with specific location info
+    // Pools of collected info
+    let bestAddress: string | undefined;
+    let bestBookingLink: string | undefined;
+    let bestWebsite: string | undefined;
+
+    // 1. Check direct answer for address
     if (data.answer) {
         const addressMatch = data.answer.match(/(?:located at|address[:\s]+)([^,\n]+(?:,[^,\n]+)?)/i);
         if (addressMatch) {
-            results.push({
-                name: restaurantName,
-                address: addressMatch[1].trim(),
-            });
+            bestAddress = addressMatch[1].trim();
         }
     }
 
-    // Parse individual search results
+    const seenAddresses = new Set<string>();
+    if (bestAddress) seenAddresses.add(bestAddress.toLowerCase());
+
+    // 2. Iterate through all results to gather info
     for (const result of data.results || []) {
         const url = result.url;
+        const content = result.content || '';
 
-        // Skip if we've seen this domain
-        const domain = new URL(url).hostname;
-        if (seen.has(domain)) continue;
-        seen.add(domain);
-
-        const parsed: SearchResult = {
-            name: restaurantName,
-        };
-
-        // Detect booking platforms
-        if (isBookingPlatform(url)) {
-            parsed.bookingLink = url;
+        // Capture Booking Link (Priority: Ontopo/Tabit etc)
+        if (!bestBookingLink && isBookingPlatform(url)) {
+            bestBookingLink = url;
+            // console.log('Found booking link:', url);
         }
 
-        // Extract address from content if available
-        const content = result.content || '';
-        const addressPatterns = [
-            /(\d+\s+[A-Za-z\u0590-\u05FF]+\s+(?:Street|St|Road|Rd|Ave|Avenue|Blvd|Boulevard)[^,]*(?:,\s*[A-Za-z\u0590-\u05FF\s]+)?)/i,
-            /(?:רחוב|רח')\s+([^\d,]+\s*\d+[^,]*)/,
-        ];
+        // Capture Website if not booking
+        if (!bestWebsite && !isBookingPlatform(url) && !url.includes('tripadvisor') && !url.includes('easy.co.il')) {
+            // Maybe official site?
+            // bestWebsite = url;
+        }
 
-        for (const pattern of addressPatterns) {
-            const match = content.match(pattern);
-            if (match) {
-                parsed.address = match[1].trim();
-                break;
+        // Capture Address if we don't have one yet
+        if (!bestAddress) {
+            const addressPatterns = [
+                /(\d+\s+[A-Za-z\u0590-\u05FF]+\s+(?:Street|St|Road|Rd|Ave|Avenue|Blvd|Boulevard)[^,]*(?:,\s*[A-Za-z\u0590-\u05FF\s]+)?)/i,
+                /(?:רחוב|רח')\s+([^\d,]+\s*\d+[^,]*)/,
+            ];
+
+            for (const pattern of addressPatterns) {
+                const match = content.match(pattern);
+                if (match) {
+                    bestAddress = match[1].trim();
+                    seenAddresses.add(bestAddress.toLowerCase());
+                    break;
+                }
             }
         }
-
-        if (parsed.bookingLink || parsed.address) {
-            results.push(parsed);
-        }
     }
 
-    // Deduplicate by address
-    const uniqueResults: SearchResult[] = [];
-    const seenAddresses = new Set<string>();
-
-    for (const result of results) {
-        const key = result.address?.toLowerCase() || Math.random().toString();
-        if (!seenAddresses.has(key)) {
-            seenAddresses.add(key);
-            uniqueResults.push(result);
-        }
+    // 3. Construct the primary result
+    // If we found anything useful, create a result
+    if (bestAddress || bestBookingLink) {
+        results.push({
+            name: restaurantName,
+            address: bestAddress,
+            bookingLink: bestBookingLink,
+        });
     }
 
-    return uniqueResults;
+    return results;
 }
 
 /**

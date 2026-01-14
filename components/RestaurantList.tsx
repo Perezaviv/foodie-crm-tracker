@@ -9,6 +9,7 @@ import type { Restaurant } from '@/lib/types';
 interface RestaurantListProps {
     restaurants: Restaurant[];
     onRestaurantClick?: (restaurant: Restaurant) => void;
+    onDelete?: (id: string) => void;
 }
 
 const containerVariants = {
@@ -26,7 +27,7 @@ const itemVariants = {
     show: { opacity: 1, y: 0 }
 };
 
-export function RestaurantList({ restaurants = [], onRestaurantClick }: RestaurantListProps) {
+export function RestaurantList({ restaurants = [], onRestaurantClick, onDelete }: RestaurantListProps) {
     // console.log('RestaurantList rendered with:', restaurants); 
     // Commented out log to keep production clean, but keeping default prop to prevent crash
     const [searchQuery, setSearchQuery] = useState('');
@@ -207,6 +208,7 @@ export function RestaurantList({ restaurants = [], onRestaurantClick }: Restaura
                             key={restaurant.id}
                             restaurant={restaurant}
                             onClick={() => onRestaurantClick?.(restaurant)}
+                            onDelete={() => onDelete?.(restaurant.id)}
                         />
                     ))
                 )}
@@ -215,18 +217,18 @@ export function RestaurantList({ restaurants = [], onRestaurantClick }: Restaura
     );
 }
 
-function RestaurantCard({ restaurant, onClick }: { restaurant: Restaurant; onClick?: () => void }) {
+function RestaurantCard({ restaurant, onClick, onDelete }: { restaurant: Restaurant; onClick?: () => void; onDelete?: () => void }) {
     return (
         <motion.div
             variants={itemVariants}
             layout
             onClick={onClick}
-            whileHover={{ scale: 1.02, y: -2 }}
-            whileTap={{ scale: 0.98 }}
-            className="bg-white dark:bg-neutral-900 rounded-2xl border-2 border-neutral-200 dark:border-neutral-700 p-4 shadow-md hover:shadow-xl transition-all duration-200 cursor-pointer hover:border-primary-400 dark:hover:border-primary-500"
+            whileHover={{ scale: 1.01 }}
+            whileTap={{ scale: 0.99 }}
+            className="group bg-white dark:bg-neutral-900 rounded-2xl border-2 border-neutral-200 dark:border-neutral-700 p-4 shadow-md hover:shadow-xl transition-all duration-300 ease-out cursor-pointer hover:border-primary-400 dark:hover:border-primary-500 relative"
         >
             <div className="flex items-start justify-between">
-                <div className="flex-1 min-w-0">
+                <div className="flex-1 min-w-0 pr-8">
                     <h3 className="font-bold text-lg truncate text-neutral-900 dark:text-white">
                         {restaurant.name}
                     </h3>
@@ -254,19 +256,40 @@ function RestaurantCard({ restaurant, onClick }: { restaurant: Restaurant; onCli
                         </p>
                     )}
                 </div>
-                {restaurant.booking_link && (
-                    <motion.a
-                        href={restaurant.booking_link}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        onClick={(e) => e.stopPropagation()}
-                        whileHover={{ scale: 1.1, rotate: 5 }}
-                        whileTap={{ scale: 0.9 }}
-                        className="flex-shrink-0 ml-3 p-3 rounded-xl bg-gradient-to-br from-primary-500 to-primary-600 text-white shadow-lg shadow-primary-500/30 border-2 border-primary-400"
-                    >
-                        <ExternalLink size={18} />
-                    </motion.a>
-                )}
+
+                <div className="flex flex-col gap-2">
+                    {restaurant.booking_link && (
+                        <motion.a
+                            href={restaurant.booking_link}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            whileHover={{ scale: 1.1 }}
+                            whileTap={{ scale: 0.9 }}
+                            className="p-2.5 rounded-xl bg-gradient-to-br from-primary-500 to-primary-600 text-white shadow-lg shadow-primary-500/30 border-2 border-primary-400 flex items-center justify-center transition-all"
+                            title="Book a table"
+                        >
+                            <ExternalLink size={18} />
+                        </motion.a>
+                    )}
+
+                    {onDelete && (
+                        <motion.button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                if (confirm('Are you sure you want to delete this restaurant?')) {
+                                    onDelete();
+                                }
+                            }}
+                            whileHover={{ scale: 1.1, backgroundColor: 'rgba(239, 68, 68, 0.1)' }}
+                            whileTap={{ scale: 0.9 }}
+                            className="p-2.5 rounded-xl bg-white dark:bg-neutral-800 text-red-500 border-2 border-transparent hover:border-red-200 dark:hover:border-red-900 hover:text-red-600 shadow-sm flex items-center justify-center transition-all opacity-0 group-hover:opacity-100 focus:opacity-100"
+                            title="Delete"
+                        >
+                            <X size={18} />
+                        </motion.button>
+                    )}
+                </div>
             </div>
         </motion.div>
     );

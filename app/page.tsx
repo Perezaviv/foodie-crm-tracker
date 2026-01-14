@@ -44,6 +44,25 @@ export default function Home() {
     toast.info('Restaurant removed', { icon: '🗑️' });
   };
 
+  /* New handler for list deletion */
+  const handleDeleteRestaurant = async (id: string) => {
+    const loadingToast = toast.loading('Deleting restaurant...');
+    try {
+      const response = await fetch(`/api/restaurants/${id}`, { method: 'DELETE' });
+
+      if (response.ok) {
+        refresh();
+        toast.success('Restaurant deleted', { id: loadingToast });
+      } else {
+        const data = await response.json();
+        toast.error(data.error || 'Failed to delete', { id: loadingToast });
+      }
+    } catch (error) {
+      console.error('Delete error:', error);
+      toast.error('Failed to delete restaurant', { id: loadingToast });
+    }
+  };
+
   return (
     <div className="flex flex-col h-screen bg-background overflow-hidden relative">
       <div className="absolute inset-0 mesh-subtle pointer-events-none z-0" />
@@ -97,6 +116,7 @@ export default function Home() {
               <RestaurantList
                 restaurants={restaurants}
                 onRestaurantClick={handleRestaurantClick}
+                onDelete={handleDeleteRestaurant}
               />
             </motion.div>
           )}
