@@ -1,11 +1,13 @@
 'use client';
 
 import { useCallback, useState, useEffect, useRef } from 'react';
-import { GoogleMap, useJsApiLoader, InfoWindow, Circle, Marker } from '@react-google-maps/api';
+import { GoogleMap, InfoWindow, Circle, Marker } from '@react-google-maps/api';
+import { useGoogleMaps } from './GoogleMapsProvider';
 import { MarkerClusterer } from '@googlemaps/markerclusterer';
 import { Utensils, Loader2, ExternalLink, Locate, MapPin, ChevronRight, X } from 'lucide-react';
 import { toast } from 'sonner';
 import type { Restaurant } from '@/lib/types';
+import { cleanAddressForGeocoding } from '@/lib/geocoding';
 
 interface RestaurantMapProps {
     restaurants: Restaurant[];
@@ -78,10 +80,7 @@ export function RestaurantMap({ restaurants, onRestaurantClick }: RestaurantMapP
         return Math.round(minSize + ratio * (maxSize - minSize));
     }, []);
 
-    const { isLoaded, loadError } = useJsApiLoader({
-        id: 'google-map-script',
-        googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '',
-    });
+    const { isLoaded, loadError } = useGoogleMaps();
 
     const restaurantsWithCoords = restaurants.filter(r => r.lat && r.lng);
 
@@ -525,39 +524,6 @@ export function RestaurantMap({ restaurants, onRestaurantClick }: RestaurantMapP
 
                                         console.log('[Auto-Fix] Starting fix for', missing.length, 'restaurants');
 
-                                        // Helper to clean noisy addresses
-                                        const cleanAddress = (addr: string, city?: string | null) => {
-                                            // Remove newlines and extra whitespace
-                                            let cleaned = addr.replace(/\n/g, ' ').replace(/\s+/g, ' ').trim();
-
-                                            // Take only the first sentence (before common noise patterns)
-                                            const noisePhrases = [
-                                                /\.\s*(To book|It is known|Book a table|Booking|Instagram|Call|Phone)/i,
-                                                /\.\s*[A-Z]/,  // Any sentence after first
-                                            ];
-                                            for (const pattern of noisePhrases) {
-                                                const match = cleaned.match(pattern);
-                                                if (match && match.index) {
-                                                    cleaned = cleaned.substring(0, match.index).trim();
-                                                }
-                                            }
-
-                                            // Remove trailing period
-                                            cleaned = cleaned.replace(/\.$/, '').trim();
-
-                                            // If no city in address and city is provided, append it
-                                            if (city && !cleaned.toLowerCase().includes(city.toLowerCase()) && !cleaned.toLowerCase().includes('tel aviv')) {
-                                                cleaned = `${cleaned}, ${city}`;
-                                            }
-
-                                            // Add Israel for better geocoding accuracy
-                                            if (!cleaned.toLowerCase().includes('israel')) {
-                                                cleaned = `${cleaned}, Israel`;
-                                            }
-
-                                            return cleaned;
-                                        };
-
                                         for (const r of missing) {
                                             if (!r.address) {
                                                 console.warn(`[Auto-Fix] Skipping "${r.name}" - no address`);
@@ -565,7 +531,7 @@ export function RestaurantMap({ restaurants, onRestaurantClick }: RestaurantMapP
                                                 continue;
                                             }
                                             try {
-                                                const cleaned = cleanAddress(r.address, r.city);
+                                                const cleaned = cleanAddressForGeocoding(r.address, r.city);
                                                 console.log(`[Auto-Fix] Geocoding "${r.name}" with address: "${cleaned}"`);
                                                 let coords: { lat: number, lng: number } | null = null;
 

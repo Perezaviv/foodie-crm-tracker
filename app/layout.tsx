@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Toaster } from "sonner";
 import { cn } from "@/lib/utils";
+import { GoogleMapsProvider } from "@/components/GoogleMapsProvider";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -78,9 +79,11 @@ export default function RootLayout({
         className="antialiased h-full w-full bg-background text-foreground overflow-hidden fixed inset-0 touch-none"
         suppressHydrationWarning
       >
-        <main className="h-full w-full overflow-hidden safe-top">
-          {children}
-        </main>
+        <GoogleMapsProvider>
+          <main className="h-full w-full overflow-hidden safe-top">
+            {children}
+          </main>
+        </GoogleMapsProvider>
         <Toaster position="top-center" richColors closeButton />
       </body>
     </html>

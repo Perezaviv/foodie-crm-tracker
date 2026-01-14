@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from 'react';
 import type { RestaurantInsert, Restaurant } from '@/lib/types';
+import { cleanAddressForGeocoding } from '@/lib/geocoding';
 
 interface ParseResponse {
     success: boolean;
@@ -107,32 +108,7 @@ export function useRestaurantParser(): UseRestaurantParserReturn {
             if (restaurantToSave.address && (!restaurantToSave.lat || !restaurantToSave.lng)) {
                 console.log('[Save] Attempting client-side geocoding...');
 
-                // Clean the address before geocoding
-                const cleanAddress = (addr: string, city?: string | null): string => {
-                    let cleaned = addr.replace(/\n/g, ' ').replace(/\s+/g, ' ').trim();
-                    // Remove noise
-                    const noisePhrases = [
-                        /\.\s*(To book|It is known|Book a table|Booking|Instagram|Call|Phone|It is currently)/i,
-                        /\.\s*[A-Z]/,
-                    ];
-                    for (const pattern of noisePhrases) {
-                        const match = cleaned.match(pattern);
-                        if (match && match.index) {
-                            cleaned = cleaned.substring(0, match.index).trim();
-                        }
-                    }
-                    cleaned = cleaned.replace(/\.$/, '').trim();
-                    const lower = cleaned.toLowerCase();
-                    if (city && !lower.includes(city.toLowerCase()) && !lower.includes('tel aviv')) {
-                        cleaned = `${cleaned}, ${city}`;
-                    }
-                    if (!lower.includes('israel')) {
-                        cleaned = `${cleaned}, Israel`;
-                    }
-                    return cleaned;
-                };
-
-                const cleanedAddress = cleanAddress(restaurantToSave.address, restaurantToSave.city);
+                const cleanedAddress = cleanAddressForGeocoding(restaurantToSave.address, restaurantToSave.city);
                 console.log(`[Save] Cleaned address: "${cleanedAddress}"`);
 
                 // Use client-side geocoder if available (Google Maps is loaded)
