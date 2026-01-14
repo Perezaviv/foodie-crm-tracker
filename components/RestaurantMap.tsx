@@ -372,15 +372,15 @@ export function RestaurantMap({ restaurants, onRestaurantClick }: RestaurantMapP
                         onCloseClick={() => setSelectedRestaurant(null)}
                         options={{ pixelOffset: new google.maps.Size(0, -40) }}
                     >
-                        <div className="min-w-[200px] max-w-[280px] p-2">
-                            <div className="flex items-start gap-2 mb-2">
-                                <div className="w-10 h-10 rounded-lg bg-orange-100 flex items-center justify-center flex-shrink-0">
-                                    <span className="text-lg">🍽️</span>
+                        <div style={{ minWidth: '200px', maxWidth: '280px', padding: '8px', backgroundColor: 'white' }}>
+                            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', marginBottom: '8px' }}>
+                                <div style={{ width: '40px', height: '40px', borderRadius: '8px', backgroundColor: '#fed7aa', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                    <span style={{ fontSize: '18px' }}>🍽️</span>
                                 </div>
-                                <div className="flex-1 min-w-0">
-                                    <h3 className="font-bold text-gray-900 text-base truncate">{selectedRestaurant.name}</h3>
+                                <div style={{ flex: 1, minWidth: 0 }}>
+                                    <h3 style={{ fontWeight: 'bold', color: '#111827', fontSize: '16px', margin: 0, wordBreak: 'break-word' }}>{selectedRestaurant.name}</h3>
                                     {selectedRestaurant.cuisine && (
-                                        <span className="inline-block text-xs px-2 py-0.5 rounded-full bg-orange-100 text-orange-700 font-medium">
+                                        <span style={{ display: 'inline-block', fontSize: '12px', padding: '2px 8px', borderRadius: '9999px', backgroundColor: '#fed7aa', color: '#c2410c', fontWeight: 500, marginTop: '4px' }}>
                                             {selectedRestaurant.cuisine}
                                         </span>
                                     )}
@@ -388,16 +388,16 @@ export function RestaurantMap({ restaurants, onRestaurantClick }: RestaurantMapP
                             </div>
 
                             {selectedRestaurant.address && (
-                                <p className="text-xs text-gray-500 flex items-start gap-1 mb-2">
-                                    <MapPin size={12} className="flex-shrink-0 mt-0.5 text-orange-500" />
-                                    <span className="line-clamp-2">{selectedRestaurant.address}</span>
+                                <p style={{ fontSize: '12px', color: '#6b7280', display: 'flex', alignItems: 'flex-start', gap: '4px', marginBottom: '8px', margin: 0 }}>
+                                    <MapPin size={12} style={{ flexShrink: 0, marginTop: '2px', color: '#f97316' }} />
+                                    <span style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{selectedRestaurant.address}</span>
                                 </p>
                             )}
 
-                            <div className="flex gap-2 mt-3">
+                            <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
                                 <button
                                     onClick={() => handleViewDetails(selectedRestaurant)}
-                                    className="flex-1 py-2 px-3 rounded-lg bg-orange-500 text-white text-xs font-semibold hover:bg-orange-600 transition-colors flex items-center justify-center gap-1"
+                                    style={{ flex: 1, padding: '8px 12px', borderRadius: '8px', backgroundColor: '#f97316', color: 'white', fontSize: '12px', fontWeight: 600, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}
                                 >
                                     View Details <ChevronRight size={14} />
                                 </button>
@@ -406,7 +406,7 @@ export function RestaurantMap({ restaurants, onRestaurantClick }: RestaurantMapP
                                         href={selectedRestaurant.booking_link}
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        className="py-2 px-3 rounded-lg border border-gray-200 text-gray-700 text-xs font-medium hover:bg-gray-50 transition-colors flex items-center gap-1"
+                                        style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid #e5e7eb', color: '#374151', fontSize: '12px', fontWeight: 500, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '4px' }}
                                     >
                                         Book <ExternalLink size={12} />
                                     </a>

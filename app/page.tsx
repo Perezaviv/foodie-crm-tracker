@@ -5,13 +5,13 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Drawer } from 'vaul';
 import { toast } from 'sonner';
 import confetti from 'canvas-confetti';
-import { Map, List, Plus, User, Loader2, Check, MapPin, ExternalLink, ChevronRight, X, Utensils } from 'lucide-react';
+import { Map, List, Plus, Loader2, Check, MapPin, ExternalLink, ChevronRight, X, Utensils } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useRestaurantParser, useRestaurants } from '@/hooks';
 import { RestaurantMap, RestaurantList, RestaurantDetail } from '@/components';
 import type { Restaurant } from '@/lib/types';
 
-type View = 'map' | 'list' | 'profile';
+type View = 'map' | 'list';
 
 export default function Home() {
   const [activeView, setActiveView] = useState<View>('list');
@@ -108,17 +108,7 @@ export default function Home() {
               />
             </motion.div>
           )}
-          {activeView === 'profile' && (
-            <motion.div
-              key="profile"
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="h-full w-full"
-            >
-              <ProfileView />
-            </motion.div>
-          )}
+
         </AnimatePresence>
       </div>
 
@@ -148,12 +138,7 @@ export default function Home() {
             <span className="text-xs font-semibold mt-1 block text-primary-600 dark:text-primary-400">Add</span>
           </button>
 
-          <NavButton
-            icon={<User size={24} />}
-            label="Profile"
-            active={activeView === 'profile'}
-            onClick={() => setActiveView('profile')}
-          />
+
         </div>
       </nav>
 
@@ -432,25 +417,3 @@ function AddDrawer({ open, onOpenChange, onSuccess }: { open: boolean, onOpenCha
   );
 }
 
-// ===================================
-// PROFILE VIEW
-// ===================================
-function ProfileView() {
-  return (
-    <div className="flex flex-col items-center justify-center h-full bg-muted/30 p-6">
-      <div className="w-24 h-24 rounded-full bg-gradient-to-br from-primary-100 to-primary-200 dark:from-primary-900 dark:to-primary-800 flex items-center justify-center mb-6 shadow-iner animate-pulse-subtle">
-        <User size={48} className="text-primary-500" />
-      </div>
-      <h2 className="text-2xl font-bold mb-2">My Profile</h2>
-      <p className="text-muted-foreground text-center max-w-sm mb-8">
-        Sign in to sync your tasty discoveries across all your devices.
-      </p>
-      <button className="py-3 px-8 rounded-xl bg-foreground text-background font-semibold shadow-lg hover:scale-105 active:scale-95 transition-all">
-        Sign In / Sign Up
-      </button>
-      <p className="text-xs text-muted-foreground mt-6 opacity-60">
-        v0.1.0 • Built with ❤️ by Foodie CRM
-      </p>
-    </div>
-  );
-}

@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from 'react';
 import type { RestaurantInsert, Restaurant } from '@/lib/types';
+import { addDemoRestaurant } from './useRestaurants';
 
 interface ParseResponse {
     success: boolean;
@@ -111,6 +112,11 @@ export function useRestaurantParser(): UseRestaurantParserReturn {
             if (!data.success) {
                 setError(data.error || 'Failed to save restaurant');
                 return null;
+            }
+
+            // In demo mode, also save to sessionStorage for persistence
+            if (data.demo && data.restaurant) {
+                addDemoRestaurant(data.restaurant);
             }
 
             return data.restaurant;

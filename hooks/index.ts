@@ -1,2 +1,2 @@
 export { useRestaurantParser } from './useRestaurantParser';
-export { useRestaurants } from './useRestaurants';
+export { useRestaurants, addDemoRestaurant, removeDemoRestaurant } from './useRestaurants';
