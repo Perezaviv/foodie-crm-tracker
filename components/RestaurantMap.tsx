@@ -85,7 +85,7 @@ export function RestaurantMap({ restaurants, isLoading = false, onRestaurantClic
 
     const { isLoaded, loadError } = useGoogleMaps();
 
-    const restaurantsWithCoords = restaurants.filter(r => r.lat !== null && r.lng !== null && typeof r.lat === 'number' && typeof r.lng === 'number');
+    const restaurantsWithCoords = restaurants.filter(r => r.lat && r.lng);
 
     // Debug logging for map loading and restaurant data
     useEffect(() => {
@@ -444,7 +444,7 @@ export function RestaurantMap({ restaurants, isLoading = false, onRestaurantClic
             >
                 {/* Markers are now managed by the clusterer in useEffect */}
 
-                {selectedRestaurant && selectedRestaurant.lat !== null && selectedRestaurant.lng !== null && (
+                {selectedRestaurant && selectedRestaurant.lat && selectedRestaurant.lng && (
                     <InfoWindow
                         position={{ lat: selectedRestaurant.lat, lng: selectedRestaurant.lng }}
                         onCloseClick={() => setSelectedRestaurant(null)}
@@ -613,8 +613,6 @@ export function RestaurantMap({ restaurants, isLoading = false, onRestaurantClic
                                                 if (!rest.address) continue;
 
                                                 const cleaned = cleanAddressForGeocoding(rest.address, rest.city);
-                                                console.log(`[Auto-Fix] Trying geocode for "${rest.name}" at "${cleaned}"`);
-
                                                 const res = await fetch('/api/geocode', {
                                                     method: 'POST',
                                                     headers: { 'Content-Type': 'application/json' },
@@ -623,25 +621,15 @@ export function RestaurantMap({ restaurants, isLoading = false, onRestaurantClic
 
                                                 const coords = await res.json();
                                                 if (coords.success) {
-                                                    console.log(`[Auto-Fix] Success for "${rest.name}": ${coords.lat}, ${coords.lng}`);
-                                                    const patchRes = await fetch(`/api/restaurants/${rest.id}`, {
+                                                    await fetch(`/api/restaurants/${rest.id}`, {
                                                         method: 'PATCH',
                                                         headers: { 'Content-Type': 'application/json' },
                                                         body: JSON.stringify({
-                                                            lat: Number(coords.lat),
-                                                            lng: Number(coords.lng)
+                                                            lat: coords.lat,
+                                                            lng: coords.lng
                                                         })
                                                     });
-
-                                                    if (patchRes.ok) {
-                                                        fixed++;
-                                                    } else {
-                                                        const patchData = await patchRes.json();
-                                                        console.error(`[Auto-Fix] PATCH failed for "${rest.name}":`, patchData.error);
-                                                        toast.error(`Permission denied fixing "${rest.name}". You might not be the owner.`);
-                                                    }
-                                                } else {
-                                                    console.warn(`[Auto-Fix] Geocoding failed for "${rest.name}":`, coords.error);
+                                                    fixed++;
                                                 }
                                             }
 

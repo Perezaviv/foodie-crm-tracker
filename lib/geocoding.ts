@@ -14,14 +14,14 @@ export function cleanAddressForGeocoding(address: string, city?: string | null):
     // Remove newlines and extra whitespace
     let cleaned = address.replace(/\n/g, ' ').replace(/\s+/g, ' ').trim();
 
-    // Remove common noise patterns
+    // Remove common noise patterns (take only the first sentence before these phrases)
     const noisePhrases = [
-        /\.?\s*(To book|It is known|It is currently|Book a table|Booking|Instagram|Call|Phone|Reservation|Open|Close|Hours|Menu|Website|Map|Direction)/i,
+        /\.\s*(To book|It is known|It is currently|Book a table|Booking|Instagram|Call|Phone)/i,
         /\.\s*[A-Z]/,  // Any sentence after first (starts with capital letter)
     ];
     for (const pattern of noisePhrases) {
         const match = cleaned.match(pattern);
-        if (match && typeof match.index === 'number') {
+        if (match && match.index) {
             cleaned = cleaned.substring(0, match.index).trim();
         }
     }

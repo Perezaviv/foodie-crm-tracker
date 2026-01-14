@@ -67,15 +67,15 @@ CREATE POLICY "Authenticated users can insert restaurants"
     TO authenticated
     WITH CHECK (auth.uid() = created_by);
 
-CREATE POLICY "Authenticated users can update all restaurants"
+CREATE POLICY "Users can update restaurants they created"
     ON restaurants FOR UPDATE
     TO authenticated
-    USING (true);
+    USING (auth.uid() = created_by);
 
-CREATE POLICY "Authenticated users can delete all restaurants"
+CREATE POLICY "Users can delete restaurants they created"
     ON restaurants FOR DELETE
     TO authenticated
-    USING (true);
+    USING (auth.uid() = created_by);
 
 -- =====================================================
 -- PHOTOS TABLE

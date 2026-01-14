@@ -304,7 +304,7 @@ export async function geocodeAddress(address: string): Promise<{ lat: number; ln
     try {
         const encoded = encodeURIComponent(address);
         const response = await fetch(
-            `https://maps.googleapis.com/maps/api/geocode/json?address=${encoded}&key=${apiKey}&region=il`
+            `https://maps.googleapis.com/maps/api/geocode/json?address=${encoded}&key=${apiKey}`
         );
 
         if (!response.ok) return null;
