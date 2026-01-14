@@ -42,8 +42,8 @@ export async function searchRestaurant(
 
     try {
         const query = city
-            ? `${name} restaurant ${city} address booking`
-            : `${name} restaurant Israel address booking`;
+            ? `${name} restaurant ${city} address booking tabit`
+            : `${name} restaurant Israel address booking tabit`;
 
         const response = await fetch('https://api.tavily.com/search', {
             method: 'POST',
@@ -88,13 +88,15 @@ export async function searchRestaurant(
 /**
  * Parse Tavily search results into structured restaurant data
  */
-function parseSearchResults(data: TavilyResponse, restaurantName: string): SearchResult[] {
+export function parseSearchResults(data: TavilyResponse, restaurantName: string): SearchResult[] {
     const results: SearchResult[] = [];
 
     // Pools of collected info
     let bestAddress: string | undefined;
-    let bestBookingLink: string | undefined;
+    const bookingLinks: string[] = [];
     let bestWebsite: string | undefined;
+
+    const seenAddresses = new Set<string>();
 
     // 1. Check direct answer for address
     if (data.answer) {
@@ -103,8 +105,6 @@ function parseSearchResults(data: TavilyResponse, restaurantName: string): Searc
             bestAddress = addressMatch[1].trim();
         }
     }
-
-    const seenAddresses = new Set<string>();
     if (bestAddress) seenAddresses.add(bestAddress.toLowerCase());
 
     // 2. Iterate through all results to gather info
@@ -112,24 +112,42 @@ function parseSearchResults(data: TavilyResponse, restaurantName: string): Searc
         const url = result.url;
         const content = result.content || '';
 
-        // Capture Booking Link (Priority: Ontopo/Tabit etc)
-        // Exclude generic landing pages
-        const isGenericLink = url.includes('/en/il/tel-aviv') ||
-            url === 'https://tabit.cloud' ||
-            url === 'https://ontopo.com' ||
-            url === 'https://ontopo.co.il';
+        // --- Booking Link Extraction ---
 
-        if (!bestBookingLink && isBookingPlatform(url) && !isGenericLink) {
-            bestBookingLink = url;
+        // Strategy 1: Check the main URL of the result
+        if (isBookingPlatform(url)) {
+            if (!isGenericBookingLink(url)) {
+                bookingLinks.push(url);
+            }
         }
 
-        // Capture Website if not booking
+        // Strategy 2: Hunt for Tabit/Ontopo links inside the text content
+        // (Sometimes the search result is an aggregator or review site that mentions the booking link)
+        const tabitMatch = content.match(/https:\/\/(?:www\.)?(?:tabit\.cloud|tabitisrael\.co\.il)\/[^\s"']+/g);
+        if (tabitMatch) {
+            tabitMatch.forEach(link => {
+                // Clean trailing punctuation
+                const cleanLink = link.replace(/[.,)]+$/, '');
+                if (!isGenericBookingLink(cleanLink)) {
+                    bookingLinks.push(cleanLink);
+                }
+            });
+        }
+
+        // --- Website Extraction ---
         if (!bestWebsite && !isBookingPlatform(url) && !url.includes('tripadvisor') && !url.includes('easy.co.il')) {
-            // Maybe official site?
-            // bestWebsite = url;
+            // Simple heuristic: if it's not a booking platform or aggregator, might be the site
+            // We verify it's not a huge global platform
+            const skipDomains = ['instagram.com', 'facebook.com', 'tiktok.com', 'wikipedia.org'];
+            try {
+                const hostname = new URL(url).hostname;
+                if (!skipDomains.some(d => hostname.includes(d))) {
+                    // bestWebsite = url; // Still tentative/commented out in original, keeping it that way unless verified
+                }
+            } catch (e) { }
         }
 
-        // Capture Address if we don't have one yet
+        // --- Address Extraction ---
         if (!bestAddress) {
             const addressPatterns = [
                 /(\d+\s+[A-Za-z\u0590-\u05FF]+\s+(?:Street|St|Road|Rd|Ave|Avenue|Blvd|Boulevard)[^,]*(?:,\s*[A-Za-z\u0590-\u05FF\s]+)?)/i,
@@ -147,7 +165,12 @@ function parseSearchResults(data: TavilyResponse, restaurantName: string): Searc
         }
     }
 
-    // 3. Construct the primary result
+    // 3. Select the best booking link
+    // Priority: Tabit > Ontopo > Others
+    // Also favor links specifically mentioning the restaurant name if possible (fuzzy match)
+    const bestBookingLink = selectBestBookingLink(bookingLinks, restaurantName);
+
+    // 4. Construct the primary result
     // If we found anything useful, create a result
     if (bestAddress || bestBookingLink) {
         results.push({
@@ -166,6 +189,7 @@ function parseSearchResults(data: TavilyResponse, restaurantName: string): Searc
 function isBookingPlatform(url: string): boolean {
     const bookingDomains = [
         'tabit.cloud',
+        'tabitisrael.co.il',
         'ontopo.co.il',
         'ontopo.com',
         'opentable.com',
@@ -174,8 +198,74 @@ function isBookingPlatform(url: string): boolean {
         'yelp.com/reservations',
     ];
 
-    const hostname = new URL(url).hostname.toLowerCase();
-    return bookingDomains.some(domain => hostname.includes(domain));
+    try {
+        const hostname = new URL(url).hostname.toLowerCase();
+        return bookingDomains.some(domain => hostname.includes(domain));
+    } catch (e) {
+        return false;
+    }
+}
+
+/**
+ * Check if a booking URL is just a generic landing page
+ */
+function isGenericBookingLink(url: string): boolean {
+    try {
+        const urlObj = new URL(url);
+        const path = urlObj.pathname.toLowerCase();
+
+        // Exact homepage match
+        if (path === '/' || path === '') return true;
+
+        // Generic country/city pages (e.g. /il/tel-aviv without specific restaurant)
+        // Adjust these patterns based on what we see. 
+        // Tabit: https://tabit.cloud/ is generic. https://tabit.cloud/il/place is specific.
+        if ((urlObj.hostname.includes('tabit.cloud') || urlObj.hostname.includes('ontopo')) &&
+            (path === '/il' || path === '/en' || path === '/he')) {
+            return true;
+        }
+
+        if (url.includes('/en/il/tel-aviv')) return true;
+
+        return false;
+    } catch (e) {
+        return true; // Invalid URL is considered generic/unusable
+    }
+}
+
+/**
+ * Prioritize booking links
+ */
+function selectBestBookingLink(links: string[], restaurantName: string): string | undefined {
+    if (links.length === 0) return undefined;
+
+    // Remove duplicates
+    const uniqueLinks = Array.from(new Set(links));
+
+    return uniqueLinks.sort((a, b) => {
+        const aScore = getLinkScore(a, restaurantName);
+        const bScore = getLinkScore(b, restaurantName);
+        return bScore - aScore;
+    })[0];
+}
+
+function getLinkScore(link: string, name: string): number {
+    let score = 0;
+    const lowerLink = link.toLowerCase();
+
+    // Domain priority
+    if (lowerLink.includes('tabit.cloud')) score += 10;
+    else if (lowerLink.includes('ontopo')) score += 8;
+    else score += 1;
+
+    // Name match bonus (simple inclusion check)
+    // Strip non-alphanumeric from name for looser matching
+    const simpleName = name.toLowerCase().replace(/[^a-z0-9]/g, '');
+    if (simpleName.length > 3 && lowerLink.replace(/[^a-z0-9]/g, '').includes(simpleName)) {
+        score += 5;
+    }
+
+    return score;
 }
 
 /**
@@ -200,17 +290,18 @@ export async function geocodeAddress(address: string): Promise<{ lat: number; ln
         const data = await response.json();
 
         if (data.status !== 'OK' || !data.results || data.results.length === 0) {
-            console.warn(`Geocoding failed for address "${address}":`, data.status);
+            console.warn(`[Geocode] Failed for address "${address}". Status: ${data.status}`);
             return null;
         }
 
         const location = data.results[0].geometry.location;
+        console.log(`[Geocode] Success for "${address}": ${location.lat}, ${location.lng}`);
         return {
             lat: location.lat,
             lng: location.lng,
         };
     } catch (error) {
-        console.error('Geocoding error for address:', address, error);
+        console.error('[Geocode] Error for address:', address, error);
         return null;
     }
 }
