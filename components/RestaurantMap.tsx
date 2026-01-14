@@ -85,6 +85,20 @@ export function RestaurantMap({ restaurants, onRestaurantClick }: RestaurantMapP
 
     const restaurantsWithCoords = restaurants.filter(r => r.lat && r.lng);
 
+    // Debug logging for map loading and restaurant data
+    useEffect(() => {
+        console.log('[RestaurantMap] API Key present:', !!process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY);
+        console.log('[RestaurantMap] isLoaded:', isLoaded, 'loadError:', loadError?.message || 'none');
+        console.log('[RestaurantMap] Total restaurants:', restaurants.length);
+        console.log('[RestaurantMap] With coordinates:', restaurantsWithCoords.length);
+
+        if (restaurants.length > 0 && restaurantsWithCoords.length === 0) {
+            console.warn('[RestaurantMap] All restaurants missing coordinates! Sample:',
+                restaurants.slice(0, 3).map(r => ({ name: r.name, lat: r.lat, lng: r.lng, address: r.address }))
+            );
+        }
+    }, [isLoaded, loadError, restaurants, restaurantsWithCoords]);
+
     // Get user's location on mount
     useEffect(() => {
         if (navigator.geolocation) {
@@ -276,6 +290,8 @@ export function RestaurantMap({ restaurants, onRestaurantClick }: RestaurantMapP
 
     if (loadError) {
         // Demo mode map fallback - show a simulated map with restaurant list
+        console.error('[RestaurantMap] Google Maps load error:', loadError);
+
         return (
             <div className="relative h-full w-full bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-900 overflow-auto">
                 {/* Simulated map background */}
@@ -286,12 +302,24 @@ export function RestaurantMap({ restaurants, onRestaurantClick }: RestaurantMapP
                     }} />
                 </div>
 
-                {/* Demo mode notice */}
+                {/* Error notice with details */}
                 <div className="absolute top-4 left-4 right-4 z-10">
-                    <div className="bg-amber-100 dark:bg-amber-900/50 border border-amber-300 dark:border-amber-700 rounded-xl p-3 shadow-lg">
-                        <p className="text-amber-800 dark:text-amber-200 text-sm text-center font-medium">
-                            🗺️ Map preview unavailable – Google Maps API key required
+                    <div className="bg-red-100 dark:bg-red-900/50 border border-red-300 dark:border-red-700 rounded-xl p-4 shadow-lg">
+                        <p className="text-red-800 dark:text-red-200 text-sm font-medium mb-2">
+                            🗺️ Google Maps failed to load
                         </p>
+                        <p className="text-red-700 dark:text-red-300 text-xs mb-3">
+                            Error: {loadError.message || 'Unknown error'}
+                        </p>
+                        <details className="text-xs text-red-600 dark:text-red-400">
+                            <summary className="cursor-pointer hover:underline">Troubleshooting steps</summary>
+                            <ul className="mt-2 ml-4 list-disc space-y-1">
+                                <li>Check that NEXT_PUBLIC_GOOGLE_MAPS_API_KEY is set in .env</li>
+                                <li>Verify the API key has "Maps JavaScript API" enabled</li>
+                                <li>Ensure localhost is allowed in API key restrictions</li>
+                                <li>Check browser console (F12) for more details</li>
+                            </ul>
+                        </details>
                     </div>
                 </div>
 
@@ -492,31 +520,93 @@ export function RestaurantMap({ restaurants, onRestaurantClick }: RestaurantMapP
                                         btn.disabled = true;
 
                                         let fixedCount = 0;
+                                        const failedRestaurants: string[] = [];
                                         const missing = restaurants.filter(r => !r.lat || !r.lng);
 
+                                        console.log('[Auto-Fix] Starting fix for', missing.length, 'restaurants');
+
+                                        // Helper to clean noisy addresses (strip "It is known for..." etc)
+                                        const cleanAddress = (addr: string) => {
+                                            return addr.split(/[\.!\?]/)[0].trim(); // Take first sentence only
+                                        };
+
                                         for (const r of missing) {
-                                            if (!r.address) continue;
+                                            if (!r.address) {
+                                                console.warn(`[Auto-Fix] Skipping "${r.name}" - no address`);
+                                                failedRestaurants.push(`${r.name} (no address)`);
+                                                continue;
+                                            }
                                             try {
-                                                const res = await fetch('/api/geocode', {
-                                                    method: 'POST',
-                                                    body: JSON.stringify({ address: r.address })
-                                                });
-                                                const data = await res.json();
-                                                if (data.success) {
-                                                    await fetch(`/api/restaurants/${r.id}`, {
-                                                        method: 'PATCH',
-                                                        body: JSON.stringify({ lat: data.lat, lng: data.lng })
+                                                const cleaned = cleanAddress(r.address);
+                                                console.log(`[Auto-Fix] Geocoding "${r.name}" with address: "${cleaned}"`);
+                                                let coords: { lat: number, lng: number } | null = null;
+
+                                                // Try client-side geocoder first (more likely to work with restricted keys)
+                                                if (window.google?.maps?.Geocoder) {
+                                                    const geocoder = new google.maps.Geocoder();
+                                                    const result = await new Promise<google.maps.GeocoderResult[] | null>((resolve) => {
+                                                        geocoder.geocode({ address: cleaned }, (results, status) => {
+                                                            console.log(`[Auto-Fix] Client geocode status for "${r.name}":`, status);
+                                                            if (status === 'OK' && results) resolve(results);
+                                                            else resolve(null);
+                                                        });
                                                     });
-                                                    fixedCount++;
+                                                    if (result && result[0]) {
+                                                        coords = {
+                                                            lat: result[0].geometry.location.lat(),
+                                                            lng: result[0].geometry.location.lng()
+                                                        };
+                                                        console.log(`[Auto-Fix] Client geocode success for "${r.name}":`, coords);
+                                                    }
+                                                } else {
+                                                    console.warn('[Auto-Fix] Client-side Geocoder not available');
                                                 }
-                                            } catch (err) { console.error(err); }
+
+                                                // Fallback to server if client fails
+                                                if (!coords) {
+                                                    console.log(`[Auto-Fix] Trying server geocode for "${r.name}"...`);
+                                                    const res = await fetch('/api/geocode', {
+                                                        method: 'POST',
+                                                        headers: { 'Content-Type': 'application/json' },
+                                                        body: JSON.stringify({ address: cleaned })
+                                                    });
+                                                    const data = await res.json();
+                                                    console.log(`[Auto-Fix] Server geocode result for "${r.name}":`, data);
+                                                    if (data.success) {
+                                                        coords = { lat: data.lat, lng: data.lng };
+                                                    }
+                                                }
+
+                                                if (coords) {
+                                                    const updateRes = await fetch(`/api/restaurants/${r.id}`, {
+                                                        method: 'PATCH',
+                                                        headers: { 'Content-Type': 'application/json' },
+                                                        body: JSON.stringify({ lat: coords.lat, lng: coords.lng })
+                                                    });
+                                                    if (updateRes.ok) {
+                                                        console.log(`[Auto-Fix] Updated "${r.name}" successfully`);
+                                                        fixedCount++;
+                                                    } else {
+                                                        console.error(`[Auto-Fix] Failed to update "${r.name}"`);
+                                                        failedRestaurants.push(`${r.name} (update failed)`);
+                                                    }
+                                                } else {
+                                                    console.warn(`[Auto-Fix] No coords found for "${r.name}"`);
+                                                    failedRestaurants.push(`${r.name} (geocode failed)`);
+                                                }
+                                            } catch (err) {
+                                                console.error('[Auto-Fix] Error for restaurant:', r.name, err);
+                                                failedRestaurants.push(`${r.name} (error)`);
+                                            }
                                         }
+
+                                        console.log('[Auto-Fix] Complete. Fixed:', fixedCount, 'Failed:', failedRestaurants);
 
                                         if (fixedCount > 0) {
                                             toast.success(`Fixed ${fixedCount} locations! Refreshing...`);
                                             window.location.reload();
                                         } else {
-                                            toast.error('Could not auto-fix locations. Check addresses.');
+                                            toast.error(`Could not fix locations. Check console for details.`);
                                             btn.textContent = 'Retry Auto-Fix';
                                             btn.disabled = false;
                                         }
