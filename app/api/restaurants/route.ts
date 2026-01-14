@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase';
 import { geocodeAddress } from '@/lib/ai';
+import { cleanAddressForGeocoding } from '@/lib/geocoding';
 import type { Restaurant } from '@/lib/types';
 
 // Force dynamic rendering for API routes
@@ -42,18 +43,26 @@ export async function POST(request: NextRequest): Promise<NextResponse<SaveRespo
         const supabase = createServerClient();
         const restaurantData = body.restaurant;
 
-        // GEOLOCATION FALLBACK:
-        // If we have an address but no coordinates (common when selecting from ambiguity list),
-        // fetch them now so the map works.
+        // GEOLOCATION:
+        // Clean noisy addresses and geocode for map display
         if (restaurantData.address && (!restaurantData.lat || !restaurantData.lng)) {
             try {
-                const coords = await geocodeAddress(restaurantData.address);
+                const cleanedAddress = cleanAddressForGeocoding(
+                    restaurantData.address,
+                    restaurantData.city
+                );
+                console.log(`[Save] Geocoding "${restaurantData.name}" with: "${cleanedAddress}"`);
+
+                const coords = await geocodeAddress(cleanedAddress);
                 if (coords) {
                     restaurantData.lat = coords.lat;
                     restaurantData.lng = coords.lng;
+                    console.log(`[Save] Geocoded successfully: ${coords.lat}, ${coords.lng}`);
+                } else {
+                    console.warn(`[Save] Geocoding failed for: "${cleanedAddress}"`);
                 }
             } catch (geoError) {
-                console.warn('Geocoding fallback failed:', geoError);
+                console.warn('[Save] Geocoding error:', geoError);
                 // Proceed without coords
             }
         }
