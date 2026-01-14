@@ -111,6 +111,39 @@ export async function POST(request: NextRequest): Promise<NextResponse<SaveRespo
 
 export async function GET(): Promise<NextResponse> {
     try {
+        if (!isSupabaseConfigured()) {
+            console.warn('Supabase not configured, returning demo data');
+            return NextResponse.json({
+                success: true,
+                demo: true,
+                restaurants: [
+                    {
+                        id: 'demo-1',
+                        name: 'Burger King',
+                        cuisine: 'Fast Food',
+                        city: 'New York',
+                        address: '1235 Broadway, New York, NY 10001',
+                        lat: 40.7484,
+                        lng: -73.9857,
+                        is_visited: true,
+                        rating: 4,
+                        created_at: new Date().toISOString(),
+                    },
+                    {
+                        id: 'demo-2',
+                        name: 'Joe\'s Pizza',
+                        cuisine: 'Pizza',
+                        city: 'New York',
+                        address: '7 Carmine St, New York, NY 10014',
+                        lat: 40.7306,
+                        lng: -74.0021,
+                        is_visited: false,
+                        created_at: new Date().toISOString(),
+                    }
+                ]
+            });
+        }
+
         const supabase = createServerClient();
 
         const { data, error } = await supabase

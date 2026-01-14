@@ -25,6 +25,11 @@ jest.mock('lucide-react', () => ({
     ChevronRight: () => <div data-testid="chevron-right" />,
 }));
 
+// Mock the provider hook
+jest.mock('../../components/GoogleMapsProvider', () => ({
+    useGoogleMaps: () => ({ isLoaded: true, loadError: undefined }),
+}));
+
 // Mock current location hook if used inside, or props.
 // Assuming RestaurantMap takes restaurants as props.
 
