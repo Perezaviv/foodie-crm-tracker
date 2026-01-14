@@ -138,6 +138,10 @@ async function handleCallbackQuery(query: NonNullable<TelegramUpdate['callback_q
 
 async function handleMessage(message: NonNullable<TelegramUpdate['message']>) {
     const chatId = message.chat.id;
+    const text = message.text || '';
+
+    console.log(`[Telegram] Processing message from ${chatId}: ${text.substring(0, 50)}... Step: ${(await getSession(chatId))?.step}`);
+
     let session = await getSession(chatId);
 
     // Auto-init session if missing
@@ -168,22 +172,36 @@ async function handleMessage(message: NonNullable<TelegramUpdate['message']>) {
     }
 
     // Handle Text
-    if (message.text) {
-        if (message.text.startsWith('/')) {
-            // Commands
-            if (message.text === '/cancel') {
+    if (text) {
+        // 1. Check for specific commands
+        if (text.startsWith('/')) {
+            const [cmd, ...args] = text.split(' ');
+            const query = args.join(' ').trim();
+
+            if (cmd === '/cancel') {
                 await clearSession(chatId);
-                await sendMessage(chatId, 'Examples:\n• `Miznon` (Search & Add)\n• Send Photos (Upload)');
+                await sendMessage(chatId, '✅ Session cleared.\n\nExamples:\n• `/add Miznon` (Search & Add)\n• Send Photos (Upload)');
+                return;
+            }
+
+            if (cmd === '/add' || cmd === '/search') {
+                if (!query) {
+                    await sendMessage(chatId, '⚠️ Please provide a restaurant name. Example: `/add Burger King`');
+                    return;
+                }
+                await startSearch(chatId, query, 'SELECTING_RESTAURANT');
+                return;
+            }
+
+            if (cmd === '/start') {
+                await sendMessage(chatId, '👋 Welcome! I can help you add restaurants and photos.\n\nType a restaurant name or send photos to start.\n\nIn groups, use `/add <name>` if I don\'t respond to text.');
                 return;
             }
         }
 
-        const text = message.text;
+        // 2. Handle State-Dependent logic
 
         // If WAITING_FOR_PHOTOS but got text (and not /cancel)
-        // Check if it's a restaurant name to attach to?
-        // Or maybe force them to click done? 
-        // Let's assume if they send text in WAITING_FOR_PHOTOS, it might be the name.
         if (session?.step === 'WAITING_FOR_PHOTOS') {
             if (text.toLowerCase() === 'done') {
                 await handleDonePhotos(chatId, session!); // Session exists if we are in this step
@@ -200,7 +218,8 @@ async function handleMessage(message: NonNullable<TelegramUpdate['message']>) {
             return;
         }
 
-        // Default: IDLE -> Search & Add
+        // 3. Default: IDLE -> Search & Add
+        // NOTE: In group chats with privacy mode ON, we might not get here unless mentioned or replying.
         await startSearch(chatId, text, 'SELECTING_RESTAURANT');
     }
 }
