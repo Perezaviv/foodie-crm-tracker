@@ -65,7 +65,8 @@ describe('RestaurantList Component', () => {
                 created_by: 'user1',
                 booking_link: null,
                 social_link: null,
-                notes: null
+                notes: null,
+                logo_url: null
             }
         ];
         render(<RestaurantList restaurants={items} />);
