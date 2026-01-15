@@ -288,12 +288,12 @@ describe('Telegram Actions - Command Handling', () => {
 
         await handleTelegramUpdate(update);
 
-        // Verify sendMessage was called
+        // Verify sendMessage was called with Hebrew menu
         expect(fetch).toHaveBeenCalledWith(
             expect.stringContaining('/sendMessage'),
             expect.objectContaining({
                 method: 'POST',
-                body: expect.stringContaining('Welcome'),
+                body: expect.stringContaining('תפריט ראשי'),
             })
         );
     });
@@ -315,7 +315,7 @@ describe('Telegram Actions - Command Handling', () => {
         expect(clearSession).toHaveBeenCalledWith(12345);
     });
 
-    it('handles /add without query shows error', async () => {
+    it('handles /add without query shows error in Hebrew', async () => {
         const update: TelegramUpdate = {
             update_id: 123,
             message: {
@@ -332,12 +332,12 @@ describe('Telegram Actions - Command Handling', () => {
         expect(fetch).toHaveBeenCalledWith(
             expect.stringContaining('/sendMessage'),
             expect.objectContaining({
-                body: expect.stringContaining('Please provide a restaurant name'),
+                body: expect.stringContaining('נא לרשום שם מסעדה'),
             })
         );
     });
 
-    it('handles /rate with invalid format shows error', async () => {
+    it('handles /rate with invalid format shows error in Hebrew', async () => {
         const update: TelegramUpdate = {
             update_id: 123,
             message: {
@@ -354,12 +354,12 @@ describe('Telegram Actions - Command Handling', () => {
         expect(fetch).toHaveBeenCalledWith(
             expect.stringContaining('/sendMessage'),
             expect.objectContaining({
-                body: expect.stringContaining('Usage'),
+                body: expect.stringContaining('שימוש'),
             })
         );
     });
 
-    it('handles /comment with invalid format shows error', async () => {
+    it('handles /comment with invalid format shows error in Hebrew', async () => {
         const update: TelegramUpdate = {
             update_id: 123,
             message: {
@@ -376,7 +376,7 @@ describe('Telegram Actions - Command Handling', () => {
         expect(fetch).toHaveBeenCalledWith(
             expect.stringContaining('/sendMessage'),
             expect.objectContaining({
-                body: expect.stringContaining('Usage'),
+                body: expect.stringContaining('שימוש'),
             })
         );
     });
@@ -418,11 +418,11 @@ describe('Telegram Actions - Photo Handling', () => {
             expect.objectContaining({ pending_photos: ['large'] })
         );
 
-        // Should send confirmation message
+        // Should send confirmation message in Hebrew
         expect(fetch).toHaveBeenCalledWith(
             expect.stringContaining('/sendMessage'),
             expect.objectContaining({
-                body: expect.stringContaining('Received 1 photo'),
+                body: expect.stringContaining('התקבלו'),
             })
         );
     });
