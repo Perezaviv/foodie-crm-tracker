@@ -106,7 +106,7 @@ async function handleCallbackQuery(query: NonNullable<TelegramUpdate['callback_q
         return;
     }
     if (data === 'menu_photos') {
-        await sendMessage(chatId, '📸 שלח תמונות ואני אעזור לך לשייך אותן למסעדה.');
+        await sendMessage(chatId, MESSAGES.PHOTO_INSTRUCTION);
         return;
     }
     if (data === 'menu_help') {
@@ -365,7 +365,7 @@ async function startSearch(chatId: number, text: string, nextStep: TelegramStep)
 
     // Multiple matches
     const buttons = result.results.map((r, i) => ([{
-        text: `${r.name} (${r.address || 'ללא כתובת'})`,
+        text: `${r.name} (${r.address || MESSAGES.NO_ADDRESS})`,
         callback_data: `select_rest:${i}`
     }]));
 
@@ -433,7 +433,7 @@ async function addRestaurantToDb(chatId: number, data: SearchResult, silent = fa
     if (!silent) {
         let msg = MESSAGES.ADDED_RESTAURANT(rest.name);
         if (rest.address) msg += `\n📍 ${rest.address}`;
-        if (rest.booking_link) msg += `\n🔗 [הזמנת מקום](${rest.booking_link})`;
+        if (rest.booking_link) msg += `\n🔗 [${MESSAGES.BOOKING_LINK_TEXT}](${rest.booking_link})`;
         await sendMessage(chatId, msg);
     }
 

@@ -64,6 +64,11 @@ export const MESSAGES = {
     BTN_COMMENT: '💬 הוסף הערה',
     BTN_PHOTOS: '📸 העלה תמונות',
     BTN_HELP: '❓ עזרה',
+
+    // Misc
+    PHOTO_INSTRUCTION: '📸 שלח תמונות ואני אעזור לך לשייך אותן למסעדה.',
+    NO_ADDRESS: 'ללא כתובת',
+    BOOKING_LINK_TEXT: 'הזמנת מקום',
 };
 
 /** Menu keyboard layout */
