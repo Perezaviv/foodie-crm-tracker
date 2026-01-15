@@ -241,3 +241,23 @@ button {
 .animate-slide-up {
   animation: slide-up 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
+
+/* Fix for mobile keyboard pushing content out of view */
+@supports (height: 100dvh) {
+  [vaul-drawer] {
+    height: auto !important;
+    max-height: 85dvh !important;
+  }
+
+  [vaul-drawer-content] {
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* Ensure drawer content stays visible when keyboard is open */
+@media screen and (max-width: 768px) {
+  [vaul-drawer] {
+    height: auto !important;
+  }
+}

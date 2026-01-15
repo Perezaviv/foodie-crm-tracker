@@ -87,7 +87,7 @@ export function AddDrawer({ open, onOpenChange, onSuccess }: AddDrawerProps) {
             <Drawer.Portal>
                 <Drawer.Overlay className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50" />
                 <Drawer.Content
-                    className="bg-background flex flex-col rounded-t-[10px] h-[90%] mt-24 fixed bottom-0 left-0 right-0 z-50 focus:outline-none"
+                    className="bg-background flex flex-col rounded-t-[10px] max-h-[85dvh] fixed bottom-0 left-0 right-0 z-50 focus:outline-none"
                     aria-describedby="add-drawer-description"
                 >
                     <Drawer.Title className="sr-only">Add a New Restaurant</Drawer.Title>
