@@ -261,7 +261,8 @@ async function handleMessage(message: NonNullable<TelegramUpdate['message']>) {
 
             // /comment <restaurant name> - <comment text>
             if (cmd === '/comment') {
-                const commentMatch = query.match(/^(.+?)\s+-\s+(.+)$/);
+                // Allow normal dash (-), en-dash (–), em-dash (—) and flexible spacing
+                const commentMatch = query.match(/^(.+?)\s*[-–—]\s*(.+)$/);
                 if (!commentMatch) {
                     await sendMessage(chatId, MESSAGES.COMMENT_USAGE);
                     return;
