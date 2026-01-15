@@ -362,9 +362,18 @@ export function RestaurantMap({ restaurants, isLoading = false, onRestaurantClic
                                 className="w-full bg-white rounded-xl p-4 shadow-md border border-slate-200 text-left hover:shadow-lg hover:border-primary-400 transition-all"
                             >
                                 <div className="flex items-start gap-3">
-                                    <div className="w-10 h-10 rounded-lg bg-primary-100 flex items-center justify-center flex-shrink-0">
-                                        <span className="text-lg">🍽️</span>
-                                    </div>
+                                    {restaurant.logo_url ? (
+                                        <img
+                                            src={restaurant.logo_url}
+                                            alt={`${restaurant.name} logo`}
+                                            className="w-10 h-10 rounded-lg object-contain bg-muted flex-shrink-0"
+                                            onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                                        />
+                                    ) : (
+                                        <div className="w-10 h-10 rounded-lg bg-primary-100 flex items-center justify-center flex-shrink-0">
+                                            <span className="text-lg">🍽️</span>
+                                        </div>
+                                    )}
                                     <div className="flex-1 min-w-0">
                                         <h3 className="font-bold text-foreground truncate">{restaurant.name}</h3>
                                         {restaurant.cuisine && (
@@ -467,9 +476,18 @@ export function RestaurantMap({ restaurants, isLoading = false, onRestaurantClic
 
                             <div style={{ padding: '12px' }}>
                                 <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', marginBottom: '8px' }}>
-                                    <div style={{ width: '40px', height: '40px', borderRadius: '8px', backgroundColor: '#fed7aa', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                                        <span style={{ fontSize: '18px' }}>🍽️</span>
-                                    </div>
+                                    {selectedRestaurant.logo_url ? (
+                                        <img
+                                            src={selectedRestaurant.logo_url}
+                                            alt={`${selectedRestaurant.name} logo`}
+                                            style={{ width: '40px', height: '40px', borderRadius: '8px', objectFit: 'contain', backgroundColor: '#f3f4f6', flexShrink: 0 }}
+                                            onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
+                                        />
+                                    ) : (
+                                        <div style={{ width: '40px', height: '40px', borderRadius: '8px', backgroundColor: '#fed7aa', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                            <span style={{ fontSize: '18px' }}>🍽️</span>
+                                        </div>
+                                    )}
                                     <div style={{ flex: 1, minWidth: 0 }}>
                                         <h3 style={{ fontWeight: 'bold', color: '#111827', fontSize: '16px', margin: 0, wordBreak: 'break-word' }}>{selectedRestaurant.name}</h3>
                                         {selectedRestaurant.cuisine && (

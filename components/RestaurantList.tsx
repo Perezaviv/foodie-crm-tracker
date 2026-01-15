@@ -243,33 +243,48 @@ function RestaurantCard({ restaurant, onClick, onDelete }: { restaurant: Restaur
             className="group bg-white rounded-2xl border-2 border-neutral-200 p-4 shadow-md hover:shadow-xl transition-all duration-300 ease-out cursor-pointer hover:border-primary-400 relative"
         >
             <div className="flex items-start justify-between">
-                <div className="flex-1 min-w-0 pr-8">
-                    <h3 className="font-bold text-lg truncate text-neutral-900">
-                        {restaurant.name}
-                    </h3>
-                    <div className="flex flex-wrap gap-2 mt-2">
-                        {restaurant.cuisine && (
-                            <span className="text-xs px-2.5 py-1 rounded-full bg-primary-100 text-primary-800 font-semibold border border-primary-200">
-                                {restaurant.cuisine}
-                            </span>
-                        )}
-                        {restaurant.city && (
-                            <span className="text-xs px-2.5 py-1 rounded-full bg-neutral-100 text-neutral-700 font-medium border border-neutral-200">
-                                📍 {restaurant.city}
-                            </span>
-                        )}
-                        {restaurant.is_visited && (
-                            <span className="text-xs px-2.5 py-1 rounded-full bg-green-100 text-green-800 font-semibold border border-green-200">
-                                ✓ Visited
-                            </span>
+                <div className="flex items-start gap-3 flex-1 min-w-0 pr-4">
+                    {/* Logo */}
+                    {restaurant.logo_url ? (
+                        <img
+                            src={restaurant.logo_url}
+                            alt={`${restaurant.name} logo`}
+                            className="w-12 h-12 rounded-lg object-contain bg-muted shadow-sm flex-shrink-0"
+                            onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                        />
+                    ) : (
+                        <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-primary-100 to-primary-200 flex items-center justify-center shadow-sm flex-shrink-0">
+                            <Utensils size={20} className="text-primary-500" />
+                        </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                        <h3 className="font-bold text-lg truncate text-neutral-900">
+                            {restaurant.name}
+                        </h3>
+                        <div className="flex flex-wrap gap-2 mt-2">
+                            {restaurant.cuisine && (
+                                <span className="text-xs px-2.5 py-1 rounded-full bg-primary-100 text-primary-800 font-semibold border border-primary-200">
+                                    {restaurant.cuisine}
+                                </span>
+                            )}
+                            {restaurant.city && (
+                                <span className="text-xs px-2.5 py-1 rounded-full bg-neutral-100 text-neutral-700 font-medium border border-neutral-200">
+                                    📍 {restaurant.city}
+                                </span>
+                            )}
+                            {restaurant.is_visited && (
+                                <span className="text-xs px-2.5 py-1 rounded-full bg-green-100 text-green-800 font-semibold border border-green-200">
+                                    ✓ Visited
+                                </span>
+                            )}
+                        </div>
+                        {restaurant.address && (
+                            <p className="text-sm text-neutral-600 mt-3 flex items-start gap-1.5 font-medium">
+                                <MapPin size={14} className="flex-shrink-0 mt-0.5 text-primary-500" />
+                                <span className="truncate">{restaurant.address}</span>
+                            </p>
                         )}
                     </div>
-                    {restaurant.address && (
-                        <p className="text-sm text-neutral-600 mt-3 flex items-start gap-1.5 font-medium">
-                            <MapPin size={14} className="flex-shrink-0 mt-0.5 text-primary-500" />
-                            <span className="truncate">{restaurant.address}</span>
-                        </p>
-                    )}
                 </div>
 
                 <div className="flex flex-col gap-2">

@@ -54,6 +54,7 @@ export type Database = {
                     notes: string | null
                     is_visited: boolean
                     rating: number | null
+                    logo_url: string | null
                     created_at: string
                     updated_at: string
                     created_by: string | null
@@ -71,6 +72,7 @@ export type Database = {
                     notes?: string | null
                     is_visited?: boolean
                     rating?: number | null
+                    logo_url?: string | null
                     created_at?: string
                     updated_at?: string
                     created_by?: string | null
@@ -88,6 +90,7 @@ export type Database = {
                     notes?: string | null
                     is_visited?: boolean
                     rating?: number | null
+                    logo_url?: string | null
                     created_at?: string
                     updated_at?: string
                     created_by?: string | null
@@ -145,7 +148,35 @@ export type Database = {
                 }
                 Relationships: []
             }
+            comments: {
+                Row: {
+                    id: string
+                    restaurant_id: string
+                    content: string
+                    author_name: string | null
+                    created_at: string
+                    created_by: string | null
+                }
+                Insert: {
+                    id?: string
+                    restaurant_id: string
+                    content: string
+                    author_name?: string | null
+                    created_at?: string
+                    created_by?: string | null
+                }
+                Update: {
+                    id?: string
+                    restaurant_id?: string
+                    content?: string
+                    author_name?: string | null
+                    created_at?: string
+                    created_by?: string | null
+                }
+                Relationships: []
+            }
         }
+
         Views: {
             [_ in never]: never
         }
@@ -165,6 +196,8 @@ export type Database = {
 export type Profile = Database['public']['Tables']['profiles']['Row']
 export type Restaurant = Database['public']['Tables']['restaurants']['Row']
 export type Photo = Database['public']['Tables']['photos']['Row']
+export type Comment = Database['public']['Tables']['comments']['Row']
 
 export type RestaurantInsert = Database['public']['Tables']['restaurants']['Insert']
 export type RestaurantUpdate = Database['public']['Tables']['restaurants']['Update']
+export type CommentInsert = Database['public']['Tables']['comments']['Insert']

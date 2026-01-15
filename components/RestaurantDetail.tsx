@@ -1,12 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Drawer } from 'vaul';
-import { MapPin, ExternalLink, Star, Clock, Edit2, Upload, Trash2, X } from 'lucide-react';
+import { MapPin, ExternalLink, Star, Clock, Edit2, Upload, Trash2, X, MessageSquare, Send, Utensils } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { PhotoUpload } from './PhotoUpload';
 import { PhotoGallery } from './PhotoGallery';
-import type { Restaurant } from '@/lib/types';
+import type { Restaurant, Comment } from '@/lib/types';
 
 interface RestaurantDetailProps {
     restaurant: Restaurant;
@@ -16,9 +16,86 @@ interface RestaurantDetailProps {
 }
 
 export function RestaurantDetail({ restaurant, onClose, onEdit, onDelete }: RestaurantDetailProps) {
-    const [activeTab, setActiveTab] = useState<'info' | 'photos'>('info');
+    const [activeTab, setActiveTab] = useState<'info' | 'photos' | 'comments'>('info');
     const [showUpload, setShowUpload] = useState(false);
     const [photosKey, setPhotosKey] = useState(0);
+    const [currentRating, setCurrentRating] = useState(restaurant.rating);
+    const [isRating, setIsRating] = useState(false);
+
+    // Comments state
+    const [comments, setComments] = useState<Comment[]>([]);
+    const [newComment, setNewComment] = useState('');
+    const [isLoadingComments, setIsLoadingComments] = useState(false);
+    const [isSubmittingComment, setIsSubmittingComment] = useState(false);
+
+    // Fetch comments when tab switches to comments
+    useEffect(() => {
+        if (activeTab === 'comments') {
+            fetchComments();
+        }
+    }, [activeTab]);
+
+    const fetchComments = async () => {
+        setIsLoadingComments(true);
+        try {
+            const response = await fetch(`/api/restaurants/${restaurant.id}/comments`);
+            const data = await response.json();
+            if (data.success) {
+                setComments(data.comments);
+            }
+        } catch (error) {
+            console.error('Failed to fetch comments:', error);
+        } finally {
+            setIsLoadingComments(false);
+        }
+    };
+
+    const handleSubmitComment = async () => {
+        if (!newComment.trim() || isSubmittingComment) return;
+
+        setIsSubmittingComment(true);
+        try {
+            const response = await fetch(`/api/restaurants/${restaurant.id}/comments`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ content: newComment.trim() }),
+            });
+            const data = await response.json();
+            if (data.success) {
+                setComments(prev => [data.comment, ...prev]);
+                setNewComment('');
+            }
+        } catch (error) {
+            console.error('Failed to submit comment:', error);
+        } finally {
+            setIsSubmittingComment(false);
+        }
+    };
+
+    const handleRatingChange = async (newRating: number) => {
+        if (isRating) return;
+
+        setIsRating(true);
+        const previousRating = currentRating;
+        setCurrentRating(newRating); // Optimistic update
+
+        try {
+            const response = await fetch(`/api/restaurants/${restaurant.id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ rating: newRating }),
+            });
+
+            if (!response.ok) {
+                setCurrentRating(previousRating); // Revert on failure
+            }
+        } catch (error) {
+            console.error('Rating update failed:', error);
+            setCurrentRating(previousRating);
+        } finally {
+            setIsRating(false);
+        }
+    };
 
     const handleUploadComplete = () => {
         setShowUpload(false);
@@ -57,13 +134,28 @@ export function RestaurantDetail({ restaurant, onClose, onEdit, onDelete }: Rest
                     <div className="flex-1 flex flex-col overflow-hidden max-w-md mx-auto w-full">
                         {/* Header */}
                         <header className="px-4 pb-4 flex items-center justify-between">
-                            <div className="flex-1 min-w-0">
-                                <h1 className="font-bold text-2xl truncate bg-gradient-to-r from-primary-500 to-primary-700 bg-clip-text text-transparent">
-                                    {restaurant.name}
-                                </h1>
-                                {restaurant.cuisine && (
-                                    <p className="text-muted-foreground">{restaurant.cuisine}</p>
+                            <div className="flex items-center gap-3">
+                                {/* Logo */}
+                                {restaurant.logo_url ? (
+                                    <img
+                                        src={restaurant.logo_url}
+                                        alt={`${restaurant.name} logo`}
+                                        className="w-12 h-12 rounded-lg object-contain bg-muted shadow-sm flex-shrink-0"
+                                        onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                                    />
+                                ) : (
+                                    <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-primary-100 to-primary-200 flex items-center justify-center shadow-sm flex-shrink-0">
+                                        <Utensils size={20} className="text-primary-500" />
+                                    </div>
                                 )}
+                                <div className="flex-1 min-w-0">
+                                    <h1 className="font-bold text-2xl truncate bg-gradient-to-r from-primary-500 to-primary-700 bg-clip-text text-transparent">
+                                        {restaurant.name}
+                                    </h1>
+                                    {restaurant.cuisine && (
+                                        <p className="text-muted-foreground">{restaurant.cuisine}</p>
+                                    )}
+                                </div>
                             </div>
                             <div className="flex gap-2 ml-4">
                                 {onEdit && (
@@ -115,7 +207,19 @@ export function RestaurantDetail({ restaurant, onClose, onEdit, onDelete }: Rest
                             >
                                 Photos
                             </button>
+                            <button
+                                onClick={() => setActiveTab('comments')}
+                                className={cn(
+                                    'flex-1 py-2 px-4 rounded-xl text-sm font-medium transition-all duration-200',
+                                    activeTab === 'comments'
+                                        ? 'bg-primary-500 text-white shadow-lg shadow-primary-500/25'
+                                        : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                                )}
+                            >
+                                Comments
+                            </button>
                         </div>
+
 
                         {/* Content Scroll Area */}
                         <div className="flex-1 overflow-y-auto px-4 pb-8 space-y-6">
@@ -179,30 +283,41 @@ export function RestaurantDetail({ restaurant, onClose, onEdit, onDelete }: Rest
                                     {/* Info Cards */}
                                     <div className="space-y-4">
                                         <div className="bg-muted/30 p-4 rounded-2xl space-y-3">
-                                            {/* Rating */}
-                                            {restaurant.rating && (
-                                                <div className="flex items-center justify-between">
-                                                    <span className="text-sm font-medium">Rating</span>
-                                                    <div className="flex items-center gap-1.5">
-                                                        <div className="flex">
-                                                            {[1, 2, 3, 4, 5].map((star) => (
+                                            {/* Rating - Always show, clickable */}
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-sm font-medium">Your Rating</span>
+                                                <div className="flex items-center gap-1.5">
+                                                    <div className="flex gap-0.5">
+                                                        {[1, 2, 3, 4, 5].map((star) => (
+                                                            <button
+                                                                key={star}
+                                                                onClick={() => handleRatingChange(star)}
+                                                                disabled={isRating}
+                                                                className={cn(
+                                                                    'p-0.5 transition-all duration-150 hover:scale-125 active:scale-95',
+                                                                    isRating && 'opacity-50 cursor-not-allowed'
+                                                                )}
+                                                            >
                                                                 <Star
-                                                                    key={star}
-                                                                    size={16}
+                                                                    size={20}
                                                                     className={cn(
-                                                                        star <= restaurant.rating!
+                                                                        'transition-colors',
+                                                                        currentRating && star <= currentRating
                                                                             ? 'text-yellow-400 fill-yellow-400'
-                                                                            : 'text-muted-foreground/30'
+                                                                            : 'text-muted-foreground/30 hover:text-yellow-300'
                                                                     )}
                                                                 />
-                                                            ))}
-                                                        </div>
-                                                        <span className="text-xs font-bold bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full">
-                                                            {restaurant.rating}
-                                                        </span>
+                                                            </button>
+                                                        ))}
                                                     </div>
+                                                    {currentRating && (
+                                                        <span className="text-xs font-bold bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full">
+                                                            {currentRating}
+                                                        </span>
+                                                    )}
                                                 </div>
-                                            )}
+                                            </div>
+
 
                                             {/* Address */}
                                             {restaurant.address && (
@@ -288,7 +403,72 @@ export function RestaurantDetail({ restaurant, onClose, onEdit, onDelete }: Rest
                                     </div>
                                 </div>
                             )}
+
+                            {activeTab === 'comments' && (
+                                <div className="space-y-4">
+                                    {/* Add Comment Form */}
+                                    <div className="bg-card border rounded-2xl p-4 shadow-sm">
+                                        <div className="flex gap-3">
+                                            <input
+                                                type="text"
+                                                value={newComment}
+                                                onChange={(e) => setNewComment(e.target.value)}
+                                                onKeyDown={(e) => e.key === 'Enter' && handleSubmitComment()}
+                                                placeholder="Write a comment..."
+                                                className="flex-1 px-4 py-2 rounded-xl border border-muted focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 transition-all"
+                                            />
+                                            <button
+                                                onClick={handleSubmitComment}
+                                                disabled={!newComment.trim() || isSubmittingComment}
+                                                className={cn(
+                                                    'p-3 rounded-xl transition-all',
+                                                    newComment.trim() && !isSubmittingComment
+                                                        ? 'bg-primary-500 text-white shadow-lg shadow-primary-500/25 hover:bg-primary-600 active:scale-95'
+                                                        : 'bg-muted text-muted-foreground cursor-not-allowed'
+                                                )}
+                                            >
+                                                <Send size={18} />
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    {/* Comments List */}
+                                    <div className="space-y-3">
+                                        {isLoadingComments ? (
+                                            <div className="text-center py-8 text-muted-foreground">
+                                                Loading comments...
+                                            </div>
+                                        ) : comments.length === 0 ? (
+                                            <div className="text-center py-8">
+                                                <MessageSquare size={48} className="mx-auto text-muted-foreground/30 mb-3" />
+                                                <p className="text-muted-foreground">No comments yet</p>
+                                                <p className="text-sm text-muted-foreground/70">Be the first to share your thoughts!</p>
+                                            </div>
+                                        ) : (
+                                            comments.map((comment) => (
+                                                <div
+                                                    key={comment.id}
+                                                    className="bg-muted/30 p-4 rounded-2xl space-y-2"
+                                                >
+                                                    <div className="flex items-center justify-between">
+                                                        <span className="text-sm font-medium text-primary-600">
+                                                            {comment.author_name || 'Anonymous'}
+                                                        </span>
+                                                        <span className="text-xs text-muted-foreground">
+                                                            {new Date(comment.created_at).toLocaleDateString()}
+                                                        </span>
+                                                    </div>
+                                                    <p className="text-sm leading-relaxed">
+                                                        {comment.content}
+                                                    </p>
+                                                </div>
+                                            ))
+                                        )}
+                                    </div>
+                                </div>
+                            )}
                         </div>
+
                     </div>
                 </Drawer.Content>
             </Drawer.Portal>

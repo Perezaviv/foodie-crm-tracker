@@ -153,6 +153,12 @@ async function handleMessage(message: NonNullable<TelegramUpdate['message']>) {
 
     // Handle Photos
     if (message.photo && message.photo.length > 0) {
+        console.log('[TG] Photo received!', {
+            chatId,
+            photoCount: message.photo.length,
+            fileId: message.photo[message.photo.length - 1].file_id.substring(0, 20) + '...'
+        });
+
         // Telegram sends multiple sizes, take the last one (largest)
         const largestPhoto = message.photo[message.photo.length - 1];
 
@@ -167,6 +173,7 @@ async function handleMessage(message: NonNullable<TelegramUpdate['message']>) {
         }
 
         const count = newPhotos.length;
+        console.log('[TG] Sending photo confirmation, count:', count);
         await sendMessage(chatId, `📸 Received ${count} photo${count > 1 ? 's' : ''}.\nPlease enter only the restaurant name :`, {
             inline_keyboard: [[{ text: '✅ Done', callback_data: 'done_photos' }, { text: '❌ Cancel', callback_data: 'cancel' }]]
         });
@@ -196,7 +203,33 @@ async function handleMessage(message: NonNullable<TelegramUpdate['message']>) {
             }
 
             if (cmd === '/start') {
-                await sendMessage(chatId, '👋 Welcome! I can help you add restaurants and photos.\n\nType a restaurant name or send photos to start.\n\nIn groups, use `/add <name>` if I don\'t respond to text.');
+                await sendMessage(chatId, '👋 Welcome! I can help you add restaurants and photos.\n\n*Commands:*\n• `/add <name>` - Add a restaurant\n• `/rate <name> <1-5>` - Rate a restaurant\n• `/comment <name> - <text>` - Add a comment\n• Send photos to upload them\n\nIn groups, use commands if I don\'t respond to text.');
+                return;
+            }
+
+            // /rate <restaurant name> <1-5>
+            if (cmd === '/rate') {
+                const ratingMatch = query.match(/^(.+?)\s+([1-5])$/);
+                if (!ratingMatch) {
+                    await sendMessage(chatId, '⚠️ Usage: `/rate Restaurant Name 5`\n\nExample: `/rate Miznon 4`');
+                    return;
+                }
+                const restaurantName = ratingMatch[1].trim();
+                const rating = parseInt(ratingMatch[2]);
+                await handleRateRestaurant(chatId, restaurantName, rating);
+                return;
+            }
+
+            // /comment <restaurant name> - <comment text>
+            if (cmd === '/comment') {
+                const commentMatch = query.match(/^(.+?)\s+-\s+(.+)$/);
+                if (!commentMatch) {
+                    await sendMessage(chatId, '⚠️ Usage: `/comment Restaurant Name - Your comment here`\n\nExample: `/comment Miznon - Amazing pita!`');
+                    return;
+                }
+                const restaurantName = commentMatch[1].trim();
+                const commentText = commentMatch[2].trim();
+                await handleAddComment(chatId, restaurantName, commentText);
                 return;
             }
         }
@@ -343,7 +376,8 @@ async function addRestaurantToDb(chatId: number, data: SearchResult, silent = fa
         cuisine: data.cuisine,
         rating: data.rating,
         is_visited: false,
-        city: derivedCity
+        city: derivedCity,
+        logo_url: data.logoUrl,
     };
 
     const { data: rest, error } = await supabase
@@ -417,6 +451,73 @@ async function processPendingPhotos(chatId: number, restaurantId: string, fileId
     }
 
     await sendMessage(chatId, `✅ Successfully added ${successCount} photos!`);
+}
+
+async function handleRateRestaurant(chatId: number, restaurantName: string, rating: number) {
+    const supabase = createAdminClient();
+
+    // Find restaurant by name (case-insensitive)
+    const { data: restaurants, error: findError } = await supabase
+        .from('restaurants')
+        .select('id, name')
+        .ilike('name', `%${restaurantName}%`)
+        .limit(5);
+
+    if (findError || !restaurants || restaurants.length === 0) {
+        await sendMessage(chatId, `❌ Restaurant "${restaurantName}" not found. Please check the name and try again.`);
+        return;
+    }
+
+    // If multiple matches, use the first one (closest match)
+    const restaurant = restaurants[0];
+
+    // Update rating
+    const { error: updateError } = await supabase
+        .from('restaurants')
+        .update({ rating })
+        .eq('id', restaurant.id);
+
+    if (updateError) {
+        await sendMessage(chatId, `❌ Failed to update rating: ${updateError.message}`);
+        return;
+    }
+
+    const stars = '⭐'.repeat(rating);
+    await sendMessage(chatId, `${stars}\n\n✅ Rated *${restaurant.name}* ${rating}/5!`);
+}
+
+async function handleAddComment(chatId: number, restaurantName: string, commentText: string) {
+    const supabase = createAdminClient();
+
+    // Find restaurant by name (case-insensitive)
+    const { data: restaurants, error: findError } = await supabase
+        .from('restaurants')
+        .select('id, name')
+        .ilike('name', `%${restaurantName}%`)
+        .limit(5);
+
+    if (findError || !restaurants || restaurants.length === 0) {
+        await sendMessage(chatId, `❌ Restaurant "${restaurantName}" not found. Please check the name and try again.`);
+        return;
+    }
+
+    const restaurant = restaurants[0];
+
+    // Add comment
+    const { error: insertError } = await supabase
+        .from('comments')
+        .insert({
+            restaurant_id: restaurant.id,
+            content: commentText,
+            author_name: 'Telegram User',
+        });
+
+    if (insertError) {
+        await sendMessage(chatId, `❌ Failed to add comment: ${insertError.message}`);
+        return;
+    }
+
+    await sendMessage(chatId, `💬 Comment added to *${restaurant.name}*!\n\n"${commentText}"`);
 }
 
 // ============================================================
