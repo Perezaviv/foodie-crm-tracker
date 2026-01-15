@@ -62,6 +62,12 @@ export interface TelegramUpdate {
 // ============================================================
 
 export async function handleTelegramUpdate(update: TelegramUpdate) {
+    console.log('[TG] handleTelegramUpdate called', {
+        update_id: update.update_id,
+        has_message: !!update.message,
+        has_callback: !!update.callback_query,
+    });
+
     if (update.callback_query) {
         await handleCallbackQuery(update.callback_query);
         return;
@@ -114,18 +120,7 @@ async function handleCallbackQuery(query: NonNullable<TelegramUpdate['callback_q
             const results = session.metadata.searchResults as SearchResult[];
             if (results && results[index]) {
                 const selected = results[index];
-                // Now we need to save the restaurant first (if it's not just a reference, but searchResult usually implies a new one? 
-                // Ah, if we searched, it returned *search results* from Tavily. 
-                // Wait, if we are attaching photos to an EXISTING restaurant, we should probably search our DB first?
-                // The user said "address it to the correct restaurant". This implies selecting one.
-                // For simplicity, let's assume we search Tavily and "Add" it if it's new, or if we had a way to search existing DB. 
-                // Given the prompt "same logic as in the app", in the app we search Tavily. 
-                // So if we pick a result, we create it (or find duplicate matches). 
-                // Let's create it, get the ID, then attach photos.
-
-                // Note: Ideally check for duplicates. addRestaurantToDb does an insert. 
-                // We'll proceed with add-then-attach.
-
+                // Add restaurant and attach photos
                 const restaurant = await addRestaurantToDb(chatId, selected, true); // true = silent, don't clear session yet
                 if (restaurant) {
                     await processPendingPhotos(chatId, restaurant.id, session.metadata.pending_photos || []);
@@ -140,7 +135,14 @@ async function handleMessage(message: NonNullable<TelegramUpdate['message']>) {
     const chatId = message.chat.id;
     const text = message.text || '';
 
-    console.log(`[Telegram] Processing message from ${chatId}: ${text.substring(0, 50)}... Step: ${(await getSession(chatId))?.step}`);
+    console.log('[TG] handleMessage called', {
+        chatId,
+        chatType: message.chat.type,
+        hasPhoto: !!(message.photo),
+        photoCount: message.photo?.length,
+        hasText: !!text,
+        textPreview: text.substring(0, 30),
+    });
 
     let session = await getSession(chatId);
 
@@ -315,12 +317,7 @@ async function startSearch(chatId: number, text: string, nextStep: TelegramStep)
 async function addRestaurantToDb(chatId: number, data: SearchResult, silent = false) {
     const supabase = createAdminClient();
 
-    // Debug logging
-    console.log(`[Telegram] Adding restaurant: "${data.name}"`);
-    console.log(`[Telegram]   Address: ${data.address || '(none)'}`);
-    console.log(`[Telegram]   Coordinates: ${data.lat}, ${data.lng}`);
-    console.log(`[Telegram]   Booking: ${data.bookingLink || '(none)'}`);
-
+    // Debug logging removed for production
     // Check duplicates? (omitted for now, relying on user or DB constraints)
 
     // Derive city - prefer from data.city, then try to extract from address
@@ -445,7 +442,16 @@ export function parseRestaurantMessage(text: string): ParsedRestaurant {
     return { name: name || null, city: city || null, notes: notes || null };
 }
 
-async function sendMessage(chatId: number, text: string, replyMarkup?: any) {
+/** Telegram inline keyboard markup structure */
+interface TelegramReplyMarkup {
+    inline_keyboard: Array<Array<{
+        text: string;
+        callback_data?: string;
+        url?: string;
+    }>>;
+}
+
+async function sendMessage(chatId: number, text: string, replyMarkup?: TelegramReplyMarkup): Promise<void> {
     try {
         await fetch(`${TELEGRAM_API_BASE}/sendMessage`, {
             method: 'POST',

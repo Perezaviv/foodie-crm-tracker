@@ -18,7 +18,6 @@ export function useRestaurants(): UseRestaurantsReturn {
     const refresh = useCallback(async () => {
         setIsLoading(true);
         setError(null);
-        console.log('[useRestaurants] Refreshing restaurant list...');
 
         try {
             const response = await fetch('/api/restaurants');
@@ -29,7 +28,6 @@ export function useRestaurants(): UseRestaurantsReturn {
                 return;
             }
 
-            console.log(`[useRestaurants] Fetched ${data.restaurants?.length || 0} restaurants`);
             setRestaurants(data.restaurants || []);
         } catch (err) {
             console.error('[useRestaurants] Error fetching:', err);

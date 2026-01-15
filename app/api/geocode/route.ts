@@ -12,12 +12,9 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ success: false, error: 'Address required' }, { status: 400 });
         }
 
-        console.log(`[API/Geocode] Request for: "${address}"`);
-
         const coords = await geocodeAddress(address);
 
         if (!coords) {
-            console.log(`[API/Geocode] Failed for: "${address}"`);
             return NextResponse.json({
                 success: false,
                 error: 'Geocoding failed - check server logs for details',
@@ -25,7 +22,6 @@ export async function POST(request: NextRequest) {
             });
         }
 
-        console.log(`[API/Geocode] Success: ${coords.lat}, ${coords.lng}`);
         return NextResponse.json({ success: true, ...coords });
 
     } catch (error) {

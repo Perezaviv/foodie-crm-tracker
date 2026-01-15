@@ -51,18 +51,14 @@ export async function POST(request: NextRequest): Promise<NextResponse<SaveRespo
                     restaurantData.address,
                     restaurantData.city
                 );
-                console.log(`[Save] Geocoding "${restaurantData.name}" with: "${cleanedAddress}"`);
 
                 const coords = await geocodeAddress(cleanedAddress);
                 if (coords) {
                     restaurantData.lat = coords.lat;
                     restaurantData.lng = coords.lng;
-                    console.log(`[Save] Geocoded successfully: ${coords.lat}, ${coords.lng}`);
-                } else {
-                    console.warn(`[Save] Geocoding failed for: "${cleanedAddress}"`);
                 }
             } catch (geoError) {
-                console.warn('[Save] Geocoding error:', geoError);
+                console.warn('[Restaurants API] Geocoding error:', geoError);
                 // Proceed without coords
             }
         }
@@ -112,7 +108,6 @@ export async function POST(request: NextRequest): Promise<NextResponse<SaveRespo
 export async function GET(): Promise<NextResponse> {
     try {
         if (!isSupabaseConfigured()) {
-            console.warn('Supabase not configured, returning demo data');
             return NextResponse.json({
                 success: true,
                 demo: true,

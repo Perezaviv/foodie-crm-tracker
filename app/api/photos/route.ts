@@ -14,8 +14,6 @@ export interface UploadResponse {
 }
 
 export async function POST(request: NextRequest): Promise<NextResponse<UploadResponse>> {
-    console.log('[Photos API] Start upload request');
-
     if (!isSupabaseConfigured()) {
         console.error('[Photos API] Supabase not configured');
         return NextResponse.json({
@@ -28,8 +26,6 @@ export async function POST(request: NextRequest): Promise<NextResponse<UploadRes
         const formData = await request.formData();
         const restaurantId = formData.get('restaurantId') as string;
         const files = formData.getAll('files') as File[];
-
-        console.log(`[Photos API] Received request for restaurant: ${restaurantId}, file count: ${files?.length}`);
 
         if (!restaurantId) {
             return NextResponse.json(
@@ -49,18 +45,14 @@ export async function POST(request: NextRequest): Promise<NextResponse<UploadRes
         const uploadedPhotos: UploadResponse['photos'] = [];
         const errors: string[] = [];
 
-        // Check for Service Role Key availability (debugging aid)
+        // Check for Service Role Key availability
         if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
-            console.warn('⚠️ WARNING: SUPABASE_SERVICE_ROLE_KEY is missing. Photo uploads may fail if RLS is enabled.');
+            console.warn('[Photos API] SUPABASE_SERVICE_ROLE_KEY is missing. Photo uploads may fail if RLS is enabled.');
         }
-
-        console.log('[Photos API] Processing files...');
 
         for (const file of files) {
             // Validate file type
-            console.log(`[Photos API] Processing file: ${file.name}, type: ${file.type}, size: ${file.size}`);
             if (!file.type.startsWith('image/')) {
-                console.warn(`[Photos API] Skipping non-image file: ${file.name}`);
                 continue;
             }
 
@@ -76,8 +68,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<UploadRes
                 const buffer = Buffer.from(arrayBuffer);
 
                 // Upload to Supabase Storage
-                console.log(`[Photos API] Uploading to storage: ${storagePath}`);
-                const { data: uploadData, error: uploadError } = await supabase.storage
+                const { error: uploadError } = await supabase.storage
                     .from('photos')
                     .upload(storagePath, buffer, {
                         contentType: file.type,
@@ -95,8 +86,6 @@ export async function POST(request: NextRequest): Promise<NextResponse<UploadRes
                     .from('photos')
                     .getPublicUrl(storagePath);
 
-                console.log(`[Photos API] Uploaded to storage. Public URL: ${urlData.publicUrl}`);
-
                 // Save to photos table
                 const { data: photoRecord, error: dbError } = await supabase
                     .from('photos')
@@ -109,12 +98,9 @@ export async function POST(request: NextRequest): Promise<NextResponse<UploadRes
 
                 if (dbError) {
                     console.error('[Photos API] Database insert error:', dbError);
-                    // attempt cleanup?
                     errors.push(`Failed to save record for ${file.name}: ${dbError.message}`);
                     continue;
                 }
-
-                console.log(`[Photos API] Database record created: ${photoRecord.id}`);
 
                 uploadedPhotos.push({
                     id: photoRecord.id,
@@ -122,7 +108,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<UploadRes
                     url: urlData.publicUrl,
                 });
             } catch (loopError) {
-                console.error('Error processing file:', file.name, loopError);
+                console.error('[Photos API] Error processing file:', file.name, loopError);
                 errors.push(`Error processing ${file.name}: ${loopError instanceof Error ? loopError.message : String(loopError)}`);
             }
         }
@@ -134,8 +120,6 @@ export async function POST(request: NextRequest): Promise<NextResponse<UploadRes
                 error: errors.length > 0 ? errors.join(', ') : 'No valid photos found',
             });
         }
-
-        console.log(`[Photos API] Successfully uploaded ${uploadedPhotos.length} photos`);
 
         return NextResponse.json({
             success: true,
@@ -207,7 +191,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
         });
 
     } catch (error) {
-        console.error('Get photos error:', error);
+        console.error('[Photos API] Get photos error:', error);
         return NextResponse.json(
             { success: false, error: 'Internal server error', photos: [] },
             { status: 500 }
@@ -237,26 +221,17 @@ export async function DELETE(request: NextRequest): Promise<NextResponse> {
 
         const supabase = createAdminClient();
 
-        console.log(`[Photos API] Deleting photo: ${id}, path: ${storagePath}`);
-
-        // 1. Delete from Database first (to prevent orphaned records if storage fails)
-        // Actually, deleting from storage first is often better to avoid "ghost files",
-        // but foreign keys might be an issue. Let's try storage first.
-
-        // 1. Delete from Storage
+        // Delete from Storage first
         const { error: storageError } = await supabase.storage
             .from('photos')
             .remove([storagePath]);
 
         if (storageError) {
             console.error('[Photos API] Storage delete error:', storageError);
-            // We'll continue to try deleting the DB record even if storage fails, 
-            // or we could return early. Ideally we want both gone.
-            // If the file is already gone, this might error or might success. 
-            // Let's assume we proceed.
+            // Continue to try deleting the DB record
         }
 
-        // 2. Delete from Database
+        // Delete from Database
         const { error: dbError } = await supabase
             .from('photos')
             .delete()
@@ -275,7 +250,7 @@ export async function DELETE(request: NextRequest): Promise<NextResponse> {
         });
 
     } catch (error) {
-        console.error('Delete photo error:', error);
+        console.error('[Photos API] Delete photo error:', error);
         return NextResponse.json(
             { success: false, error: 'Internal server error' },
             { status: 500 }

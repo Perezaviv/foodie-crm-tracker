@@ -1,0 +1,1519 @@
+{
+  "timestamp": "2026-01-14T22:13:05.186Z",
+  "mode": "audit",
+  "summary": {
+    "filesScanned": 37,
+    "issuesFound": 217,
+    "actionsProposed": 217,
+    "actionsExecuted": 0
+  },
+  "audits": {
+    "deadCode": {
+      "filesScanned": 37,
+      "issues": [
+        {
+          "type": "orphaned-file",
+          "file": "lib\\ai\\parser.ts",
+          "message": "File appears to be unused (no imports found)",
+          "action": "review-for-deletion"
+        },
+        {
+          "type": "orphaned-file",
+          "file": "components\\RestaurantDetail.tsx",
+          "message": "File appears to be unused (no imports found)",
+          "action": "review-for-deletion"
+        },
+        {
+          "type": "orphaned-file",
+          "file": "components\\RestaurantList.tsx",
+          "message": "File appears to be unused (no imports found)",
+          "action": "review-for-deletion"
+        },
+        {
+          "type": "orphaned-file",
+          "file": "components\\RestaurantMap.tsx",
+          "message": "File appears to be unused (no imports found)",
+          "action": "review-for-deletion"
+        },
+        {
+          "type": "orphaned-file",
+          "file": "hooks\\useRestaurantParser.ts",
+          "message": "File appears to be unused (no imports found)",
+          "action": "review-for-deletion"
+        },
+        {
+          "type": "orphaned-file",
+          "file": "hooks\\useRestaurants.ts",
+          "message": "File appears to be unused (no imports found)",
+          "action": "review-for-deletion"
+        },
+        {
+          "type": "orphaned-file",
+          "file": "execution\\check_recent.js",
+          "message": "File appears to be unused (no imports found)",
+          "action": "review-for-deletion"
+        },
+        {
+          "type": "orphaned-file",
+          "file": "execution\\code_organizer.js",
+          "message": "File appears to be unused (no imports found)",
+          "action": "review-for-deletion"
+        },
+        {
+          "type": "orphaned-file",
+          "file": "execution\\code_reviewer.js",
+          "message": "File appears to be unused (no imports found)",
+          "action": "review-for-deletion"
+        },
+        {
+          "type": "orphaned-file",
+          "file": "execution\\seed_restaurants.js",
+          "message": "File appears to be unused (no imports found)",
+          "action": "review-for-deletion"
+        },
+        {
+          "type": "orphaned-file",
+          "file": "execution\\telegram_poller.js",
+          "message": "File appears to be unused (no imports found)",
+          "action": "review-for-deletion"
+        },
+        {
+          "type": "orphaned-file",
+          "file": "execution\\test_supabase.js",
+          "message": "File appears to be unused (no imports found)",
+          "action": "review-for-deletion"
+        },
+        {
+          "type": "orphaned-file",
+          "file": "execution\\test_supabase_hebrew.js",
+          "message": "File appears to be unused (no imports found)",
+          "action": "review-for-deletion"
+        },
+        {
+          "type": "orphaned-file",
+          "file": "execution\\verify_api.js",
+          "message": "File appears to be unused (no imports found)",
+          "action": "review-for-deletion"
+        },
+        {
+          "type": "orphaned-file",
+          "file": "execution\\verify_db.js",
+          "message": "File appears to be unused (no imports found)",
+          "action": "review-for-deletion"
+        },
+        {
+          "type": "commented-code",
+          "file": "lib\\telegram-actions.ts",
+          "line": 117,
+          "message": "Commented-out code block (8 lines)",
+          "action": "review-for-removal"
+        },
+        {
+          "type": "commented-code",
+          "file": "components\\RestaurantMap.tsx",
+          "line": 237,
+          "message": "Commented-out code block (5 lines)",
+          "action": "review-for-removal"
+        },
+        {
+          "type": "unresolved-todo",
+          "file": "execution\\code_organizer.js",
+          "line": 252,
+          "message": "// Find TODO/FIXME",
+          "action": "resolve-or-remove"
+        },
+        {
+          "type": "unresolved-todo",
+          "file": "execution\\code_organizer.js",
+          "line": 259,
+          "message": "if (lines[i].match(/\\b(TODO|FIXME|HACK|XXX)\\b/i)) {",
+          "action": "resolve-or-remove"
+        },
+        {
+          "type": "unresolved-todo",
+          "file": "execution\\code_organizer.js",
+          "line": 261,
+          "message": "type: 'unresolved-todo',",
+          "action": "resolve-or-remove"
+        },
+        {
+          "type": "unresolved-todo",
+          "file": "execution\\code_organizer.js",
+          "line": 604,
+          "message": "const todos = report.audits.deadCode.issues.filter(i => i.type === 'unresolved-todo');",
+          "action": "resolve-or-remove"
+        }
+      ]
+    },
+    "dependencies": {
+      "totalDependencies": 19,
+      "totalDevDependencies": 18,
+      "issues": [
+        {
+          "type": "unused-dependency",
+          "package": "@google/generative-ai",
+          "message": "Dependency appears unused in source files",
+          "action": "verify-and-remove"
+        },
+        {
+          "type": "unused-dependency",
+          "package": "@googlemaps/markerclusterer",
+          "message": "Dependency appears unused in source files",
+          "action": "verify-and-remove"
+        },
+        {
+          "type": "unused-dependency",
+          "package": "@react-google-maps/api",
+          "message": "Dependency appears unused in source files",
+          "action": "verify-and-remove"
+        },
+        {
+          "type": "unused-dependency",
+          "package": "@supabase/supabase-js",
+          "message": "Dependency appears unused in source files",
+          "action": "verify-and-remove"
+        },
+        {
+          "type": "unused-dependency",
+          "package": "@types/canvas-confetti",
+          "message": "Dependency appears unused in source files",
+          "action": "verify-and-remove"
+        },
+        {
+          "type": "unused-dependency",
+          "package": "ai",
+          "message": "Dependency appears unused in source files",
+          "action": "verify-and-remove"
+        },
+        {
+          "type": "unused-dependency",
+          "package": "canvas-confetti",
+          "message": "Dependency appears unused in source files",
+          "action": "verify-and-remove"
+        },
+        {
+          "type": "unused-dependency",
+          "package": "clsx",
+          "message": "Dependency appears unused in source files",
+          "action": "verify-and-remove"
+        },
+        {
+          "type": "unused-dependency",
+          "package": "dotenv",
+          "message": "Dependency appears unused in source files",
+          "action": "verify-and-remove"
+        },
+        {
+          "type": "unused-dependency",
+          "package": "framer-motion",
+          "message": "Dependency appears unused in source files",
+          "action": "verify-and-remove"
+        },
+        {
+          "type": "unused-dependency",
+          "package": "lucide-react",
+          "message": "Dependency appears unused in source files",
+          "action": "verify-and-remove"
+        },
+        {
+          "type": "unused-dependency",
+          "package": "next",
+          "message": "Dependency appears unused in source files",
+          "action": "verify-and-remove"
+        },
+        {
+          "type": "unused-dependency",
+          "package": "openai",
+          "message": "Dependency appears unused in source files",
+          "action": "verify-and-remove"
+        },
+        {
+          "type": "unused-dependency",
+          "package": "react",
+          "message": "Dependency appears unused in source files",
+          "action": "verify-and-remove"
+        },
+        {
+          "type": "unused-dependency",
+          "package": "react-dom",
+          "message": "Dependency appears unused in source files",
+          "action": "verify-and-remove"
+        },
+        {
+          "type": "unused-dependency",
+          "package": "sonner",
+          "message": "Dependency appears unused in source files",
+          "action": "verify-and-remove"
+        },
+        {
+          "type": "unused-dependency",
+          "package": "tailwind-merge",
+          "message": "Dependency appears unused in source files",
+          "action": "verify-and-remove"
+        },
+        {
+          "type": "unused-dependency",
+          "package": "telegraf",
+          "message": "Dependency appears unused in source files",
+          "action": "verify-and-remove"
+        },
+        {
+          "type": "unused-dependency",
+          "package": "vaul",
+          "message": "Dependency appears unused in source files",
+          "action": "verify-and-remove"
+        }
+      ]
+    },
+    "structure": {
+      "issues": [
+        {
+          "type": "missing-index",
+          "file": "lib/index.ts",
+          "message": "Directory missing index file for exports",
+          "action": "create"
+        }
+      ]
+    },
+    "artifacts": {
+      "issues": [
+        {
+          "type": "console-log",
+          "file": "app\\api\\geocode\\route.ts",
+          "line": 15,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "app\\api\\geocode\\route.ts",
+          "line": 20,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "app\\api\\geocode\\route.ts",
+          "line": 28,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "app\\api\\photos\\route.ts",
+          "line": 17,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "app\\api\\photos\\route.ts",
+          "line": 32,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "app\\api\\photos\\route.ts",
+          "line": 57,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "app\\api\\photos\\route.ts",
+          "line": 61,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "app\\api\\photos\\route.ts",
+          "line": 79,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "app\\api\\photos\\route.ts",
+          "line": 98,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "app\\api\\photos\\route.ts",
+          "line": 117,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "app\\api\\photos\\route.ts",
+          "line": 138,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "app\\api\\photos\\route.ts",
+          "line": 240,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "app\\api\\restaurants\\route.ts",
+          "line": 54,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "app\\api\\restaurants\\route.ts",
+          "line": 60,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "lib\\ai\\search.ts",
+          "line": 82,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "lib\\ai\\search.ts",
+          "line": 91,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "lib\\ai\\search.ts",
+          "line": 98,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "lib\\ai\\search.ts",
+          "line": 218,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "lib\\ai\\search.ts",
+          "line": 245,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "lib\\ai\\search.ts",
+          "line": 354,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "lib\\ai\\search.ts",
+          "line": 355,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "lib\\ai\\search.ts",
+          "line": 370,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "lib\\ai\\search.ts",
+          "line": 378,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "lib\\telegram-actions.ts",
+          "line": 143,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "lib\\telegram-actions.ts",
+          "line": 319,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "lib\\telegram-actions.ts",
+          "line": 320,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "lib\\telegram-actions.ts",
+          "line": 321,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "lib\\telegram-actions.ts",
+          "line": 322,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "components\\PhotoUpload.tsx",
+          "line": 28,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "components\\PhotoUpload.tsx",
+          "line": 33,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "components\\PhotoUpload.tsx",
+          "line": 52,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "components\\RestaurantList.tsx",
+          "line": 32,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "components\\RestaurantMap.tsx",
+          "line": 92,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "components\\RestaurantMap.tsx",
+          "line": 93,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "components\\RestaurantMap.tsx",
+          "line": 94,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "components\\RestaurantMap.tsx",
+          "line": 95,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "components\\RestaurantMap.tsx",
+          "line": 116,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "components\\RestaurantMap.tsx",
+          "line": 610,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "components\\RestaurantMap.tsx",
+          "line": 619,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "components\\RestaurantMap.tsx",
+          "line": 623,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "components\\RestaurantMap.tsx",
+          "line": 627,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "components\\RestaurantMap.tsx",
+          "line": 638,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "hooks\\useRestaurantParser.ts",
+          "line": 109,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "hooks\\useRestaurantParser.ts",
+          "line": 112,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "hooks\\useRestaurantParser.ts",
+          "line": 120,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "hooks\\useRestaurantParser.ts",
+          "line": 128,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "hooks\\useRestaurants.ts",
+          "line": 21,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "hooks\\useRestaurants.ts",
+          "line": 32,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "execution\\check_recent.js",
+          "line": 11,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "execution\\check_recent.js",
+          "line": 21,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "execution\\check_recent.js",
+          "line": 22,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "execution\\code_organizer.js",
+          "line": 52,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "execution\\code_organizer.js",
+          "line": 103,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "execution\\code_organizer.js",
+          "line": 118,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "execution\\code_organizer.js",
+          "line": 271,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "execution\\code_organizer.js",
+          "line": 285,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "execution\\code_organizer.js",
+          "line": 289,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "execution\\code_organizer.js",
+          "line": 322,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "execution\\code_organizer.js",
+          "line": 325,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "execution\\code_organizer.js",
+          "line": 344,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "execution\\code_organizer.js",
+          "line": 359,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "execution\\code_organizer.js",
+          "line": 412,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "execution\\code_organizer.js",
+          "line": 425,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "debugger",
+          "file": "execution\\code_organizer.js",
+          "line": 460,
+          "message": "debugger statement found",
+          "action": "remove"
+        },
+        {
+          "type": "debugger",
+          "file": "execution\\code_organizer.js",
+          "line": 463,
+          "message": "debugger statement found",
+          "action": "remove"
+        },
+        {
+          "type": "debugger",
+          "file": "execution\\code_organizer.js",
+          "line": 466,
+          "message": "debugger statement found",
+          "action": "remove"
+        },
+        {
+          "type": "console-log",
+          "file": "execution\\code_organizer.js",
+          "line": 494,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "execution\\code_organizer.js",
+          "line": 507,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "execution\\code_organizer.js",
+          "line": 546,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "execution\\code_organizer.js",
+          "line": 736,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "execution\\code_organizer.js",
+          "line": 737,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "execution\\code_organizer.js",
+          "line": 738,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "execution\\code_organizer.js",
+          "line": 745,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "execution\\code_organizer.js",
+          "line": 746,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "execution\\code_organizer.js",
+          "line": 751,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "execution\\code_organizer.js",
+          "line": 774,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "execution\\code_organizer.js",
+          "line": 786,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "execution\\code_organizer.js",
+          "line": 790,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "execution\\code_organizer.js",
+          "line": 794,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "execution\\code_organizer.js",
+          "line": 797,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "execution\\code_organizer.js",
+          "line": 800,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "execution\\code_organizer.js",
+          "line": 801,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "execution\\code_organizer.js",
+          "line": 802,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "execution\\code_organizer.js",
+          "line": 803,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "execution\\code_organizer.js",
+          "line": 804,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "execution\\code_organizer.js",
+          "line": 805,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "execution\\code_organizer.js",
+          "line": 806,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "execution\\code_organizer.js",
+          "line": 807,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "execution\\code_organizer.js",
+          "line": 808,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "execution\\code_reviewer.js",
+          "line": 49,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "execution\\code_reviewer.js",
+          "line": 91,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "execution\\code_reviewer.js",
+          "line": 96,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "execution\\code_reviewer.js",
+          "line": 136,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "execution\\code_reviewer.js",
+          "line": 142,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "execution\\code_reviewer.js",
+          "line": 145,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "execution\\code_reviewer.js",
+          "line": 167,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "execution\\code_reviewer.js",
+          "line": 189,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "execution\\code_reviewer.js",
+          "line": 201,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "execution\\code_reviewer.js",
+          "line": 271,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "execution\\code_reviewer.js",
+          "line": 286,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "execution\\code_reviewer.js",
+          "line": 297,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "execution\\code_reviewer.js",
+          "line": 337,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "execution\\code_reviewer.js",
+          "line": 354,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "execution\\code_reviewer.js",
+          "line": 357,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "execution\\code_reviewer.js",
+          "line": 368,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "execution\\code_reviewer.js",
+          "line": 369,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "execution\\code_reviewer.js",
+          "line": 370,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "execution\\code_reviewer.js",
+          "line": 371,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "execution\\code_reviewer.js",
+          "line": 386,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "execution\\code_reviewer.js",
+          "line": 395,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "execution\\code_reviewer.js",
+          "line": 437,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "execution\\code_reviewer.js",
+          "line": 450,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "execution\\code_reviewer.js",
+          "line": 508,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "execution\\code_reviewer.js",
+          "line": 633,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "execution\\code_reviewer.js",
+          "line": 634,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "execution\\code_reviewer.js",
+          "line": 635,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "execution\\code_reviewer.js",
+          "line": 640,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "execution\\code_reviewer.js",
+          "line": 641,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "execution\\code_reviewer.js",
+          "line": 666,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "execution\\code_reviewer.js",
+          "line": 671,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "execution\\code_reviewer.js",
+          "line": 675,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "execution\\code_reviewer.js",
+          "line": 679,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "execution\\code_reviewer.js",
+          "line": 683,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "execution\\code_reviewer.js",
+          "line": 684,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "execution\\code_reviewer.js",
+          "line": 685,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "execution\\code_reviewer.js",
+          "line": 686,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "execution\\code_reviewer.js",
+          "line": 687,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "execution\\code_reviewer.js",
+          "line": 688,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "execution\\code_reviewer.js",
+          "line": 689,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "execution\\seed_restaurants.js",
+          "line": 114,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "execution\\seed_restaurants.js",
+          "line": 126,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "execution\\seed_restaurants.js",
+          "line": 128,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "execution\\seed_restaurants.js",
+          "line": 140,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "execution\\seed_restaurants.js",
+          "line": 141,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "execution\\telegram_poller.js",
+          "line": 224,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "execution\\telegram_poller.js",
+          "line": 302,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "execution\\telegram_poller.js",
+          "line": 373,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "execution\\telegram_poller.js",
+          "line": 375,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "execution\\telegram_poller.js",
+          "line": 398,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "execution\\telegram_poller.js",
+          "line": 402,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "execution\\telegram_poller.js",
+          "line": 408,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "execution\\telegram_poller.js",
+          "line": 413,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "execution\\telegram_poller.js",
+          "line": 417,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "execution\\telegram_poller.js",
+          "line": 434,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "execution\\telegram_poller.js",
+          "line": 449,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "execution\\telegram_poller.js",
+          "line": 464,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "execution\\telegram_poller.js",
+          "line": 552,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "execution\\telegram_poller.js",
+          "line": 553,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "execution\\test_supabase.js",
+          "line": 8,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "execution\\test_supabase.js",
+          "line": 9,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "execution\\test_supabase.js",
+          "line": 14,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "execution\\test_supabase.js",
+          "line": 23,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "execution\\test_supabase.js",
+          "line": 24,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "execution\\test_supabase.js",
+          "line": 27,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "execution\\test_supabase.js",
+          "line": 41,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "execution\\test_supabase_hebrew.js",
+          "line": 11,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "execution\\test_supabase_hebrew.js",
+          "line": 22,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "execution\\test_supabase_hebrew.js",
+          "line": 33,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "execution\\verify_api.js",
+          "line": 8,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "execution\\verify_api.js",
+          "line": 28,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "execution\\verify_api.js",
+          "line": 31,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "execution\\verify_api.js",
+          "line": 33,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "execution\\verify_api.js",
+          "line": 37,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "execution\\verify_api.js",
+          "line": 40,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "execution\\verify_api.js",
+          "line": 42,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "execution\\verify_api.js",
+          "line": 46,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "execution\\verify_api.js",
+          "line": 54,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "execution\\verify_api.js",
+          "line": 59,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "execution\\verify_db.js",
+          "line": 10,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "execution\\verify_db.js",
+          "line": 23,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "execution\\verify_db.js",
+          "line": 33,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "execution\\verify_db.js",
+          "line": 37,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "execution\\verify_db.js",
+          "line": 47,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "execution\\verify_db.js",
+          "line": 51,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        },
+        {
+          "type": "console-log",
+          "file": "execution\\verify_db.js",
+          "line": 61,
+          "message": "console.log statement (consider removing for production)",
+          "action": "remove-or-replace-with-logger"
+        }
+      ]
+    },
+    "production": {
+      "issues": [
+        {
+          "type": "config",
+          "file": "next.config.ts",
+          "message": "Consider enabling reactStrictMode for production",
+          "action": "add-config"
+        }
+      ]
+    }
+  },
+  "proposedActions": []
+}

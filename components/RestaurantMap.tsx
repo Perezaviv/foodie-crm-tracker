@@ -87,19 +87,12 @@ export function RestaurantMap({ restaurants, isLoading = false, onRestaurantClic
 
     const restaurantsWithCoords = restaurants.filter(r => r.lat !== null && r.lng !== null && typeof r.lat === 'number' && typeof r.lng === 'number');
 
-    // Debug logging for map loading and restaurant data
+    // Log warnings only when there's an actual issue
     useEffect(() => {
-        console.log('[RestaurantMap] API Key present:', !!process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY);
-        console.log('[RestaurantMap] isLoaded:', isLoaded, 'loadError:', loadError?.message || 'none');
-        console.log('[RestaurantMap] Total restaurants:', restaurants.length);
-        console.log('[RestaurantMap] With coordinates:', restaurantsWithCoords.length);
-
         if (restaurants.length > 0 && restaurantsWithCoords.length === 0) {
-            console.warn('[RestaurantMap] All restaurants missing coordinates! Sample:',
-                restaurants.slice(0, 3).map(r => ({ name: r.name, lat: r.lat, lng: r.lng, address: r.address }))
-            );
+            console.warn('[RestaurantMap] All restaurants missing coordinates');
         }
-    }, [isLoaded, loadError, restaurants, restaurantsWithCoords]);
+    }, [restaurants, restaurantsWithCoords]);
 
     // Get user's location on mount
     useEffect(() => {
@@ -113,7 +106,7 @@ export function RestaurantMap({ restaurants, isLoading = false, onRestaurantClic
                     });
                 },
                 (error) => {
-                    console.log('Geolocation error:', error.message);
+                    // Silently handle geolocation errors
                 },
                 { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
             );
@@ -230,17 +223,6 @@ export function RestaurantMap({ restaurants, isLoading = false, onRestaurantClic
             }, 100); // Wait 100ms after zooming stops
         });
     }, [getCenter, getZoom, restaurantsWithCoords.length]);
-
-    // Re-center only when restaurant count changes meaningfully
-    useEffect(() => {
-        if (mapRef.current && restaurantsWithCoords.length > 0 && initialCenterRef.current) {
-            // Only re-center automatically if this is the first time we have restaurants
-            // or if the length changed (meaning one was added/deleted)
-            // But actually, maybe we should ONLY do it on first load and manual "Locate Me"
-            // Let's decide: if the length changes, we might want to pan to include the new one.
-            // For now, let's keep it minimal to satisfy the user's "stay in the same place" request.
-        }
-    }, [restaurantsWithCoords.length]);
 
     // Setup marker clustering
     useEffect(() => {
@@ -607,24 +589,17 @@ export function RestaurantMap({ restaurants, isLoading = false, onRestaurantClic
 
                                         try {
                                             const missing = restaurants.filter(r => r.lat === null || r.lng === null);
-                                            console.log(`[Auto-Fix] Found ${missing.length} restaurants missing location`);
                                             let fixed = 0;
 
                                             for (const rest of missing) {
                                                 let geocodeQuery: string;
 
                                                 if (rest.address) {
-                                                    // Has address - use it
                                                     geocodeQuery = cleanAddressForGeocoding(rest.address, rest.city);
-                                                    console.log(`[Auto-Fix] Trying geocode for "${rest.name}" with address: "${geocodeQuery}"`);
                                                 } else if (rest.city) {
-                                                    // No address but has city - try name + city
                                                     geocodeQuery = `${rest.name}, ${rest.city}, Israel`;
-                                                    console.log(`[Auto-Fix] No address for "${rest.name}", trying name+city: "${geocodeQuery}"`);
                                                 } else {
-                                                    // No address and no city - try name + generic Israel
                                                     geocodeQuery = `${rest.name} restaurant, Israel`;
-                                                    console.log(`[Auto-Fix] No address/city for "${rest.name}", trying name only: "${geocodeQuery}"`);
                                                 }
 
                                                 const res = await fetch('/api/geocode', {
@@ -635,7 +610,6 @@ export function RestaurantMap({ restaurants, isLoading = false, onRestaurantClic
 
                                                 const coords = await res.json();
                                                 if (coords.success) {
-                                                    console.log(`[Auto-Fix] Success for "${rest.name}": ${coords.lat}, ${coords.lng}. Updating DB...`);
                                                     const patchRes = await fetch(`/api/restaurants/${rest.id}`, {
                                                         method: 'PATCH',
                                                         headers: { 'Content-Type': 'application/json' },

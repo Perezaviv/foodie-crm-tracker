@@ -1,0 +1,745 @@
+{
+  "timestamp": "2026-01-15T06:42:57.737Z",
+  "summary": {
+    "critical": 2,
+    "warning": 30,
+    "info": 72
+  },
+  "checks": {
+    "static": {
+      "passed": true,
+      "errorCount": 0,
+      "warningCount": 0,
+      "issues": []
+    },
+    "quality": {
+      "filesAnalyzed": 28,
+      "issues": [
+        {
+          "type": "info",
+          "file": "app\\api\\geocode\\route.ts",
+          "message": "File has deeply nested code (8 levels)",
+          "category": "nesting"
+        },
+        {
+          "type": "warning",
+          "file": "app\\api\\parse\\route.ts",
+          "line": 25,
+          "message": "Function 'POST' has 86 lines (threshold: 50)",
+          "category": "function-length"
+        },
+        {
+          "type": "info",
+          "file": "app\\api\\parse\\route.ts",
+          "message": "File has deeply nested code (10 levels)",
+          "category": "nesting"
+        },
+        {
+          "type": "warning",
+          "file": "app\\api\\photos\\route.ts",
+          "line": 16,
+          "message": "Function 'POST' has 121 lines (threshold: 50)",
+          "category": "function-length"
+        },
+        {
+          "type": "warning",
+          "file": "app\\api\\photos\\route.ts",
+          "line": 139,
+          "message": "Function 'GET' has 62 lines (threshold: 50)",
+          "category": "function-length"
+        },
+        {
+          "type": "warning",
+          "file": "app\\api\\photos\\route.ts",
+          "line": 202,
+          "message": "Function 'DELETE' has 58 lines (threshold: 50)",
+          "category": "function-length"
+        },
+        {
+          "type": "info",
+          "file": "app\\api\\photos\\route.ts",
+          "message": "File has deeply nested code (12 levels)",
+          "category": "nesting"
+        },
+        {
+          "type": "warning",
+          "file": "app\\api\\restaurants\\route.ts",
+          "line": 32,
+          "message": "Function 'POST' has 75 lines (threshold: 50)",
+          "category": "function-length"
+        },
+        {
+          "type": "warning",
+          "file": "app\\api\\restaurants\\route.ts",
+          "line": 108,
+          "message": "Function 'GET' has 55 lines (threshold: 50)",
+          "category": "function-length"
+        },
+        {
+          "type": "info",
+          "file": "app\\api\\restaurants\\route.ts",
+          "message": "File has deeply nested code (12 levels)",
+          "category": "nesting"
+        },
+        {
+          "type": "info",
+          "file": "app\\api\\restaurants\\[id]\\route.ts",
+          "message": "File has deeply nested code (8 levels)",
+          "category": "nesting"
+        },
+        {
+          "type": "info",
+          "file": "app\\layout.tsx",
+          "message": "File has deeply nested code (6 levels)",
+          "category": "nesting"
+        },
+        {
+          "type": "warning",
+          "file": "app\\page.tsx",
+          "line": 16,
+          "message": "Function 'Home' has 164 lines (threshold: 50)",
+          "category": "function-length"
+        },
+        {
+          "type": "warning",
+          "file": "app\\page.tsx",
+          "line": 215,
+          "message": "Function 'AddDrawer' has 227 lines (threshold: 50)",
+          "category": "function-length"
+        },
+        {
+          "type": "info",
+          "file": "app\\page.tsx",
+          "message": "File has deeply nested code (15 levels)",
+          "category": "nesting"
+        },
+        {
+          "type": "warning",
+          "file": "lib\\ai\\parser.ts",
+          "line": 40,
+          "message": "Function 'extractRestaurantInfo' has 74 lines (threshold: 50)",
+          "category": "function-length"
+        },
+        {
+          "type": "info",
+          "file": "lib\\ai\\parser.ts",
+          "message": "File has deeply nested code (8 levels)",
+          "category": "nesting"
+        },
+        {
+          "type": "warning",
+          "file": "lib\\ai\\search.ts",
+          "line": 33,
+          "message": "Function 'searchRestaurant' has 81 lines (threshold: 50)",
+          "category": "function-length"
+        },
+        {
+          "type": "warning",
+          "file": "lib\\ai\\search.ts",
+          "line": 118,
+          "message": "Function 'parseSearchResults' has 123 lines (threshold: 50)",
+          "category": "function-length"
+        },
+        {
+          "type": "info",
+          "file": "lib\\ai\\search.ts",
+          "message": "File has deeply nested code (12 levels)",
+          "category": "nesting"
+        },
+        {
+          "type": "info",
+          "file": "lib\\geocoding.ts",
+          "message": "File has deeply nested code (6 levels)",
+          "category": "nesting"
+        },
+        {
+          "type": "info",
+          "file": "lib\\supabase.ts",
+          "message": "File has deeply nested code (6 levels)",
+          "category": "nesting"
+        },
+        {
+          "type": "warning",
+          "file": "lib\\telegram-actions.ts",
+          "line": 76,
+          "message": "Function 'handleCallbackQuery' has 51 lines (threshold: 50)",
+          "category": "function-length"
+        },
+        {
+          "type": "warning",
+          "file": "lib\\telegram-actions.ts",
+          "line": 128,
+          "message": "Function 'handleMessage' has 86 lines (threshold: 50)",
+          "category": "function-length"
+        },
+        {
+          "type": "warning",
+          "file": "lib\\telegram-actions.ts",
+          "line": 226,
+          "message": "Function 'startSearch' has 76 lines (threshold: 50)",
+          "category": "function-length"
+        },
+        {
+          "type": "warning",
+          "file": "lib\\telegram-actions.ts",
+          "line": 303,
+          "message": "Function 'addRestaurantToDb' has 52 lines (threshold: 50)",
+          "category": "function-length"
+        },
+        {
+          "type": "warning",
+          "file": "lib\\telegram-actions.ts",
+          "line": 356,
+          "message": "Function 'processPendingPhotos' has 51 lines (threshold: 50)",
+          "category": "function-length"
+        },
+        {
+          "type": "info",
+          "file": "lib\\telegram-actions.ts",
+          "message": "File has deeply nested code (10 levels)",
+          "category": "nesting"
+        },
+        {
+          "type": "info",
+          "file": "lib\\telegram-session.ts",
+          "message": "File has deeply nested code (6 levels)",
+          "category": "nesting"
+        },
+        {
+          "type": "info",
+          "file": "lib\\types.ts",
+          "message": "File has deeply nested code (10 levels)",
+          "category": "nesting"
+        },
+        {
+          "type": "info",
+          "file": "components\\GoogleMapsProvider.tsx",
+          "message": "File has deeply nested code (6 levels)",
+          "category": "nesting"
+        },
+        {
+          "type": "warning",
+          "file": "components\\PhotoGallery.tsx",
+          "line": 17,
+          "message": "Function 'PhotoGallery' has 182 lines (threshold: 50)",
+          "category": "function-length"
+        },
+        {
+          "type": "info",
+          "file": "components\\PhotoGallery.tsx",
+          "message": "File has deeply nested code (16 levels)",
+          "category": "nesting"
+        },
+        {
+          "type": "warning",
+          "file": "components\\PhotoUpload.tsx",
+          "line": 19,
+          "message": "Function 'PhotoUpload' has 218 lines (threshold: 50)",
+          "category": "function-length"
+        },
+        {
+          "type": "info",
+          "file": "components\\PhotoUpload.tsx",
+          "message": "File has deeply nested code (22 levels)",
+          "category": "nesting"
+        },
+        {
+          "type": "warning",
+          "file": "components\\RestaurantDetail.tsx",
+          "line": 18,
+          "message": "Function 'RestaurantDetail' has 280 lines (threshold: 50)",
+          "category": "function-length"
+        },
+        {
+          "type": "info",
+          "file": "components\\RestaurantDetail.tsx",
+          "message": "File has deeply nested code (38 levels)",
+          "category": "nesting"
+        },
+        {
+          "type": "warning",
+          "file": "components\\RestaurantList.tsx",
+          "line": 31,
+          "message": "Function 'RestaurantList' has 203 lines (threshold: 50)",
+          "category": "function-length"
+        },
+        {
+          "type": "warning",
+          "file": "components\\RestaurantList.tsx",
+          "line": 235,
+          "message": "Function 'RestaurantCard' has 77 lines (threshold: 50)",
+          "category": "function-length"
+        },
+        {
+          "type": "info",
+          "file": "components\\RestaurantList.tsx",
+          "message": "File has deeply nested code (22 levels)",
+          "category": "nesting"
+        },
+        {
+          "type": "warning",
+          "file": "components\\RestaurantMap.tsx",
+          "message": "File has 668 lines (threshold: 500)",
+          "category": "file-length"
+        },
+        {
+          "type": "warning",
+          "file": "components\\RestaurantMap.tsx",
+          "line": 62,
+          "message": "Function 'RestaurantMap' has 606 lines (threshold: 50)",
+          "category": "function-length"
+        },
+        {
+          "type": "info",
+          "file": "components\\RestaurantMap.tsx",
+          "message": "File has deeply nested code (30 levels)",
+          "category": "nesting"
+        },
+        {
+          "type": "warning",
+          "file": "hooks\\useRestaurantParser.ts",
+          "line": 34,
+          "message": "Function 'useRestaurantParser' has 144 lines (threshold: 50)",
+          "category": "function-length"
+        },
+        {
+          "type": "info",
+          "file": "hooks\\useRestaurantParser.ts",
+          "message": "File has deeply nested code (16 levels)",
+          "category": "nesting"
+        },
+        {
+          "type": "info",
+          "file": "hooks\\useRestaurants.ts",
+          "message": "File has deeply nested code (8 levels)",
+          "category": "nesting"
+        }
+      ]
+    },
+    "types": {
+      "filesAnalyzed": 28,
+      "anyUsageCount": 0,
+      "missingReturnTypes": 3,
+      "issues": [
+        {
+          "type": "info",
+          "file": "app\\api\\health\\route.ts",
+          "line": 6,
+          "message": "Function missing explicit return type",
+          "category": "missing-return-type"
+        },
+        {
+          "type": "info",
+          "file": "app\\page.tsx",
+          "line": 16,
+          "message": "Function missing explicit return type",
+          "category": "missing-return-type"
+        },
+        {
+          "type": "info",
+          "file": "components\\GoogleMapsProvider.tsx",
+          "line": 32,
+          "message": "Function missing explicit return type",
+          "category": "missing-return-type"
+        }
+      ]
+    },
+    "coverage": {
+      "skipped": true,
+      "reason": "Tests failed or coverage not available"
+    },
+    "performance": {
+      "issues": [
+        {
+          "type": "info",
+          "file": "app\\page.tsx",
+          "line": 97,
+          "message": "Inline object/array in JSX prop (consider useMemo)",
+          "category": "memoization"
+        },
+        {
+          "type": "info",
+          "file": "app\\page.tsx",
+          "line": 98,
+          "message": "Inline object/array in JSX prop (consider useMemo)",
+          "category": "memoization"
+        },
+        {
+          "type": "info",
+          "file": "app\\page.tsx",
+          "line": 99,
+          "message": "Inline object/array in JSX prop (consider useMemo)",
+          "category": "memoization"
+        },
+        {
+          "type": "info",
+          "file": "app\\page.tsx",
+          "line": 112,
+          "message": "Inline object/array in JSX prop (consider useMemo)",
+          "category": "memoization"
+        },
+        {
+          "type": "info",
+          "file": "app\\page.tsx",
+          "line": 113,
+          "message": "Inline object/array in JSX prop (consider useMemo)",
+          "category": "memoization"
+        },
+        {
+          "type": "info",
+          "file": "app\\page.tsx",
+          "line": 114,
+          "message": "Inline object/array in JSX prop (consider useMemo)",
+          "category": "memoization"
+        },
+        {
+          "type": "info",
+          "file": "components\\GoogleMapsProvider.tsx",
+          "line": 26,
+          "message": "Inline object/array in JSX prop (consider useMemo)",
+          "category": "memoization"
+        },
+        {
+          "type": "info",
+          "file": "components\\RestaurantList.tsx",
+          "line": 92,
+          "message": "Inline object/array in JSX prop (consider useMemo)",
+          "category": "memoization"
+        },
+        {
+          "type": "info",
+          "file": "components\\RestaurantList.tsx",
+          "line": 93,
+          "message": "Inline object/array in JSX prop (consider useMemo)",
+          "category": "memoization"
+        },
+        {
+          "type": "info",
+          "file": "components\\RestaurantList.tsx",
+          "line": 165,
+          "message": "Inline object/array in JSX prop (consider useMemo)",
+          "category": "memoization"
+        },
+        {
+          "type": "info",
+          "file": "components\\RestaurantList.tsx",
+          "line": 166,
+          "message": "Inline object/array in JSX prop (consider useMemo)",
+          "category": "memoization"
+        },
+        {
+          "type": "info",
+          "file": "components\\RestaurantList.tsx",
+          "line": 167,
+          "message": "Inline object/array in JSX prop (consider useMemo)",
+          "category": "memoization"
+        },
+        {
+          "type": "info",
+          "file": "components\\RestaurantList.tsx",
+          "line": 211,
+          "message": "Inline object/array in JSX prop (consider useMemo)",
+          "category": "memoization"
+        },
+        {
+          "type": "info",
+          "file": "components\\RestaurantList.tsx",
+          "line": 212,
+          "message": "Inline object/array in JSX prop (consider useMemo)",
+          "category": "memoization"
+        },
+        {
+          "type": "info",
+          "file": "components\\RestaurantList.tsx",
+          "line": 241,
+          "message": "Inline object/array in JSX prop (consider useMemo)",
+          "category": "memoization"
+        },
+        {
+          "type": "info",
+          "file": "components\\RestaurantList.tsx",
+          "line": 242,
+          "message": "Inline object/array in JSX prop (consider useMemo)",
+          "category": "memoization"
+        },
+        {
+          "type": "info",
+          "file": "components\\RestaurantList.tsx",
+          "line": 282,
+          "message": "Inline object/array in JSX prop (consider useMemo)",
+          "category": "memoization"
+        },
+        {
+          "type": "info",
+          "file": "components\\RestaurantList.tsx",
+          "line": 283,
+          "message": "Inline object/array in JSX prop (consider useMemo)",
+          "category": "memoization"
+        },
+        {
+          "type": "info",
+          "file": "components\\RestaurantList.tsx",
+          "line": 299,
+          "message": "Inline object/array in JSX prop (consider useMemo)",
+          "category": "memoization"
+        },
+        {
+          "type": "info",
+          "file": "components\\RestaurantList.tsx",
+          "line": 300,
+          "message": "Inline object/array in JSX prop (consider useMemo)",
+          "category": "memoization"
+        },
+        {
+          "type": "info",
+          "file": "components\\RestaurantMap.tsx",
+          "line": 328,
+          "message": "Inline object/array in JSX prop (consider useMemo)",
+          "category": "memoization"
+        },
+        {
+          "type": "info",
+          "file": "components\\RestaurantMap.tsx",
+          "line": 416,
+          "message": "Inline object/array in JSX prop (consider useMemo)",
+          "category": "memoization"
+        },
+        {
+          "type": "info",
+          "file": "components\\RestaurantMap.tsx",
+          "line": 431,
+          "message": "Inline object/array in JSX prop (consider useMemo)",
+          "category": "memoization"
+        },
+        {
+          "type": "info",
+          "file": "components\\RestaurantMap.tsx",
+          "line": 433,
+          "message": "Inline object/array in JSX prop (consider useMemo)",
+          "category": "memoization"
+        },
+        {
+          "type": "info",
+          "file": "components\\RestaurantMap.tsx",
+          "line": 438,
+          "message": "Inline object/array in JSX prop (consider useMemo)",
+          "category": "memoization"
+        },
+        {
+          "type": "info",
+          "file": "components\\RestaurantMap.tsx",
+          "line": 441,
+          "message": "Inline object/array in JSX prop (consider useMemo)",
+          "category": "memoization"
+        },
+        {
+          "type": "info",
+          "file": "components\\RestaurantMap.tsx",
+          "line": 442,
+          "message": "Inline object/array in JSX prop (consider useMemo)",
+          "category": "memoization"
+        },
+        {
+          "type": "info",
+          "file": "components\\RestaurantMap.tsx",
+          "line": 448,
+          "message": "Inline object/array in JSX prop (consider useMemo)",
+          "category": "memoization"
+        },
+        {
+          "type": "info",
+          "file": "components\\RestaurantMap.tsx",
+          "line": 459,
+          "message": "Inline object/array in JSX prop (consider useMemo)",
+          "category": "memoization"
+        },
+        {
+          "type": "info",
+          "file": "components\\RestaurantMap.tsx",
+          "line": 461,
+          "message": "Inline object/array in JSX prop (consider useMemo)",
+          "category": "memoization"
+        },
+        {
+          "type": "info",
+          "file": "components\\RestaurantMap.tsx",
+          "line": 468,
+          "message": "Inline object/array in JSX prop (consider useMemo)",
+          "category": "memoization"
+        },
+        {
+          "type": "info",
+          "file": "components\\RestaurantMap.tsx",
+          "line": 469,
+          "message": "Inline object/array in JSX prop (consider useMemo)",
+          "category": "memoization"
+        },
+        {
+          "type": "info",
+          "file": "components\\RestaurantMap.tsx",
+          "line": 470,
+          "message": "Inline object/array in JSX prop (consider useMemo)",
+          "category": "memoization"
+        },
+        {
+          "type": "info",
+          "file": "components\\RestaurantMap.tsx",
+          "line": 471,
+          "message": "Inline object/array in JSX prop (consider useMemo)",
+          "category": "memoization"
+        },
+        {
+          "type": "info",
+          "file": "components\\RestaurantMap.tsx",
+          "line": 473,
+          "message": "Inline object/array in JSX prop (consider useMemo)",
+          "category": "memoization"
+        },
+        {
+          "type": "info",
+          "file": "components\\RestaurantMap.tsx",
+          "line": 474,
+          "message": "Inline object/array in JSX prop (consider useMemo)",
+          "category": "memoization"
+        },
+        {
+          "type": "info",
+          "file": "components\\RestaurantMap.tsx",
+          "line": 476,
+          "message": "Inline object/array in JSX prop (consider useMemo)",
+          "category": "memoization"
+        },
+        {
+          "type": "info",
+          "file": "components\\RestaurantMap.tsx",
+          "line": 484,
+          "message": "Inline object/array in JSX prop (consider useMemo)",
+          "category": "memoization"
+        },
+        {
+          "type": "info",
+          "file": "components\\RestaurantMap.tsx",
+          "line": 485,
+          "message": "Inline object/array in JSX prop (consider useMemo)",
+          "category": "memoization"
+        },
+        {
+          "type": "info",
+          "file": "components\\RestaurantMap.tsx",
+          "line": 486,
+          "message": "Inline object/array in JSX prop (consider useMemo)",
+          "category": "memoization"
+        },
+        {
+          "type": "info",
+          "file": "components\\RestaurantMap.tsx",
+          "line": 490,
+          "message": "Inline object/array in JSX prop (consider useMemo)",
+          "category": "memoization"
+        },
+        {
+          "type": "info",
+          "file": "components\\RestaurantMap.tsx",
+          "line": 493,
+          "message": "Inline object/array in JSX prop (consider useMemo)",
+          "category": "memoization"
+        },
+        {
+          "type": "info",
+          "file": "components\\RestaurantMap.tsx",
+          "line": 502,
+          "message": "Inline object/array in JSX prop (consider useMemo)",
+          "category": "memoization"
+        },
+        {
+          "type": "info",
+          "file": "components\\RestaurantMap.tsx",
+          "line": 517,
+          "message": "Inline object/array in JSX prop (consider useMemo)",
+          "category": "memoization"
+        },
+        {
+          "type": "info",
+          "file": "components\\RestaurantMap.tsx",
+          "line": 519,
+          "message": "Inline object/array in JSX prop (consider useMemo)",
+          "category": "memoization"
+        },
+        {
+          "type": "info",
+          "file": "components\\RestaurantMap.tsx",
+          "line": 528,
+          "message": "Inline object/array in JSX prop (consider useMemo)",
+          "category": "memoization"
+        },
+        {
+          "type": "info",
+          "file": "components\\RestaurantMap.tsx",
+          "line": 529,
+          "message": "Inline object/array in JSX prop (consider useMemo)",
+          "category": "memoization"
+        }
+      ]
+    },
+    "security": {
+      "issues": [
+        {
+          "type": "warning",
+          "file": "execution\\code_reviewer.js",
+          "line": 484,
+          "message": "Usage of dangerouslySetInnerHTML (potential XSS)",
+          "category": "xss-risk"
+        },
+        {
+          "type": "warning",
+          "file": "execution\\code_reviewer.js",
+          "line": 485,
+          "message": "Usage of dangerouslySetInnerHTML (potential XSS)",
+          "category": "xss-risk"
+        },
+        {
+          "type": "warning",
+          "file": "execution\\code_reviewer.js",
+          "line": 490,
+          "message": "Usage of dangerouslySetInnerHTML (potential XSS)",
+          "category": "xss-risk"
+        },
+        {
+          "type": "critical",
+          "file": "execution\\code_reviewer.js",
+          "line": 501,
+          "message": "Usage of eval() is dangerous",
+          "category": "eval-usage"
+        },
+        {
+          "type": "warning",
+          "file": "reports\\code_review_report.json",
+          "line": 711,
+          "message": "Usage of dangerouslySetInnerHTML (potential XSS)",
+          "category": "xss-risk"
+        },
+        {
+          "type": "warning",
+          "file": "reports\\code_review_report.json",
+          "line": 718,
+          "message": "Usage of dangerouslySetInnerHTML (potential XSS)",
+          "category": "xss-risk"
+        },
+        {
+          "type": "warning",
+          "file": "reports\\code_review_report.json",
+          "line": 725,
+          "message": "Usage of dangerouslySetInnerHTML (potential XSS)",
+          "category": "xss-risk"
+        },
+        {
+          "type": "critical",
+          "file": "reports\\code_review_report.json",
+          "line": 732,
+          "message": "Usage of eval() is dangerous",
+          "category": "eval-usage"
+        }
+      ]
+    }
+  }
+}

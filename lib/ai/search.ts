@@ -79,7 +79,6 @@ export async function searchRestaurant(
         for (const result of results) {
             if (result.address && (!result.lat || !result.lng)) {
                 const cleanedAddress = cleanAddressForGeocoding(result.address, city);
-                console.log(`[Search] Geocoding address: "${cleanedAddress}"`);
                 const coords = await geocodeAddress(cleanedAddress);
                 if (coords) {
                     result.lat = coords.lat;
@@ -88,14 +87,11 @@ export async function searchRestaurant(
             } else if (!result.address && city && (!result.lat || !result.lng)) {
                 // Fallback: try geocoding with restaurant name + city
                 const fallbackQuery = `${name}, ${city}, Israel`;
-                console.log(`[Search] No address found, trying fallback geocoding: "${fallbackQuery}"`);
                 const coords = await geocodeAddress(fallbackQuery);
                 if (coords) {
                     result.lat = coords.lat;
                     result.lng = coords.lng;
-                    // Set a constructed address for display
                     result.address = `${city}, Israel`;
-                    console.log(`[Search] Fallback geocoding succeeded for "${name}"`);
                 }
             }
         }
@@ -215,7 +211,6 @@ export function parseSearchResults(data: TavilyResponse, restaurantName: string,
                     if (/\d/.test(candidate) || /Tel Aviv|Jerusalem|Haifa|תל אביב|ירושלים|חיפה/i.test(candidate)) {
                         bestAddress = candidate;
                         seenAddresses.add(bestAddress.toLowerCase());
-                        console.log(`[Search] Found address: "${bestAddress}" from pattern`);
                         break;
                     }
                 }
@@ -240,10 +235,6 @@ export function parseSearchResults(data: TavilyResponse, restaurantName: string,
         });
     }
 
-    // 5. If no address but we have city, log for debugging
-    if (!bestAddress && city) {
-        console.log(`[Search] No address extracted for "${restaurantName}" in "${city}" - will attempt name-based geocoding`);
-    }
 
     return results;
 }
@@ -343,16 +334,12 @@ function getLinkScore(link: string, name: string): number {
  * Geocode an address using Google Geocoding API
  */
 export async function geocodeAddress(address: string): Promise<{ lat: number; lng: number } | null> {
-    // Try server-side key first, fall back to public key
     const apiKey = process.env.GOOGLE_MAPS_API_KEY || process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
 
     if (!apiKey) {
-        console.error('[Geocode] ERROR: Google Maps API key not configured. Check GOOGLE_MAPS_API_KEY or NEXT_PUBLIC_GOOGLE_MAPS_API_KEY');
+        console.error('[Geocode] Google Maps API key not configured');
         return null;
     }
-
-    console.log(`[Geocode] Attempting to geocode: "${address}"`);
-    console.log(`[Geocode] Using API key: ${apiKey.substring(0, 10)}...`);
 
     try {
         const encoded = encodeURIComponent(address);
@@ -361,27 +348,23 @@ export async function geocodeAddress(address: string): Promise<{ lat: number; ln
         const response = await fetch(url);
 
         if (!response.ok) {
-            console.error(`[Geocode] HTTP error: ${response.status} ${response.statusText}`);
+            console.error(`[Geocode] HTTP error: ${response.status}`);
             return null;
         }
 
         const data = await response.json();
 
-        console.log(`[Geocode] Google API Response - Status: ${data.status}, Error: ${data.error_message || 'none'}`);
-
         if (data.status !== 'OK' || !data.results || data.results.length === 0) {
-            console.warn(`[Geocode] Failed for address "${address}". Status: ${data.status}, Error: ${data.error_message || 'No results'}`);
             return null;
         }
 
         const location = data.results[0].geometry.location;
-        console.log(`[Geocode] Success for "${address}": ${location.lat}, ${location.lng}`);
         return {
             lat: location.lat,
             lng: location.lng,
         };
     } catch (error) {
-        console.error('[Geocode] Error for address:', address, error);
+        console.error('[Geocode] Error:', error);
         return null;
     }
 }

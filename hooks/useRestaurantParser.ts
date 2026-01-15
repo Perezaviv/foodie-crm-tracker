@@ -106,10 +106,7 @@ export function useRestaurantParser(): UseRestaurantParserReturn {
 
             // Client-side geocoding if we have an address but no coordinates
             if (restaurantToSave.address && (!restaurantToSave.lat || !restaurantToSave.lng)) {
-                console.log('[Save] Attempting client-side geocoding...');
-
                 const cleanedAddress = cleanAddressForGeocoding(restaurantToSave.address, restaurantToSave.city);
-                console.log(`[Save] Cleaned address: "${cleanedAddress}"`);
 
                 // Use client-side geocoder if available (Google Maps is loaded)
                 if (typeof window !== 'undefined' && window.google?.maps?.Geocoder) {
@@ -117,7 +114,6 @@ export function useRestaurantParser(): UseRestaurantParserReturn {
                         const geocoder = new google.maps.Geocoder();
                         const result = await new Promise<google.maps.GeocoderResult[] | null>((resolve) => {
                             geocoder.geocode({ address: cleanedAddress }, (results, status) => {
-                                console.log(`[Save] Geocode status: ${status}`);
                                 if (status === 'OK' && results) resolve(results);
                                 else resolve(null);
                             });
@@ -125,13 +121,10 @@ export function useRestaurantParser(): UseRestaurantParserReturn {
                         if (result && result[0]) {
                             restaurantToSave.lat = result[0].geometry.location.lat();
                             restaurantToSave.lng = result[0].geometry.location.lng();
-                            console.log(`[Save] Geocoded: ${restaurantToSave.lat}, ${restaurantToSave.lng}`);
                         }
                     } catch (geoError) {
-                        console.warn('[Save] Client geocoding error:', geoError);
+                        console.warn('[useRestaurantParser] Client geocoding error:', geoError);
                     }
-                } else {
-                    console.warn('[Save] Google Maps Geocoder not available');
                 }
             }
 

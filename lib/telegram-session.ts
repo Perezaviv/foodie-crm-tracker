@@ -1,4 +1,6 @@
 import { createAdminClient } from './supabase';
+import { SearchResult } from './ai';
+import { Json } from './types';
 
 export type TelegramStep =
     | 'IDLE'
@@ -7,10 +9,17 @@ export type TelegramStep =
     | 'WAITING_FOR_PHOTOS'
     | 'REVIEWING_PHOTOS';
 
+/** Metadata stored in Telegram session */
+export interface TelegramSessionMetadata {
+    pending_photos?: string[];
+    searchResults?: SearchResult[];
+    [key: string]: unknown; // Allow additional properties for flexibility
+}
+
 export interface TelegramSession {
     chat_id: number;
     step: TelegramStep;
-    metadata: any;
+    metadata: TelegramSessionMetadata;
     updated_at: string;
 }
 
@@ -31,14 +40,18 @@ export async function getSession(chatId: number): Promise<TelegramSession | null
     return data as TelegramSession;
 }
 
-export async function updateSession(chatId: number, step: TelegramStep, metadata: any = {}) {
+export async function updateSession(
+    chatId: number,
+    step: TelegramStep,
+    metadata: TelegramSessionMetadata = {}
+): Promise<void> {
     const supabase = createAdminClient();
     const { error } = await supabase
         .from('telegram_sessions')
         .upsert({
             chat_id: chatId,
             step,
-            metadata
+            metadata: metadata as Json
         });
 
     if (error) {
@@ -47,7 +60,7 @@ export async function updateSession(chatId: number, step: TelegramStep, metadata
     }
 }
 
-export async function clearSession(chatId: number) {
+export async function clearSession(chatId: number): Promise<void> {
     const supabase = createAdminClient();
     const { error } = await supabase
         .from('telegram_sessions')

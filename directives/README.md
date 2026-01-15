@@ -11,7 +11,11 @@ Each directive defines:
 
 ## Available Directives
 
-_No directives created yet. Directives will be added as the project evolves._
+| Directive | Description |
+|-----------|-------------|
+| [`telegram_listener.md`](telegram_listener.md) | Listen for Telegram bot messages to add restaurants |
+| [`code_reviewer.md`](code_reviewer.md) | Comprehensive code quality analysis agent |
+| [`code_organizer.md`](code_organizer.md) | Codebase cleanup and production readiness agent |
 
 ## Creating New Directives
 
