@@ -4,8 +4,14 @@ import { getSession, updateSession, clearSession, TelegramStep, TelegramSession 
 import { searchRestaurant, SearchResult, extractRestaurantInfo } from './ai';
 import { createAdminClient } from './supabase';
 
-const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
-const TELEGRAM_API_BASE = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}`;
+// Get token at runtime to ensure env var is available in serverless
+function getTelegramApiBase(): string {
+    const token = process.env.TELEGRAM_BOT_TOKEN;
+    if (!token) {
+        throw new Error('TELEGRAM_BOT_TOKEN not configured');
+    }
+    return `https://api.telegram.org/bot${token}`;
+}
 
 // ============================================================
 // TYPES
@@ -159,24 +165,30 @@ async function handleMessage(message: NonNullable<TelegramUpdate['message']>) {
             fileId: message.photo[message.photo.length - 1].file_id.substring(0, 20) + '...'
         });
 
-        // Telegram sends multiple sizes, take the last one (largest)
-        const largestPhoto = message.photo[message.photo.length - 1];
+        try {
+            // Telegram sends multiple sizes, take the last one (largest)
+            const largestPhoto = message.photo[message.photo.length - 1];
 
-        const currentPhotos = session?.metadata?.pending_photos || [];
-        const newPhotos = [...currentPhotos, largestPhoto.file_id];
+            const currentPhotos = session?.metadata?.pending_photos || [];
+            const newPhotos = [...currentPhotos, largestPhoto.file_id];
 
-        // Update session
-        if (!session || session.step !== 'WAITING_FOR_PHOTOS') {
-            await updateSession(chatId, 'WAITING_FOR_PHOTOS', { pending_photos: newPhotos });
-        } else {
-            await updateSession(chatId, 'WAITING_FOR_PHOTOS', { ...session.metadata, pending_photos: newPhotos });
+            // Update session
+            console.log('[TG] Updating session with photos, count:', newPhotos.length);
+            if (!session || session.step !== 'WAITING_FOR_PHOTOS') {
+                await updateSession(chatId, 'WAITING_FOR_PHOTOS', { pending_photos: newPhotos });
+            } else {
+                await updateSession(chatId, 'WAITING_FOR_PHOTOS', { ...session.metadata, pending_photos: newPhotos });
+            }
+
+            const count = newPhotos.length;
+            console.log('[TG] Sending photo confirmation, count:', count);
+            await sendMessage(chatId, `📸 Received ${count} photo${count > 1 ? 's' : ''}.\nPlease enter only the restaurant name :`, {
+                inline_keyboard: [[{ text: '✅ Done', callback_data: 'done_photos' }, { text: '❌ Cancel', callback_data: 'cancel' }]]
+            });
+        } catch (error) {
+            console.error('[TG] Error handling photo:', error);
+            await sendMessage(chatId, '❌ Error processing photo. Please try again.');
         }
-
-        const count = newPhotos.length;
-        console.log('[TG] Sending photo confirmation, count:', count);
-        await sendMessage(chatId, `📸 Received ${count} photo${count > 1 ? 's' : ''}.\nPlease enter only the restaurant name :`, {
-            inline_keyboard: [[{ text: '✅ Done', callback_data: 'done_photos' }, { text: '❌ Cancel', callback_data: 'cancel' }]]
-        });
         return;
     }
 
@@ -412,12 +424,12 @@ async function processPendingPhotos(chatId: number, restaurantId: string, fileId
     for (const fileId of fileIds) {
         // 1. Get File Path
         try {
-            const fileRes = await fetch(`${TELEGRAM_API_BASE}/getFile?file_id=${fileId}`);
+            const fileRes = await fetch(`${getTelegramApiBase()}/getFile?file_id=${fileId}`);
             const fileJson = await fileRes.json();
             if (!fileJson.ok) continue;
 
             const filePath = fileJson.result.file_path;
-            const downloadUrl = `https://api.telegram.org/file/bot${TELEGRAM_BOT_TOKEN}/${filePath}`;
+            const downloadUrl = `https://api.telegram.org/file/bot${process.env.TELEGRAM_BOT_TOKEN}/${filePath}`;
 
             // 2. Download
             const imageRes = await fetch(downloadUrl);
@@ -554,7 +566,7 @@ interface TelegramReplyMarkup {
 
 async function sendMessage(chatId: number, text: string, replyMarkup?: TelegramReplyMarkup): Promise<void> {
     try {
-        await fetch(`${TELEGRAM_API_BASE}/sendMessage`, {
+        const response = await fetch(`${getTelegramApiBase()}/sendMessage`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -564,17 +576,23 @@ async function sendMessage(chatId: number, text: string, replyMarkup?: TelegramR
                 reply_markup: replyMarkup
             }),
         });
+
+        // Log send result for debugging
+        if (!response.ok) {
+            const errorData = await response.text();
+            console.error('[TG] sendMessage failed:', response.status, errorData);
+        }
     } catch (error) {
-        console.error('Failed to send Telegram message:', error);
+        console.error('[TG] Failed to send Telegram message:', error);
     }
 }
 
 async function answerCallbackQuery(callbackQueryId: string) {
     try {
-        await fetch(`${TELEGRAM_API_BASE}/answerCallbackQuery`, {
+        await fetch(`${getTelegramApiBase()}/answerCallbackQuery`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ callback_query_id: callbackQueryId }),
         });
-    } catch (e) { console.error('Error answering callback', e); }
+    } catch (e) { console.error('[TG] Error answering callback', e); }
 }
