@@ -69,6 +69,7 @@ export const MESSAGES = {
     PHOTO_INSTRUCTION: '📸 שלח תמונות ואני אעזור לך לשייך אותן למסעדה.',
     NO_ADDRESS: 'ללא כתובת',
     BOOKING_LINK_TEXT: 'הזמנת מקום',
+    ERROR_GENERIC: '❌ שגיאה כללית במערכת. נסה שוב מאוחר יותר.'
 };
 
 /** Menu keyboard layout */

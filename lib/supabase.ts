@@ -41,8 +41,7 @@ export function createAdminClient(): SupabaseClient<Database> {
     const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
     if (!supabaseUrl || !serviceRoleKey) {
-        console.warn('Supabase service role key not configured - falling back to anon key (may fail RLS)')
-        return createServerClient()
+        throw new Error('SUPABASE_SERVICE_ROLE_KEY is not set. The Telegram bot requires this environment variable to function.')
     }
 
     return createClient<Database>(supabaseUrl, serviceRoleKey, {

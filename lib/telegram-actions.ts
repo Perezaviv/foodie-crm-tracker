@@ -295,7 +295,17 @@ async function handleMessage(message: NonNullable<TelegramUpdate['message']>) {
 
         // 3. Default: IDLE -> Search & Add
         // NOTE: In group chats with privacy mode ON, we might not get here unless mentioned or replying.
-        await startSearch(chatId, text, 'SELECTING_RESTAURANT');
+        // Wrap startSearch in try/catch to handle admin client errors (missing env vars)
+        try {
+            await startSearch(chatId, text, 'SELECTING_RESTAURANT');
+        } catch (err: any) {
+            console.error('[TG] Search failed:', err);
+            if (err?.message?.includes('SUPABASE_SERVICE_ROLE_KEY')) {
+                await sendMessage(chatId, '⚠️ **System Error**: `SUPABASE_SERVICE_ROLE_KEY` is not configured on the server. I cannot save data without it.');
+            } else {
+                await sendMessage(chatId, MESSAGES.ERROR_GENERIC);
+            }
+        }
     }
 }
 
@@ -495,8 +505,9 @@ async function processPendingPhotos(chatId: number, restaurantId: string, fileId
             });
 
             if (dbError) {
-                console.error('[TG] DB insert failed:', dbError);
-                continue;
+                console.error('[TG] DB insert failed details:', JSON.stringify(dbError));
+                // Only fail this photo, but log it properly
+                throw new Error(`DB Insert Failed: ${dbError.message}`);
             }
 
             console.log('[TG] Successfully uploaded photo:', storagePath);
@@ -564,20 +575,30 @@ async function handleAddComment(chatId: number, restaurantName: string, commentT
     const restaurant = restaurants[0];
 
     // Add comment
-    const { error: insertError } = await supabase
-        .from('comments')
-        .insert({
-            restaurant_id: restaurant.id,
-            content: commentText,
-            author_name: 'Telegram User',
-        });
+    try {
+        // Add comment
+        const { error: insertError } = await supabase
+            .from('comments')
+            .insert({
+                restaurant_id: restaurant.id,
+                content: commentText,
+                author_name: 'Telegram User',
+            });
 
-    if (insertError) {
-        await sendMessage(chatId, MESSAGES.COMMENT_ERROR(insertError.message));
-        return;
+        if (insertError) {
+            await sendMessage(chatId, MESSAGES.COMMENT_ERROR(insertError.message));
+            return;
+        }
+
+        await sendMessage(chatId, MESSAGES.COMMENT_SUCCESS(restaurant.name, commentText));
+    } catch (err: any) {
+        console.error('[TG] Comment failed:', err);
+        if (err?.message?.includes('SUPABASE_SERVICE_ROLE_KEY')) {
+            await sendMessage(chatId, '⚠️ **System Error**: `SUPABASE_SERVICE_ROLE_KEY` is missing.');
+        } else {
+            await sendMessage(chatId, MESSAGES.ERROR_GENERIC);
+        }
     }
-
-    await sendMessage(chatId, MESSAGES.COMMENT_SUCCESS(restaurant.name, commentText));
 }
 
 // ============================================================
