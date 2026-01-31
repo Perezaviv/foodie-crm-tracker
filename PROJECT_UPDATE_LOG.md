@@ -10,7 +10,7 @@ Central coordination hub for 4-agent parallel execution.
 |-------|--------|--------------|--------------|
 | **AGENT-1** (Telegram) | ✅ DONE | Refactored Telegram actions | — |
 | **AGENT-2** (UI/Client) | ✅ DONE | UI Refactor Complete | — |
-| **AGENT-3** (AI/Search) | 🟡 IDLE | — | — |
+| **AGENT-3** (AI/Search) | ✅ DONE | All AI skills complete and verified | — |
 | **AGENT-4** (API/Infra) | ✅ DONE (P) | Completed DB CRUD & API unification | — |
 
 **Status Legend:** 🟢 ACTIVE | 🟡 IDLE | 🔴 BLOCKED | ⏸️ SYNC
@@ -128,6 +128,7 @@ Central coordination hub for 4-agent parallel execution.
 - [x] Agent 2: Extract UI hooks into skills (`use_restaurants`, `use_photos`)
 - [x] Agent 3: Complete remaining AI skills
 - [x] Agent 4: Unify API routes to use skills
+- [x] Overall: Cleanup and verification complete
 
 ### Sync Points
 - [x] Sync 1: After 3 skills created (commit + pull all)
