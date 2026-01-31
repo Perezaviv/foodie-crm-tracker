@@ -34,34 +34,30 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
 let browserClientInstance: SupabaseClient<Database> | null = null;
 
 // =============================================================================
-// MAIN FUNCTIONS
+// MAIN SKILL FUNCTION
 // =============================================================================
 
 /**
  * Get a Supabase client based on the context type.
- * 
- * @example
- * // Browser/client-side usage (singleton)
- * const { client } = getSupabaseClient({ type: 'browser' });
- * 
- * // Server API route (new instance each call)
- * const { client } = getSupabaseClient({ type: 'server' });
- * 
- * // Admin operations bypassing RLS
- * const { client } = getSupabaseClient({ type: 'admin' });
+ * Returns a standardized Skill output.
  */
 export function getSupabaseClient(input: SupabaseClientInput): SupabaseClientOutput {
     try {
+        let client: SupabaseClient<Database>;
         switch (input.type) {
             case 'browser':
-                return createBrowserClient();
+                client = createBrowserClient();
+                break;
             case 'server':
-                return createServerClient();
+                client = createServerClient();
+                break;
             case 'admin':
-                return createAdminClient();
+                client = createAdminClient();
+                break;
             default:
-                return { success: false, error: `Unknown client type: ${input.type}` };
+                throw new Error(`Unknown client type: ${input.type}`);
         }
+        return { success: true, client };
     } catch (error) {
         return {
             success: false,
@@ -78,58 +74,54 @@ export function isSupabaseConfigured(): boolean {
 }
 
 // =============================================================================
-// INTERNAL HELPERS / EXPORTS
+// CLASSIC CLIENT FACTORIES (Direct usage)
 // =============================================================================
 
-export function createBrowserClient(): SupabaseClientOutput {
+/**
+ * Browser-side client (singleton). Throws if misconfigured.
+ */
+export function createBrowserClient(): SupabaseClient<Database> {
     if (!supabaseUrl || !supabaseAnonKey) {
-        return {
-            success: false,
-            error: 'Supabase environment variables are not configured. Please set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in .env.local',
-        };
+        throw new Error('Supabase environment variables are not configured. Please set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in .env.local');
     }
 
     if (!browserClientInstance) {
         browserClientInstance = createClient<Database>(supabaseUrl, supabaseAnonKey);
     }
 
-    return { success: true, client: browserClientInstance };
+    return browserClientInstance;
 }
 
-export function createServerClient(): SupabaseClientOutput {
+/**
+ * Server-side client (new instance). Throws if misconfigured.
+ */
+export function createServerClient(): SupabaseClient<Database> {
     if (!supabaseUrl || !supabaseAnonKey) {
-        return {
-            success: false,
-            error: 'Supabase environment variables are not configured',
-        };
+        throw new Error('Supabase environment variables are not configured');
     }
 
-    const client = createClient<Database>(supabaseUrl, supabaseAnonKey, {
+    return createClient<Database>(supabaseUrl, supabaseAnonKey, {
         auth: {
             persistSession: false,
         },
     });
-
-    return { success: true, client };
 }
 
-export function createAdminClient(): SupabaseClientOutput {
+/**
+ * Admin client bypassing RLS. Throws if misconfigured.
+ */
+export function createAdminClient(): SupabaseClient<Database> {
     const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
     if (!supabaseUrl || !serviceRoleKey) {
-        return {
-            success: false,
-            error: 'SUPABASE_SERVICE_ROLE_KEY is not set. The Telegram bot requires this environment variable to function.',
-        };
+        throw new Error('SUPABASE_SERVICE_ROLE_KEY is not set. The Telegram bot requires this environment variable to function.');
     }
 
-    const client = createClient<Database>(supabaseUrl, serviceRoleKey, {
+    return createClient<Database>(supabaseUrl, serviceRoleKey, {
         auth: {
             persistSession: false,
             autoRefreshToken: false,
             detectSessionInUrl: false,
         },
     });
-
-    return { success: true, client };
 }

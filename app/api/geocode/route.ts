@@ -1,6 +1,5 @@
-
 import { NextRequest, NextResponse } from 'next/server';
-import { geocodeAddress } from '@/lib/ai/search';
+import { geocodeAddress } from '@/lib/skills/ai';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,17 +11,21 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ success: false, error: 'Address required' }, { status: 400 });
         }
 
-        const coords = await geocodeAddress(address);
+        const result = await geocodeAddress({ address });
 
-        if (!coords) {
+        if (!result.success || !result.data) {
             return NextResponse.json({
                 success: false,
-                error: 'Geocoding failed - check server logs for details',
+                error: result.error || 'Geocoding failed',
                 address: address
             });
         }
 
-        return NextResponse.json({ success: true, ...coords });
+        return NextResponse.json({
+            success: true,
+            lat: result.data.lat,
+            lng: result.data.lng
+        });
 
     } catch (error) {
         console.error('[API/Geocode] Error:', error);

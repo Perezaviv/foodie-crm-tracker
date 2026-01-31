@@ -2,7 +2,7 @@ import { SupabaseClient } from '@supabase/supabase-js';
 import { Database } from './types';
 import { getSession, updateSession, clearSession, TelegramStep, TelegramSession } from './telegram-session';
 import { searchRestaurant, SearchResult, extractRestaurantInfo } from './ai';
-import { createAdminClient } from './supabase';
+
 import { MESSAGES, MENU_KEYBOARD } from './telegram-messages';
 import { 
     sendMessage, 
@@ -102,35 +102,35 @@ async function handleCallbackQuery(query: NonNullable<TelegramUpdate['callback_q
 
     // Handle menu buttons (no session required)
     if (data === 'menu_add') {
-        await sendMessage(chatId, MESSAGES.ADD_USAGE);
+        await sendMessage({ chatId, text: MESSAGES.ADD_USAGE });
         return;
     }
     if (data === 'menu_rate') {
-        await sendMessage(chatId, MESSAGES.RATING_USAGE);
+        await sendMessage({ chatId, text: MESSAGES.RATING_USAGE });
         return;
     }
     if (data === 'menu_comment') {
-        await sendMessage(chatId, MESSAGES.COMMENT_USAGE);
+        await sendMessage({ chatId, text: MESSAGES.COMMENT_USAGE });
         return;
     }
     if (data === 'menu_photos') {
-        await sendMessage(chatId, MESSAGES.PHOTO_INSTRUCTION);
+        await sendMessage({ chatId, text: MESSAGES.PHOTO_INSTRUCTION });
         return;
     }
     if (data === 'menu_help') {
-        await sendMessage(chatId, MESSAGES.WELCOME);
+        await sendMessage({ chatId, text: MESSAGES.WELCOME });
         return;
     }
 
     const session = await getSession(chatId);
     if (!session) {
-        await sendMessage(chatId, MESSAGES.SESSION_EXPIRED);
+        await sendMessage({ chatId, text: MESSAGES.SESSION_EXPIRED });
         return;
     }
 
     if (data === 'cancel') {
         await clearSession(chatId);
-        await sendMessage(chatId, MESSAGES.ACTION_CANCELLED);
+        await sendMessage({ chatId, text: MESSAGES.ACTION_CANCELLED });
         return;
     }
 
@@ -148,7 +148,7 @@ async function handleCallbackQuery(query: NonNullable<TelegramUpdate['callback_q
                 await addRestaurant({ chatId, data: selected });
                 await clearSession(chatId);
             } else {
-                await sendMessage(chatId, MESSAGES.SELECTION_INVALID);
+                await sendMessage({ chatId, text: MESSAGES.SELECTION_INVALID });
             }
         }
     } else if (session.step === 'SELECTING_RESTAURANT_FOR_PHOTOS') {
