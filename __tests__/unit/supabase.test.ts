@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-require-imports */
-import '@supabase/supabase-js'; // Keep for types if needed, or remove if unused. createClient was unused.
+import '@supabase/supabase-js'; // Keep for types if needed
 
 jest.mock('@supabase/supabase-js', () => ({
     createClient: jest.fn(),
@@ -18,24 +18,22 @@ describe('lib/supabase', () => {
         process.env = ORIGINAL_ENV;
     });
 
-    it('throws error if environment variables are missing', () => {
+    it('createBrowserClient throws error if environment variables are missing', () => {
         delete process.env.NEXT_PUBLIC_SUPABASE_URL;
         delete process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-        // We need to require the module here to trigger the top-level code or the function call depending on implementation
-        // But verify the function call throws
-        const { getSupabaseClient } = require('../../lib/supabase');
-        expect(() => getSupabaseClient()).toThrow('Supabase environment variables are not configured');
+        const { createBrowserClient } = require('../../lib/supabase');
+        expect(() => createBrowserClient()).toThrow('Supabase environment variables are not configured');
     });
 
-    it('creates client with correct credentials', () => {
+    it('createBrowserClient creates client with correct credentials', () => {
         process.env.NEXT_PUBLIC_SUPABASE_URL = 'http://test.supabase.co';
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = 'test-anon-key';
 
-        const { getSupabaseClient } = require('../../lib/supabase');
+        const { createBrowserClient } = require('../../lib/supabase');
         const { createClient } = require('@supabase/supabase-js');
 
-        getSupabaseClient();
+        createBrowserClient();
 
         expect(createClient).toHaveBeenCalledWith(
             'http://test.supabase.co',
@@ -47,9 +45,6 @@ describe('lib/supabase', () => {
         process.env.NEXT_PUBLIC_SUPABASE_URL = 'http://test.supabase.co';
         delete process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-        // We must re-require to pick up the top-level constants changes? 
-        // Wait, lib/supabase reads env vars at top level.
-        // So modifying process.env and re-requiring IS necessary.
         let { isSupabaseConfigured } = require('../../lib/supabase');
         expect(isSupabaseConfigured()).toBe(false);
 

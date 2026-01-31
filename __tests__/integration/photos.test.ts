@@ -1,63 +1,24 @@
 /**
  * @jest-environment node
  */
-/**
- * @jest-environment node
- */
 import { POST, GET } from '../../app/api/photos/route';
-import { createServerClient, createAdminClient, isSupabaseConfigured } from '../../lib/supabase';
 import { NextRequest } from 'next/server';
 
-// Mock lib/supabase
-jest.mock('../../lib/supabase', () => ({
-    createServerClient: jest.fn(),
-    createAdminClient: jest.fn(),
+// Mock DB skills
+jest.mock('../../lib/skills/db', () => ({
     isSupabaseConfigured: jest.fn(),
+    getPhotos: jest.fn(),
+    uploadPhoto: jest.fn(),
+    deletePhoto: jest.fn(),
 }));
 
-describe('/api/photos Integration', () => {
-    const mockInsert = jest.fn();
-    const mockSelect = jest.fn();
-    const mockSingle = jest.fn();
-    const mockFrom = jest.fn();
-    const mockUpload = jest.fn();
-    const mockGetPublicUrl = jest.fn();
-    const mockStorageFrom = jest.fn();
-    const mockEq = jest.fn();
-    const mockOrder = jest.fn();
+import { isSupabaseConfigured, getPhotos, uploadPhoto } from '../../lib/skills/db';
 
-    const mockSupabase = {
-        from: mockFrom,
-        storage: {
-            from: mockStorageFrom,
-        }
-    };
+describe('/api/photos Integration', () => {
 
     beforeEach(() => {
         jest.clearAllMocks();
         (isSupabaseConfigured as jest.Mock).mockReturnValue(true);
-        (createServerClient as jest.Mock).mockReturnValue(mockSupabase);
-        (createAdminClient as jest.Mock).mockReturnValue(mockSupabase);
-
-        // Mock Database Chain
-        mockFrom.mockReturnValue({
-            insert: mockInsert,
-            select: mockSelect,
-        });
-        mockInsert.mockReturnValue({ select: mockSelect });
-        mockSelect.mockReturnValue({
-            single: mockSingle,
-            eq: mockEq,
-        });
-        mockEq.mockReturnValue({ order: mockOrder });
-        mockOrder.mockReturnValue({ data: [], error: null });
-
-        // Mock Storage Chain
-        mockStorageFrom.mockReturnValue({
-            upload: mockUpload,
-            getPublicUrl: mockGetPublicUrl,
-        });
-        mockGetPublicUrl.mockReturnValue({ data: { publicUrl: 'http://test.url' } });
     });
 
     describe('POST', () => {
@@ -94,9 +55,10 @@ describe('/api/photos Integration', () => {
             formData.append('restaurantId', '123');
             formData.append('files', new Blob(['fake-image'], { type: 'image/jpeg' }), 'test.jpg');
 
-            // Mock success responses
-            mockUpload.mockResolvedValue({ error: null });
-            mockSingle.mockResolvedValue({ data: { id: 'photo-1', storage_path: 'p1.jpg' }, error: null });
+            (uploadPhoto as jest.Mock).mockResolvedValue({
+                success: true,
+                data: { id: 'photo-1', storage_path: 'p1.jpg', url: 'http://test.url' }
+            });
 
             const req = new NextRequest('http://localhost/api/photos', {
                 method: 'POST',
@@ -112,12 +74,12 @@ describe('/api/photos Integration', () => {
             expect(json.photos[0].url).toBe('http://test.url');
         });
 
-        it('handles storage upload error', async () => {
+        it('handles upload error', async () => {
             const formData = new FormData();
             formData.append('restaurantId', '123');
             formData.append('files', new Blob(['fake-image'], { type: 'image/jpeg' }), 'test.jpg');
 
-            mockUpload.mockResolvedValue({ error: { message: 'Upload Denied' } });
+            (uploadPhoto as jest.Mock).mockResolvedValue({ success: false, error: 'Upload Denied' });
 
             const req = new NextRequest('http://localhost/api/photos', {
                 method: 'POST',
@@ -127,7 +89,7 @@ describe('/api/photos Integration', () => {
             const res = await POST(req);
             const json = await res.json();
 
-            // Since we loop through files and continue on error, if all fail, it returns "No photos were uploaded successfully"
+            // The API returns success: false if ALL photos fail
             expect(json.success).toBe(false);
             expect(json.error).toContain('Failed to upload test.jpg: Upload Denied');
         });
@@ -135,11 +97,9 @@ describe('/api/photos Integration', () => {
 
     describe('GET', () => {
         it('fetches photos for a restaurant', async () => {
-            const mockPhotos = [{ id: '1', storage_path: 'foo.jpg', restaurant_id: '123' }];
+            const mockPhotos = [{ id: '1', storage_path: 'foo.jpg', url: 'http://test.url', restaurant_id: '123' }];
 
-            mockSelect.mockReturnValue({ eq: mockEq }); // Need to reset mock return for this specific chain
-            mockEq.mockReturnValue({ order: mockOrder });
-            mockOrder.mockResolvedValue({ data: mockPhotos, error: null });
+            (getPhotos as jest.Mock).mockResolvedValue({ success: true, data: mockPhotos });
 
             const req = new NextRequest('http://localhost/api/photos?restaurantId=123');
             const res = await GET(req);
@@ -148,6 +108,17 @@ describe('/api/photos Integration', () => {
             expect(json.success).toBe(true);
             expect(json.photos).toHaveLength(1);
             expect(json.photos[0].url).toBe('http://test.url');
+        });
+
+        it('handles fetch error', async () => {
+            (getPhotos as jest.Mock).mockResolvedValue({ success: false, error: 'DB Error' });
+
+            const req = new NextRequest('http://localhost/api/photos?restaurantId=123');
+            const res = await GET(req);
+            const json = await res.json();
+
+            expect(json.success).toBe(false);
+            expect(json.error).toBe('DB Error');
         });
     });
 });

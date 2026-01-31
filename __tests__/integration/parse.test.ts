@@ -40,7 +40,10 @@ describe('/api/parse Integration', () => {
         });
 
         // 3. Mock Geocode
-        (geocodeAddress as jest.Mock).mockResolvedValue({ lat: 35.6, lng: 139.7 });
+        (geocodeAddress as jest.Mock).mockResolvedValue({
+            success: true,
+            data: { lat: 35.6, lng: 139.7 }
+        });
 
         const req = new NextRequest('http://localhost/api/parse', {
             method: 'POST',

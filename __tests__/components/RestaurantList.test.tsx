@@ -8,15 +8,15 @@ import type { Restaurant } from '../../lib/types';
 
 // Mock sub-components/icons
 jest.mock('lucide-react', () => ({
-    Search: () => <div data-testid="search-icon" />,
-    Filter: () => <div data-testid="filter-icon" />,
-    MapPin: () => <div data-testid="map-pin" />,
-    Star: () => <div data-testid="star" />,
-    Navigation: () => <div data-testid="nav-icon" />,
-    Utensils: () => <div data-testid="utensils-icon" />,
-    X: () => <div data-testid="close-icon" />,
-    ChevronDown: () => <div data-testid="chevron-down" />,
-    ExternalLink: () => <div data-testid="external-link" />,
+    Search: () => <span data-testid="search-icon" />,
+    Filter: () => <span data-testid="filter-icon" />,
+    MapPin: () => <span data-testid="map-pin" />,
+    Star: () => <span data-testid="star" />,
+    Navigation: () => <span data-testid="nav-icon" />,
+    Utensils: () => <span data-testid="utensils-icon" />,
+    X: () => <span data-testid="close-icon" />,
+    ChevronDown: () => <span data-testid="chevron-down" />,
+    ExternalLink: () => <span data-testid="external-link" />,
 }));
 
 // Mock framer-motion to avoid animation issues in tests
