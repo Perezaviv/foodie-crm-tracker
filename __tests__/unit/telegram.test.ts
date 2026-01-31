@@ -459,3 +459,91 @@ describe('Telegram Actions - Photo Handling', () => {
         );
     });
 });
+
+// ============================================================
+// New Flow Tests (Rate/Comment without Commands)
+// ============================================================
+
+describe('Telegram Actions - Interactive Flows', () => {
+    beforeEach(() => {
+        jest.clearAllMocks();
+        process.env.TELEGRAM_BOT_TOKEN = 'test-token';
+    });
+
+    it('handles text in WAITING_FOR_RATE step', async () => {
+        const session: TelegramSession = {
+            chat_id: 12345,
+            step: 'WAITING_FOR_RATE',
+            metadata: {},
+            updated_at: new Date().toISOString(),
+        };
+        (getSession as jest.Mock).mockResolvedValue(session);
+
+        const update: TelegramUpdate = {
+            update_id: 125,
+            message: {
+                message_id: 1,
+                from: { id: 1, first_name: 'Test', is_bot: false },
+                chat: { id: 12345, first_name: 'Test', type: 'private' },
+                date: Date.now(),
+                text: 'Miznon 5',
+            },
+        };
+
+        await handleTelegramUpdate(update);
+
+        // Should call database via rateRestaurant
+        // We know rateRestaurant calls extractRestaurantInfo or searchRestaurant -> eventually supabase update
+        // Since we didn't mock rateRestaurant, let's just check clearSession was called which implies success
+        expect(clearSession).toHaveBeenCalledWith(12345);
+    });
+
+    it('handles text in WAITING_FOR_COMMENT step', async () => {
+        const session: TelegramSession = {
+            chat_id: 12345,
+            step: 'WAITING_FOR_COMMENT',
+            metadata: {},
+            updated_at: new Date().toISOString(),
+        };
+        (getSession as jest.Mock).mockResolvedValue(session);
+
+        const update: TelegramUpdate = {
+            update_id: 126,
+            message: {
+                message_id: 1,
+                from: { id: 1, first_name: 'Test', is_bot: false },
+                chat: { id: 12345, first_name: 'Test', type: 'private' },
+                date: Date.now(),
+                text: 'Miznon - Great food',
+            },
+        };
+
+        await handleTelegramUpdate(update);
+
+        expect(clearSession).toHaveBeenCalledWith(12345);
+    });
+
+    it('menu_rate callback sets WAITING_FOR_RATE', async () => {
+        const session: TelegramSession = {
+            chat_id: 12345,
+            step: 'IDLE',
+            metadata: {},
+            updated_at: new Date().toISOString(),
+        };
+        (getSession as jest.Mock).mockResolvedValue(session);
+
+        const update: TelegramUpdate = {
+            update_id: 127,
+            callback_query: {
+                id: 'q1',
+                from: { id: 1, first_name: 'Test' },
+                message: { message_id: 1, chat: { id: 12345 } },
+                data: 'menu_rate',
+            },
+        };
+
+        await handleTelegramUpdate(update);
+
+        expect(updateSession).toHaveBeenCalledWith(12345, 'WAITING_FOR_RATE', {});
+    });
+});

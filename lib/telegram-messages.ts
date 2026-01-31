@@ -34,7 +34,7 @@ export const MESSAGES = {
     RESTAURANT_NOT_FOUND: (name: string): string => `❌ המסעדה "${name}" לא נמצאה. בדוק את השם ונסה שוב.`,
 
     // Photos
-    PHOTO_RECEIVED: (count: number): string => `📸 התקבלו ${count} תמונ${count > 1 ? 'ות' : 'ה'}.\nהזן את שם המסעדה בלבד:`,
+    PHOTO_RECEIVED: (count: number): string => `📸 התקבלו ${count} תמונ${count > 1 ? 'ות' : 'ה'}. לחץ סיום כאשר כל התמונות עלו.`,
     PROCESSING_PHOTOS: (count: number): string => `⏳ מעבד ${count} תמונות...`,
     PHOTOS_SUCCESS: (count: number): string => `✅ נוספו בהצלחה ${count} תמונות!`,
     PHOTO_ERROR: '❌ שגיאה בעיבוד התמונה. נסה שוב.',
@@ -42,6 +42,7 @@ export const MESSAGES = {
 
     // Rating
     RATING_USAGE: '⚠️ שימוש: `/rate שם מסעדה 5`\n\nדוגמה: `/rate מזנון 4`',
+    RATE_INSTRUCTION: '⭐ נא לשלוח את שם המסעדה והציון (1-5).\n\nדוגמה: `מזנון 5`',
     RATING_SUCCESS: (name: string, rating: number): string => {
         const stars = '⭐'.repeat(rating);
         return `${stars}\n\n✅ דירגת *${name}* ${rating}/5!`;
@@ -50,6 +51,7 @@ export const MESSAGES = {
 
     // Comments
     COMMENT_USAGE: '⚠️ שימוש: `/comment שם מסעדה - הערה שלך`\n\nדוגמה: `/comment מזנון - פיתה מדהימה!`',
+    COMMENT_INSTRUCTION: '💬 נא לשלוח את שם המסעדה והערה, מופרדים במקף.\n\nדוגמה: `מזנון - אחלה מקום`',
     COMMENT_SUCCESS: (name: string, text: string): string => `💬 הערה נוספה ל*${name}*!\n\n"${text}"`,
     COMMENT_ERROR: (error: string): string => `❌ נכשל בהוספת הערה: ${error}`,
 

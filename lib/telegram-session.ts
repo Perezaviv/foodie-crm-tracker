@@ -7,7 +7,9 @@ export type TelegramStep =
     | 'SELECTING_RESTAURANT'
     | 'SELECTING_RESTAURANT_FOR_PHOTOS'
     | 'WAITING_FOR_PHOTOS'
-    | 'REVIEWING_PHOTOS';
+    | 'REVIEWING_PHOTOS'
+    | 'WAITING_FOR_RATE'
+    | 'WAITING_FOR_COMMENT';
 
 /** Metadata stored in Telegram session */
 export interface TelegramSessionMetadata {

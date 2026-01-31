@@ -77,6 +77,30 @@ export async function addRestaurant(input: AddRestaurantInput): Promise<AddResta
             }
         }
 
+        // Check for existing restaurant by name and city
+        const { data: existingRestaurant } = await supabase
+            .from('restaurants')
+            .select('*')
+            .ilike('name', data.name)
+            .ilike('city', derivedCity || '%')
+            .maybeSingle();
+
+        if (existingRestaurant) {
+            console.log(`[AddRestaurant] Found existing restaurant: ${existingRestaurant.name} (ID: ${existingRestaurant.id})`);
+
+            if (!silent) {
+                await sendMessage({
+                    chatId,
+                    text: `⚠️ **שים לב:** המסעדה *${existingRestaurant.name}* כבר קיימת במערכת.\nהוספנו את המידע לכאורה, אבל בעצם השתמשנו ברשומה הקיימת.`
+                });
+            }
+
+            return {
+                success: true,
+                data: { restaurant: existingRestaurant }
+            };
+        }
+
         const insertPayload = {
             name: data.name,
             address: data.address,
@@ -105,24 +129,24 @@ export async function addRestaurant(input: AddRestaurantInput): Promise<AddResta
             let msg = MESSAGES.ADDED_RESTAURANT(restaurant.name);
             if (restaurant.address) msg += `\n📍 ${restaurant.address}`;
             if (restaurant.booking_link) msg += `\n🔗 [${MESSAGES.BOOKING_LINK_TEXT}](${restaurant.booking_link})`;
-            
+
             await sendMessage({ chatId, text: msg });
         }
 
-        return { 
-            success: true, 
-            data: { restaurant } 
+        return {
+            success: true,
+            data: { restaurant }
         };
 
     } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-        
+
         // Send error message to user
         await sendMessage({ chatId: input.chatId, text: MESSAGES.ERROR_SAVING(errorMessage) });
-        
-        return { 
-            success: false, 
-            error: errorMessage 
+
+        return {
+            success: false,
+            error: errorMessage
         };
     }
 }

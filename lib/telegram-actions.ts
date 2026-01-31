@@ -100,17 +100,23 @@ async function handleCallbackQuery(query: NonNullable<TelegramUpdate['callback_q
 
     await answerCallbackQuery(query.id);
 
+    await answerCallbackQuery(query.id);
+
+    const session = await getSession(chatId);
+
     // Handle menu buttons (no session required)
     if (data === 'menu_add') {
         await sendMessage({ chatId, text: MESSAGES.ADD_USAGE });
         return;
     }
     if (data === 'menu_rate') {
-        await sendMessage({ chatId, text: MESSAGES.RATING_USAGE });
+        await updateSession(chatId, 'WAITING_FOR_RATE', session?.metadata || {});
+        await sendMessage({ chatId, text: MESSAGES.RATE_INSTRUCTION });
         return;
     }
     if (data === 'menu_comment') {
-        await sendMessage({ chatId, text: MESSAGES.COMMENT_USAGE });
+        await updateSession(chatId, 'WAITING_FOR_COMMENT', session?.metadata || {});
+        await sendMessage({ chatId, text: MESSAGES.COMMENT_INSTRUCTION });
         return;
     }
     if (data === 'menu_photos') {
@@ -122,7 +128,6 @@ async function handleCallbackQuery(query: NonNullable<TelegramUpdate['callback_q
         return;
     }
 
-    const session = await getSession(chatId);
     if (!session) {
         await sendMessage({ chatId, text: MESSAGES.SESSION_EXPIRED });
         return;
@@ -296,6 +301,37 @@ async function handleMessage(message: NonNullable<TelegramUpdate['message']>) {
             }
             // Assume it's the name
             await handleDonePhotos(chatId, session!, text); // Pass text as query
+            return;
+        }
+
+        if (session?.step === 'WAITING_FOR_RATE') {
+            // Expected format: "Name Score" (e.g. "Miznon 5")
+            // Or just "Name" if we want to prompt for score, but instructions say "Name Score"
+            const ratingMatch = text.match(/^(.+?)\s+([1-5])$/);
+            if (!ratingMatch) {
+                // If they just typed a name, maybe we should treat it as a search? 
+                // No, sticking to instructions is safer to avoid confusion.
+                await sendMessage({ chatId, text: MESSAGES.RATING_USAGE });
+                return;
+            }
+            const restaurantName = ratingMatch[1].trim();
+            const rating = parseInt(ratingMatch[2]);
+            await rateRestaurant({ chatId, restaurantName, rating });
+            await clearSession(chatId);
+            return;
+        }
+
+        if (session?.step === 'WAITING_FOR_COMMENT') {
+            // Expected format: "Name - Comment"
+            const commentMatch = text.match(/^(.+?)\s*[-–—]\s*(.+)$/);
+            if (!commentMatch) {
+                await sendMessage({ chatId, text: MESSAGES.COMMENT_USAGE });
+                return;
+            }
+            const restaurantName = commentMatch[1].trim();
+            const commentText = commentMatch[2].trim();
+            await addTelegramComment({ chatId, restaurantName, commentText });
+            await clearSession(chatId);
             return;
         }
 
