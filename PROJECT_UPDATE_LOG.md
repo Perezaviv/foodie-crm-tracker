@@ -11,7 +11,7 @@ Central coordination hub for 4-agent parallel execution.
 | **AGENT-1** (Telegram) | 🟡 IDLE | — | — |
 | **AGENT-2** (UI/Client) | 🟢 ACTIVE | Creating `use_geocoding` and `use_comments` | `components/RestaurantMap.tsx`, `components/RestaurantDetail.tsx`, `components/PhotoGallery.tsx`, `components/PhotoUpload.tsx`, `hooks/*` |
 | **AGENT-3** (AI/Search) | 🟡 IDLE | — | — |
-| **AGENT-4** (API/Infra) | 🟢 ACTIVE | Creating DB CRUD skills and refactoring API routes | `lib/supabase.ts`, `app/api/restaurants/*`, `app/api/photos/*`, `app/api/geocode/*`, `lib/skills/db/*` |
+| **AGENT-4** (API/Infra) | 🟢 ACTIVE | Completed DB CRUD skills and API route unification | `lib/supabase.ts`, `app/api/restaurants/*`, `app/api/photos/*`, `app/api/geocode/*`, `lib/skills/db/*` |
 
 **Status Legend:** 🟢 ACTIVE | 🟡 IDLE | 🔴 BLOCKED | ⏸️ SYNC
 
@@ -103,8 +103,8 @@ Central coordination hub for 4-agent parallel execution.
 
 ### [AGENT-4] API/Infra Specialist
 ```
-[2026-01-31 10:40] Initialized. Ready to begin Phase 1: Create lib/skills/db/ foundation
 [2026-01-31 11:15] Phase 3: Starting Task 1-3. Creating `restaurant_crud`, `photo_crud`, and `comment_crud` skills.
+[2026-01-31 11:45] Phase 3: COMPLETED. Created all DB skills, refactored API routes, and unified lib/supabase.ts.
 ```
 
 ---
@@ -126,7 +126,7 @@ Central coordination hub for 4-agent parallel execution.
 - [x] Agent 1: Extract telegram skills (`send_message`, `handle_callback`)
 - [x] Agent 2: Extract UI hooks into skills (`use_restaurants`, `use_photos`)
 - [ ] Agent 3: Complete remaining AI skills
-- [ ] Agent 4: Unify API routes to use skills
+- [x] Agent 4: Unify API routes to use skills
 
 ### Sync Points
 - [ ] Sync 1: After 3 skills created (commit + pull all)

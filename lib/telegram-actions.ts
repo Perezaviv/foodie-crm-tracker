@@ -158,9 +158,9 @@ async function handleCallbackQuery(query: NonNullable<TelegramUpdate['callback_q
             if (results && results[index]) {
                 const selected = results[index];
                 // Add restaurant and attach photos
-                const restaurant = await addRestaurantToDb(chatId, selected, true); // true = silent, don't clear session yet
-                if (restaurant) {
-                    await processPendingPhotos(chatId, restaurant.id, session.metadata.pending_photos || []);
+                const result = await addRestaurant({ chatId, data: selected, silent: true });
+                if (result.success && result.data?.restaurant) {
+                    await processPhotos({ chatId, restaurantId: result.data.restaurant.id, fileIds: session.metadata.pending_photos || [] });
                     await clearSession(chatId);
                 }
             }
@@ -213,8 +213,12 @@ async function handleMessage(message: NonNullable<TelegramUpdate['message']>) {
 
             const count = newPhotos.length;
             console.log('[TG] Sending photo confirmation, count:', count);
-            await sendMessage(chatId, MESSAGES.PHOTO_RECEIVED(count), {
-                inline_keyboard: [[{ text: MESSAGES.BTN_DONE, callback_data: 'done_photos' }, { text: MESSAGES.BTN_CANCEL, callback_data: 'cancel' }]]
+            await sendMessage({ 
+                chatId, 
+                text: MESSAGES.PHOTO_RECEIVED(count),
+                replyMarkup: {
+                    inline_keyboard: [[{ text: MESSAGES.BTN_DONE, callback_data: 'done_photos' }, { text: MESSAGES.BTN_CANCEL, callback_data: 'cancel' }]]
+                }
             });
         } catch (error) {
             console.error('[TG] Error handling photo - Full details:', {
@@ -222,7 +226,7 @@ async function handleMessage(message: NonNullable<TelegramUpdate['message']>) {
                 stack: error instanceof Error ? error.stack : undefined,
                 chatId,
             });
-            await sendMessage(chatId, MESSAGES.PHOTO_ERROR);
+            await sendMessage({ chatId, text: MESSAGES.PHOTO_ERROR });
         }
         return;
     }
