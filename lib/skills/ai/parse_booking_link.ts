@@ -50,7 +50,8 @@ const GENERIC_PATH_TERMS = [
     'regions', 'area', 'zone', 'home', 'main', 'index', 'about', 'contact',
     'terms', 'privacy', 'collection', 'collections', 'category', 'categories',
     'restaurant-collection', 'restaurant-collections', 'best-restaurants',
-    'tel-aviv', 'jerusalem', 'haifa', 'herzliya', 'netanya', 'jaffa', 'eilat'
+    'tel-aviv', 'jerusalem', 'haifa', 'herzliya', 'netanya', 'jaffa', 'eilat',
+    'terms-of-use', 'privacy-policy', 'faq', 'help', 'en', 'he', 'il'
 ];
 
 // =============================================================================

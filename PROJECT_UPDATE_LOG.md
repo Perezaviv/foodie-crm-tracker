@@ -66,6 +66,8 @@ Central coordination hub for 4-agent parallel execution.
 | `restaurant_crud` | AGENT-4 | ✅ READY | `lib/skills/db/restaurant_crud.ts` | None |
 | `photo_crud` | AGENT-4 | ✅ READY | `lib/skills/db/photo_crud.ts` | None |
 | `comment_crud` | AGENT-4 | ✅ READY | `lib/skills/db/comment_crud.ts` | None |
+| `geocode_address` | AGENT-3 | ✅ READY | `lib/skills/ai/geocode_address.ts` | `search_restaurant` |
+| `parse_booking_link` | AGENT-3 | ✅ READY | `lib/skills/ai/parse_booking_link.ts` | `search_restaurant` |
 
 **Status Legend:** 🔨 DRAFT | ✅ READY | 🚫 DEPRECATED
 
@@ -99,6 +101,7 @@ Central coordination hub for 4-agent parallel execution.
 ### [AGENT-3] AI/Search Specialist
 ```
 [2026-01-31 10:40] Initialized. Awaiting Phase 2 (after AGENT-4 creates supabase_client skill)
+[2026-01-31 11:15] Completed Phase 2 & 3 AI skills: geocode_address, parse_booking_link. Enhanced search_restaurant. Added unit tests for all 4 AI skills. Updated lib/ai/index.ts.
 ```
 
 ### [AGENT-4] API/Infra Specialist
@@ -125,7 +128,7 @@ Central coordination hub for 4-agent parallel execution.
 ### Phase 3: Parallel Extraction (All Agents)
 - [x] Agent 1: Extract telegram skills (`send_message`, `handle_callback`)
 - [x] Agent 2: Extract UI hooks into skills (`use_restaurants`, `use_photos`)
-- [ ] Agent 3: Complete remaining AI skills
+- [x] Agent 3: Complete remaining AI skills
 - [x] Agent 4: Unify API routes to use skills
 
 ### Sync Points

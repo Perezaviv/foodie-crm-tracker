@@ -267,7 +267,7 @@ async function handleMessage(message: NonNullable<TelegramUpdate['message']>) {
                 }
                 const restaurantName = ratingMatch[1].trim();
                 const rating = parseInt(ratingMatch[2]);
-                await handleRateRestaurant(chatId, restaurantName, rating);
+                await rateRestaurant({ chatId, restaurantName, rating });
                 return;
             }
 
@@ -281,7 +281,7 @@ async function handleMessage(message: NonNullable<TelegramUpdate['message']>) {
                 }
                 const restaurantName = commentMatch[1].trim();
                 const commentText = commentMatch[2].trim();
-                await handleAddComment(chatId, restaurantName, commentText);
+                await addComment({ chatId, restaurantName, commentText });
                 return;
             }
         }
@@ -333,7 +333,7 @@ async function handleDonePhotos(chatId: number, session: TelegramSession, queryO
 }
 
 async function startSearch(chatId: number, text: string, nextStep: TelegramStep) {
-    await sendMessage(chatId, MESSAGES.SEARCHING);
+    await sendMessage({ chatId, text: MESSAGES.SEARCHING });
 
     // 1. AI Extraction (Gemini)
     const parseResult = await extractRestaurantInfo(text);
@@ -353,7 +353,7 @@ async function startSearch(chatId: number, text: string, nextStep: TelegramStep)
     const result = await searchRestaurant(queryName, city);
 
     if (!result.success || result.results.length === 0) {
-        await sendMessage(chatId, MESSAGES.NO_RESULTS);
+        await sendMessage({ chatId, text: MESSAGES.NO_RESULTS });
         return;
     }
 
@@ -368,7 +368,7 @@ async function startSearch(chatId: number, text: string, nextStep: TelegramStep)
     if (result.results.length === 1) {
         if (nextStep === 'SELECTING_RESTAURANT') {
             // Auto-add
-            await addRestaurantToDb(chatId, enrichedResults[0]);
+            await addRestaurant({ chatId, data: enrichedResults[0] });
             // Don't clear session if we want to allow immediate photo upload? 
             // But usually we clear. User can start sending photos now.
             await clearSession(chatId);
@@ -409,209 +409,7 @@ async function startSearch(chatId: number, text: string, nextStep: TelegramStep)
     });
 }
 
-async function addRestaurantToDb(chatId: number, data: SearchResult, silent = false) {
-    const supabase = createAdminClient();
 
-    // Debug logging removed for production
-    // Check duplicates? (omitted for now, relying on user or DB constraints)
-
-    // Derive city - prefer from data.city, then try to extract from address
-    let derivedCity = data.city;
-    if (!derivedCity && data.address) {
-        if (data.address.toLowerCase().includes('tel aviv')) {
-            derivedCity = 'Tel Aviv';
-        } else {
-            const parts = data.address.split(',');
-            if (parts.length > 1) {
-                derivedCity = parts[1].trim();
-            }
-        }
-    }
-
-    const insertPayload = {
-        name: data.name,
-        address: data.address,
-        lat: data.lat,
-        lng: data.lng,
-        booking_link: data.bookingLink,
-        social_link: data.socialLink,
-        cuisine: data.cuisine,
-        rating: data.rating,
-        is_visited: false,
-        city: derivedCity,
-        logo_url: data.logoUrl,
-    };
-
-    const { data: rest, error } = await supabase
-        .from('restaurants')
-        .insert(insertPayload)
-        .select()
-        .single();
-
-    if (error) {
-        await sendMessage(chatId, MESSAGES.ERROR_SAVING(error.message));
-        return null;
-    }
-
-    if (!silent) {
-        let msg = MESSAGES.ADDED_RESTAURANT(rest.name);
-        if (rest.address) msg += `\n📍 ${rest.address}`;
-        if (rest.booking_link) msg += `\n🔗 [${MESSAGES.BOOKING_LINK_TEXT}](${rest.booking_link})`;
-        await sendMessage(chatId, msg);
-    }
-
-    return rest;
-}
-
-async function processPendingPhotos(chatId: number, restaurantId: string, fileIds: string[]) {
-    if (!fileIds || fileIds.length === 0) return;
-
-    let successCount = 0;
-    const supabase = createAdminClient();
-
-    await sendMessage(chatId, MESSAGES.PROCESSING_PHOTOS(fileIds.length));
-
-    for (const fileId of fileIds) {
-        // 1. Get File Path
-        try {
-            console.log('[TG] Processing fileId:', fileId.substring(0, 20) + '...');
-
-            const fileRes = await fetch(`${getTelegramApiBase()}/getFile?file_id=${fileId}`);
-            const fileJson = await fileRes.json();
-            if (!fileJson.ok) {
-                console.error('[TG] getFile API failed:', fileJson);
-                continue;
-            }
-
-            const filePath = fileJson.result.file_path;
-            console.log('[TG] Got file path:', filePath);
-            const downloadUrl = `https://api.telegram.org/file/bot${process.env.TELEGRAM_BOT_TOKEN}/${filePath}`;
-
-            // 2. Download
-            const imageRes = await fetch(downloadUrl);
-            if (!imageRes.ok) {
-                console.error('[TG] File download failed:', imageRes.status, imageRes.statusText);
-                continue;
-            }
-            const arrayBuffer = await imageRes.arrayBuffer();
-            const buffer = Buffer.from(arrayBuffer);
-            console.log('[TG] Downloaded image, size:', buffer.length, 'bytes');
-
-            // 3. Upload to Supabase
-            const ext = filePath.split('.').pop() || 'jpg';
-            const storagePath = `restaurants/${restaurantId}/${Date.now()}_${Math.random().toString(36).substring(7)}.${ext}`;
-
-            const { error: uploadError } = await supabase.storage
-                .from('photos')
-                .upload(storagePath, buffer, { contentType: 'image/jpeg' });
-
-            if (uploadError) {
-                console.error('[TG] Storage upload failed:', uploadError);
-                continue;
-            }
-
-            // 4. Create DB Record
-            const { error: dbError } = await supabase.from('photos').insert({
-                restaurant_id: restaurantId,
-                storage_path: storagePath
-            });
-
-            if (dbError) {
-                console.error('[TG] DB insert failed details:', JSON.stringify(dbError));
-                // Only fail this photo, but log it properly
-                throw new Error(`DB Insert Failed: ${dbError.message}`);
-            }
-
-            console.log('[TG] Successfully uploaded photo:', storagePath);
-            successCount++;
-
-        } catch (e) {
-            console.error('[TG] Photo processing error - Full details:', {
-                error: e instanceof Error ? e.message : String(e),
-                stack: e instanceof Error ? e.stack : undefined,
-                fileId: fileId.substring(0, 20) + '...',
-            });
-        }
-    }
-
-    await sendMessage(chatId, MESSAGES.PHOTOS_SUCCESS(successCount));
-}
-
-async function handleRateRestaurant(chatId: number, restaurantName: string, rating: number) {
-    const supabase = createAdminClient();
-
-    // Find restaurant by name (case-insensitive)
-    const { data: restaurants, error: findError } = await supabase
-        .from('restaurants')
-        .select('id, name')
-        .ilike('name', `%${restaurantName}%`)
-        .limit(5);
-
-    if (findError || !restaurants || restaurants.length === 0) {
-        await sendMessage(chatId, MESSAGES.RESTAURANT_NOT_FOUND(restaurantName));
-        return;
-    }
-
-    // If multiple matches, use the first one (closest match)
-    const restaurant = restaurants[0];
-
-    // Update rating
-    const { error: updateError } = await supabase
-        .from('restaurants')
-        .update({ rating })
-        .eq('id', restaurant.id);
-
-    if (updateError) {
-        await sendMessage(chatId, MESSAGES.RATING_ERROR(updateError.message));
-        return;
-    }
-
-    await sendMessage(chatId, MESSAGES.RATING_SUCCESS(restaurant.name, rating));
-}
-
-async function handleAddComment(chatId: number, restaurantName: string, commentText: string) {
-    const supabase = createAdminClient();
-
-    // Find restaurant by name (case-insensitive)
-    const { data: restaurants, error: findError } = await supabase
-        .from('restaurants')
-        .select('id, name')
-        .ilike('name', `%${restaurantName}%`)
-        .limit(5);
-
-    if (findError || !restaurants || restaurants.length === 0) {
-        await sendMessage(chatId, MESSAGES.RESTAURANT_NOT_FOUND(restaurantName));
-        return;
-    }
-
-    const restaurant = restaurants[0];
-
-    // Add comment
-    try {
-        // Add comment
-        const { error: insertError } = await supabase
-            .from('comments')
-            .insert({
-                restaurant_id: restaurant.id,
-                content: commentText,
-                author_name: 'Telegram User',
-            });
-
-        if (insertError) {
-            await sendMessage(chatId, MESSAGES.COMMENT_ERROR(insertError.message));
-            return;
-        }
-
-        await sendMessage(chatId, MESSAGES.COMMENT_SUCCESS(restaurant.name, commentText));
-    } catch (err: any) {
-        console.error('[TG] Comment failed:', err);
-        if (err?.message?.includes('SUPABASE_SERVICE_ROLE_KEY')) {
-            await sendMessage(chatId, '⚠️ **System Error**: `SUPABASE_SERVICE_ROLE_KEY` is missing.');
-        } else {
-            await sendMessage(chatId, MESSAGES.ERROR_GENERIC);
-        }
-    }
-}
 
 // ============================================================
 // HELPERS
