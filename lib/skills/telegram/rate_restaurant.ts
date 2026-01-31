@@ -1,7 +1,7 @@
 /**
  * Skill: RateRestaurant
  * @owner AGENT-1
- * @status READY
+ * @status DRAFT
  * @created 2026-01-31
  * @dependencies supabase_client, send_message
  */
@@ -12,7 +12,6 @@
 
 import { getSupabaseClient } from '../db/supabase_client';
 import { sendMessage } from './send_message';
-import { notifyGroup } from './notify_group';
 import { MESSAGES } from '../../telegram-messages';
 import type { Database } from '../../types';
 
@@ -24,7 +23,6 @@ export interface RateRestaurantInput {
     chatId: number;
     restaurantName: string;
     rating: number;
-    userName?: string;
 }
 
 export interface RateRestaurantOutput {
@@ -47,13 +45,12 @@ export interface RateRestaurantOutput {
  * const result = await rateRestaurant({
  *     chatId: 123456789,
  *     restaurantName: 'מזנון',
- *     rating: 5,
- *     userName: 'Aviv'
+ *     rating: 5
  * });
  */
 export async function rateRestaurant(input: RateRestaurantInput): Promise<RateRestaurantOutput> {
     try {
-        const { chatId, restaurantName, rating, userName } = input;
+        const { chatId, restaurantName, rating } = input;
 
         // Validate rating range
         if (rating < 1 || rating > 5) {
@@ -94,23 +91,17 @@ export async function rateRestaurant(input: RateRestaurantInput): Promise<RateRe
 
         await sendMessage({ chatId, text: MESSAGES.RATING_SUCCESS(restaurant.name, rating) });
 
-        // Notify Group
-        await notifyGroup({
-            text: `rated *${restaurant.name}*: ${'⭐'.repeat(rating)} (${rating})`,
-            actionBy: userName
-        });
-
-        return {
-            success: true,
-            data: { restaurantName: restaurant.name, rating }
+        return { 
+            success: true, 
+            data: { restaurantName: restaurant.name, rating } 
         };
 
     } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-
-        return {
-            success: false,
-            error: errorMessage
+        
+        return { 
+            success: false, 
+            error: errorMessage 
         };
     }
 }

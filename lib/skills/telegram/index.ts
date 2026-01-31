@@ -20,6 +20,3 @@ export type { RateRestaurantInput, RateRestaurantOutput } from './rate_restauran
 
 export { addTelegramComment } from './add_comment';
 export type { AddCommentInput, AddCommentOutput } from './add_comment';
-
-export { notifyGroup } from './notify_group';
-export type { NotifyGroupInput } from './notify_group';
