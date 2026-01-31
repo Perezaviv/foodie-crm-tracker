@@ -1,7 +1,7 @@
 /**
  * Skill: ProcessPhotos
  * @owner AGENT-1
- * @status DRAFT
+ * @status READY
  * @created 2026-01-31
  * @dependencies supabase_client, send_message
  */
@@ -12,6 +12,7 @@
 
 import { getSupabaseClient } from '../db/supabase_client';
 import { sendMessage } from './send_message';
+import { notifyGroup } from './notify_group';
 import { MESSAGES } from '../../telegram-messages';
 
 // =============================================================================
@@ -22,6 +23,7 @@ export interface ProcessPhotosInput {
     chatId: number;
     restaurantId: string;
     fileIds: string[];
+    userName?: string;
 }
 
 export interface ProcessPhotosOutput {
@@ -44,12 +46,13 @@ export interface ProcessPhotosOutput {
  * const result = await processPhotos({
  *     chatId: 123456789,
  *     restaurantId: 'restaurant-uuid',
- *     fileIds: ['AgACAgIAAxkDAAIC...']
+ *     fileIds: ['AgACAgIAAxkDAAIC...'],
+ *     userName: 'Aviv'
  * });
  */
 export async function processPhotos(input: ProcessPhotosInput): Promise<ProcessPhotosOutput> {
     try {
-        const { chatId, restaurantId, fileIds } = input;
+        const { chatId, restaurantId, fileIds, userName } = input;
 
         if (!fileIds || fileIds.length === 0) {
             return { success: true, data: { processedCount: 0, totalCount: 0 } };
@@ -77,7 +80,7 @@ export async function processPhotos(input: ProcessPhotosInput): Promise<ProcessP
 
                 const fileRes = await fetch(`https://api.telegram.org/bot${token}/getFile?file_id=${fileId}`);
                 const fileJson = await fileRes.json();
-                
+
                 if (!fileJson.ok) {
                     console.error('[TG] getFile API failed:', fileJson);
                     continue;
@@ -136,17 +139,32 @@ export async function processPhotos(input: ProcessPhotosInput): Promise<ProcessP
 
         await sendMessage({ chatId, text: MESSAGES.PHOTOS_SUCCESS(successCount) });
 
-        return { 
-            success: true, 
-            data: { processedCount: successCount, totalCount: fileIds.length } 
+        // Fetch Restaurant Name for Notification
+        const { data: restaurant } = await supabase
+            .from('restaurants')
+            .select('name')
+            .eq('id', restaurantId)
+            .single();
+
+        // Notify Group
+        if (successCount > 0) {
+            await notifyGroup({
+                text: `added ${successCount} photos to *${restaurant?.name || 'Restaurant'}* 📸`,
+                actionBy: userName
+            });
+        }
+
+        return {
+            success: true,
+            data: { processedCount: successCount, totalCount: fileIds.length }
         };
 
     } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-        
-        return { 
-            success: false, 
-            error: errorMessage 
+
+        return {
+            success: false,
+            error: errorMessage
         };
     }
 }

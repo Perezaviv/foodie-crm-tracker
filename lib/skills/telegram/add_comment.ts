@@ -1,7 +1,7 @@
 /**
  * Skill: AddComment
  * @owner AGENT-1
- * @status DRAFT
+ * @status READY
  * @created 2026-01-31
  * @dependencies supabase_client, send_message
  */
@@ -12,6 +12,7 @@
 
 import { getSupabaseClient } from '../db/supabase_client';
 import { sendMessage } from './send_message';
+import { notifyGroup } from './notify_group';
 import { MESSAGES } from '../../telegram-messages';
 import type { Database } from '../../types';
 
@@ -23,6 +24,7 @@ export interface AddCommentInput {
     chatId: number;
     restaurantName: string;
     commentText: string;
+    userName?: string;
 }
 
 export interface AddCommentOutput {
@@ -45,12 +47,13 @@ export interface AddCommentOutput {
  * const result = await addComment({
  *     chatId: 123456789,
  *     restaurantName: 'מזנון',
- *     commentText: 'הפיתה הכי טובה בעיר!'
+ *     commentText: 'הפיתה הכי טובה בעיר!',
+ *     userName: 'Aviv'
  * });
  */
 export async function addTelegramComment(input: AddCommentInput): Promise<AddCommentOutput> {
     try {
-        const { chatId, restaurantName, commentText } = input;
+        const { chatId, restaurantName, commentText, userName } = input;
 
         // Get admin Supabase client
         const { client: supabase, error: clientError } = getSupabaseClient({ type: 'admin' });
@@ -78,7 +81,7 @@ export async function addTelegramComment(input: AddCommentInput): Promise<AddCom
             .insert({
                 restaurant_id: restaurant.id,
                 content: commentText,
-                author_name: 'Telegram User',
+                author_name: userName || 'Telegram User',
             });
 
         if (insertError) {
@@ -87,6 +90,12 @@ export async function addTelegramComment(input: AddCommentInput): Promise<AddCom
         }
 
         await sendMessage({ chatId, text: MESSAGES.COMMENT_SUCCESS(restaurant.name, commentText) });
+
+        // Notify Group
+        await notifyGroup({
+            text: `commented on *${restaurant.name}*: "${commentText}"`,
+            actionBy: userName
+        });
 
         return {
             success: true,

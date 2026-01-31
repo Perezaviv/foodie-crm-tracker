@@ -97,6 +97,7 @@ export async function handleTelegramUpdate(update: TelegramUpdate) {
 async function handleCallbackQuery(query: NonNullable<TelegramUpdate['callback_query']>) {
     const chatId = query.message.chat.id;
     const data = query.data;
+    const userName = query.from.first_name;
 
     await answerCallbackQuery(query.id);
 
@@ -140,7 +141,7 @@ async function handleCallbackQuery(query: NonNullable<TelegramUpdate['callback_q
     }
 
     if (data === 'done_photos') {
-        await handleDonePhotos(chatId, session);
+        await handleDonePhotos(chatId, session, userName);
         return;
     }
 
@@ -150,7 +151,7 @@ async function handleCallbackQuery(query: NonNullable<TelegramUpdate['callback_q
             const results = session.metadata.searchResults as SearchResult[];
             if (results && results[index]) {
                 const selected = results[index];
-                await addRestaurant({ chatId, data: selected });
+                await addRestaurant({ chatId, data: selected, userName });
                 await clearSession(chatId);
             } else {
                 await sendMessage({ chatId, text: MESSAGES.SELECTION_INVALID });
@@ -163,9 +164,9 @@ async function handleCallbackQuery(query: NonNullable<TelegramUpdate['callback_q
             if (results && results[index]) {
                 const selected = results[index];
                 // Add restaurant and attach photos
-                const result = await addRestaurant({ chatId, data: selected, silent: true });
+                const result = await addRestaurant({ chatId, data: selected, silent: true, userName });
                 if (result.success && result.data?.restaurant) {
-                    await processPhotos({ chatId, restaurantId: result.data.restaurant.id, fileIds: session.metadata.pending_photos || [] });
+                    await processPhotos({ chatId, restaurantId: result.data.restaurant.id, fileIds: session.metadata.pending_photos || [], userName });
                     await clearSession(chatId);
                 }
             }
@@ -176,9 +177,11 @@ async function handleCallbackQuery(query: NonNullable<TelegramUpdate['callback_q
 async function handleMessage(message: NonNullable<TelegramUpdate['message']>) {
     const chatId = message.chat.id;
     const text = message.text || '';
+    const userName = message.from.first_name;
 
     console.log('[TG] handleMessage called', {
         chatId,
+        chatTitle: message.chat.type === 'group' || message.chat.type === 'supergroup' ? (message.chat as any).title : undefined,
         chatType: message.chat.type,
         hasPhoto: !!(message.photo),
         photoCount: message.photo?.length,
@@ -254,7 +257,7 @@ async function handleMessage(message: NonNullable<TelegramUpdate['message']>) {
                     await sendMessage({ chatId, text: MESSAGES.ADD_USAGE });
                     return;
                 }
-                await startSearch(chatId, query, 'SELECTING_RESTAURANT');
+                await startSearch(chatId, query, 'SELECTING_RESTAURANT', userName);
                 return;
             }
 
@@ -272,7 +275,7 @@ async function handleMessage(message: NonNullable<TelegramUpdate['message']>) {
                 }
                 const restaurantName = ratingMatch[1].trim();
                 const rating = parseInt(ratingMatch[2]);
-                await rateRestaurant({ chatId, restaurantName, rating });
+                await rateRestaurant({ chatId, restaurantName, rating, userName });
                 return;
             }
 
@@ -286,7 +289,7 @@ async function handleMessage(message: NonNullable<TelegramUpdate['message']>) {
                 }
                 const restaurantName = commentMatch[1].trim();
                 const commentText = commentMatch[2].trim();
-                await addTelegramComment({ chatId, restaurantName, commentText });
+                await addTelegramComment({ chatId, restaurantName, commentText, userName });
                 return;
             }
         }
@@ -296,11 +299,11 @@ async function handleMessage(message: NonNullable<TelegramUpdate['message']>) {
         // If WAITING_FOR_PHOTOS but got text (and not /cancel)
         if (session?.step === 'WAITING_FOR_PHOTOS') {
             if (text.toLowerCase() === 'done') {
-                await handleDonePhotos(chatId, session!); // Session exists if we are in this step
+                await handleDonePhotos(chatId, session!, userName); // Session exists if we are in this step
                 return;
             }
             // Assume it's the name
-            await handleDonePhotos(chatId, session!, text); // Pass text as query
+            await handleDonePhotos(chatId, session!, userName, text); // Pass text as query
             return;
         }
 
@@ -316,7 +319,7 @@ async function handleMessage(message: NonNullable<TelegramUpdate['message']>) {
             }
             const restaurantName = ratingMatch[1].trim();
             const rating = parseInt(ratingMatch[2]);
-            await rateRestaurant({ chatId, restaurantName, rating });
+            await rateRestaurant({ chatId, restaurantName, rating, userName });
             await clearSession(chatId);
             return;
         }
@@ -330,14 +333,14 @@ async function handleMessage(message: NonNullable<TelegramUpdate['message']>) {
             }
             const restaurantName = commentMatch[1].trim();
             const commentText = commentMatch[2].trim();
-            await addTelegramComment({ chatId, restaurantName, commentText });
+            await addTelegramComment({ chatId, restaurantName, commentText, userName });
             await clearSession(chatId);
             return;
         }
 
         if (session?.step === 'SELECTING_RESTAURANT' || session?.step === 'SELECTING_RESTAURANT_FOR_PHOTOS') {
             // New search query
-            await startSearch(chatId, text, session.step);
+            await startSearch(chatId, text, session.step, userName);
             return;
         }
 
@@ -345,7 +348,7 @@ async function handleMessage(message: NonNullable<TelegramUpdate['message']>) {
         // NOTE: In group chats with privacy mode ON, we might not get here unless mentioned or replying.
         // Wrap startSearch in try/catch to handle admin client errors (missing env vars)
         try {
-            await startSearch(chatId, text, 'SELECTING_RESTAURANT');
+            await startSearch(chatId, text, 'SELECTING_RESTAURANT', userName);
         } catch (err: any) {
             console.error('[TG] Search failed:', err);
             if (err?.message?.includes('SUPABASE_SERVICE_ROLE_KEY')) {
@@ -357,10 +360,10 @@ async function handleMessage(message: NonNullable<TelegramUpdate['message']>) {
     }
 }
 
-async function handleDonePhotos(chatId: number, session: TelegramSession, queryOverride?: string) {
+async function handleDonePhotos(chatId: number, session: TelegramSession, userName: string, queryOverride?: string) {
     // If we have a query (user typed name), search immediately
     if (queryOverride) {
-        await startSearch(chatId, queryOverride, 'SELECTING_RESTAURANT_FOR_PHOTOS');
+        await startSearch(chatId, queryOverride, 'SELECTING_RESTAURANT_FOR_PHOTOS', userName);
         return;
     }
 
@@ -368,7 +371,7 @@ async function handleDonePhotos(chatId: number, session: TelegramSession, queryO
     await sendMessage({ chatId, text: MESSAGES.WHICH_RESTAURANT });
 }
 
-async function startSearch(chatId: number, text: string, nextStep: TelegramStep) {
+async function startSearch(chatId: number, text: string, nextStep: TelegramStep, userName: string) {
     await sendMessage({ chatId, text: MESSAGES.SEARCHING });
 
     // 1. AI Extraction (Gemini)

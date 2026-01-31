@@ -1,7 +1,7 @@
 /**
  * Skill: AddRestaurant
  * @owner AGENT-1
- * @status DRAFT
+ * @status READY
  * @created 2026-01-31
  * @dependencies supabase_client, send_message
  */
@@ -12,6 +12,7 @@
 
 import { getSupabaseClient } from '../db/supabase_client';
 import { sendMessage } from './send_message';
+import { notifyGroup } from './notify_group';
 import { MESSAGES } from '../../telegram-messages';
 import type { SearchResult } from '../ai/search_restaurant';
 import type { Database } from '../../types';
@@ -24,6 +25,7 @@ export interface AddRestaurantInput {
     chatId: number;
     data: SearchResult;
     silent?: boolean;
+    userName?: string; // New field for notification attribution
 }
 
 export interface AddRestaurantOutput {
@@ -51,12 +53,13 @@ export interface AddRestaurantOutput {
  *         lng: 34.7818,
  *         cuisine: 'מזרחי',
  *         rating: 4.5
- *     }
+ *     },
+ *     userName: 'Aviv'
  * });
  */
 export async function addRestaurant(input: AddRestaurantInput): Promise<AddRestaurantOutput> {
     try {
-        const { chatId, data, silent = false } = input;
+        const { chatId, data, silent = false, userName } = input;
 
         // Get admin Supabase client
         const { client: supabase, error: clientError } = getSupabaseClient({ type: 'admin' });
@@ -92,6 +95,14 @@ export async function addRestaurant(input: AddRestaurantInput): Promise<AddResta
                 await sendMessage({
                     chatId,
                     text: `⚠️ **שים לב:** המסעדה *${existingRestaurant.name}* כבר קיימת במערכת.\nהוספנו את המידע לכאורה, אבל בעצם השתמשנו ברשומה הקיימת.`
+                });
+
+                // Even for existing restaurants, if it was an explicit "Add" action (not silent), we might want to notify
+                // But typically if they find it, maybe they will rate it next.
+                // Let's notify that someone "Found" it to keep the group alive
+                await notifyGroup({
+                    text: `found existing restaurant: *${existingRestaurant.name}*`,
+                    actionBy: userName
                 });
             }
 
@@ -131,6 +142,12 @@ export async function addRestaurant(input: AddRestaurantInput): Promise<AddResta
             if (restaurant.booking_link) msg += `\n🔗 [${MESSAGES.BOOKING_LINK_TEXT}](${restaurant.booking_link})`;
 
             await sendMessage({ chatId, text: msg });
+
+            // Notify Group
+            await notifyGroup({
+                text: `added a new restaurant: *${restaurant.name}* 🏙️`,
+                actionBy: userName
+            });
         }
 
         return {
