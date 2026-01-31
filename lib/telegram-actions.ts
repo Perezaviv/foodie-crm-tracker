@@ -4,13 +4,13 @@ import { getSession, updateSession, clearSession, TelegramStep, TelegramSession 
 import { searchRestaurant, SearchResult, extractRestaurantInfo } from './ai';
 
 import { MESSAGES, MENU_KEYBOARD } from './telegram-messages';
-import { 
-    sendMessage, 
+import {
+    sendMessage,
     answerCallbackQuery,
-    addRestaurant, 
-    processPhotos, 
-    rateRestaurant, 
-    addComment 
+    addRestaurant,
+    processPhotos,
+    rateRestaurant,
+    addTelegramComment
 } from './skills/telegram';
 
 // Get token at runtime to ensure env var is available in serverless
@@ -213,8 +213,8 @@ async function handleMessage(message: NonNullable<TelegramUpdate['message']>) {
 
             const count = newPhotos.length;
             console.log('[TG] Sending photo confirmation, count:', count);
-            await sendMessage({ 
-                chatId, 
+            await sendMessage({
+                chatId,
                 text: MESSAGES.PHOTO_RECEIVED(count),
                 replyMarkup: {
                     inline_keyboard: [[{ text: MESSAGES.BTN_DONE, callback_data: 'done_photos' }, { text: MESSAGES.BTN_CANCEL, callback_data: 'cancel' }]]
@@ -240,13 +240,13 @@ async function handleMessage(message: NonNullable<TelegramUpdate['message']>) {
 
             if (cmd === '/cancel') {
                 await clearSession(chatId);
-                await sendMessage(chatId, MESSAGES.SESSION_CLEARED);
+                await sendMessage({ chatId, text: MESSAGES.SESSION_CLEARED });
                 return;
             }
 
             if (cmd === '/add' || cmd === '/search') {
                 if (!query) {
-                    await sendMessage(chatId, MESSAGES.ADD_USAGE);
+                    await sendMessage({ chatId, text: MESSAGES.ADD_USAGE });
                     return;
                 }
                 await startSearch(chatId, query, 'SELECTING_RESTAURANT');
@@ -254,7 +254,7 @@ async function handleMessage(message: NonNullable<TelegramUpdate['message']>) {
             }
 
             if (cmd === '/start' || cmd === '/menu') {
-                await sendMessage(chatId, MESSAGES.MENU_HEADER, MENU_KEYBOARD);
+                await sendMessage({ chatId, text: MESSAGES.MENU_HEADER, replyMarkup: MENU_KEYBOARD });
                 return;
             }
 
@@ -262,7 +262,7 @@ async function handleMessage(message: NonNullable<TelegramUpdate['message']>) {
             if (cmd === '/rate') {
                 const ratingMatch = query.match(/^(.+?)\s+([1-5])$/);
                 if (!ratingMatch) {
-                    await sendMessage(chatId, MESSAGES.RATING_USAGE);
+                    await sendMessage({ chatId, text: MESSAGES.RATING_USAGE });
                     return;
                 }
                 const restaurantName = ratingMatch[1].trim();
@@ -276,12 +276,12 @@ async function handleMessage(message: NonNullable<TelegramUpdate['message']>) {
                 // Allow normal dash (-), en-dash (–), em-dash (—) and flexible spacing
                 const commentMatch = query.match(/^(.+?)\s*[-–—]\s*(.+)$/);
                 if (!commentMatch) {
-                    await sendMessage(chatId, MESSAGES.COMMENT_USAGE);
+                    await sendMessage({ chatId, text: MESSAGES.COMMENT_USAGE });
                     return;
                 }
                 const restaurantName = commentMatch[1].trim();
                 const commentText = commentMatch[2].trim();
-                await addComment({ chatId, restaurantName, commentText });
+                await addTelegramComment({ chatId, restaurantName, commentText });
                 return;
             }
         }
@@ -313,9 +313,9 @@ async function handleMessage(message: NonNullable<TelegramUpdate['message']>) {
         } catch (err: any) {
             console.error('[TG] Search failed:', err);
             if (err?.message?.includes('SUPABASE_SERVICE_ROLE_KEY')) {
-                await sendMessage(chatId, '⚠️ **System Error**: `SUPABASE_SERVICE_ROLE_KEY` is not configured on the server. I cannot save data without it.');
+                await sendMessage({ chatId, text: '⚠️ **System Error**: `SUPABASE_SERVICE_ROLE_KEY` is not configured on the server. I cannot save data without it.' });
             } else {
-                await sendMessage(chatId, MESSAGES.ERROR_GENERIC);
+                await sendMessage({ chatId, text: MESSAGES.ERROR_GENERIC });
             }
         }
     }
@@ -329,7 +329,7 @@ async function handleDonePhotos(chatId: number, session: TelegramSession, queryO
     }
 
     await updateSession(chatId, 'SELECTING_RESTAURANT_FOR_PHOTOS', session.metadata);
-    await sendMessage(chatId, MESSAGES.WHICH_RESTAURANT);
+    await sendMessage({ chatId, text: MESSAGES.WHICH_RESTAURANT });
 }
 
 async function startSearch(chatId: number, text: string, nextStep: TelegramStep) {
@@ -350,7 +350,7 @@ async function startSearch(chatId: number, text: string, nextStep: TelegramStep)
         city = parsed.city || undefined;
     }
 
-    const result = await searchRestaurant(queryName, city);
+    const result = await searchRestaurant({ name: queryName, city });
 
     if (!result.success || result.results.length === 0) {
         await sendMessage({ chatId, text: MESSAGES.NO_RESULTS });
@@ -376,10 +376,10 @@ async function startSearch(chatId: number, text: string, nextStep: TelegramStep)
             // For photos, we need confirmation or just do it?
             // Let's ask to be safe or just do it.
             // "Found X. Attaching photos..."
-            const restaurant = await addRestaurantToDb(chatId, enrichedResults[0], true);
-            if (restaurant) {
+            const result = await addRestaurant({ chatId, data: enrichedResults[0], silent: true });
+            if (result.success && result.data?.restaurant) {
                 const session = await getSession(chatId);
-                await processPendingPhotos(chatId, restaurant.id, session?.metadata?.pending_photos || []);
+                await processPhotos({ chatId, restaurantId: result.data.restaurant.id, fileIds: session?.metadata?.pending_photos || [] });
                 await clearSession(chatId);
             }
         }
@@ -404,8 +404,12 @@ async function startSearch(chatId: number, text: string, nextStep: TelegramStep)
         searchResults: enrichedResults
     });
 
-    await sendMessage(chatId, MESSAGES.MULTIPLE_RESULTS, {
-        inline_keyboard: buttons
+    await sendMessage({
+        chatId,
+        text: MESSAGES.MULTIPLE_RESULTS,
+        replyMarkup: {
+            inline_keyboard: buttons
+        }
     });
 }
 

@@ -8,7 +8,7 @@ Central coordination hub for 4-agent parallel execution.
 
 | Agent | Status | Current Task | Files Locked |
 |-------|--------|--------------|--------------|
-| **AGENT-1** (Telegram) | 🟡 IDLE | — | — |
+| **AGENT-1** (Telegram) | ✅ DONE | Refactored Telegram actions | — |
 | **AGENT-2** (UI/Client) | 🟢 ACTIVE | Creating `use_geocoding` and `use_comments` | `components/RestaurantMap.tsx`, `components/RestaurantDetail.tsx`, `components/PhotoGallery.tsx`, `components/PhotoUpload.tsx`, `hooks/*` |
 | **AGENT-3** (AI/Search) | 🟡 IDLE | — | — |
 | **AGENT-4** (API/Infra) | 🟢 ACTIVE | Completed DB CRUD skills and API route unification | `lib/supabase.ts`, `app/api/restaurants/*`, `app/api/photos/*`, `app/api/geocode/*`, `lib/skills/db/*` |
@@ -59,6 +59,10 @@ Central coordination hub for 4-agent parallel execution.
 | `extract_info` | AGENT-3 | ✅ READY | `lib/skills/ai/extract_info.ts` | AGENT-1 |
 | `send_message` | AGENT-1 | ✅ READY | `lib/skills/telegram/send_message.ts` | None |
 | `handle_callback` | AGENT-1 | ✅ READY | `lib/skills/telegram/handle_callback.ts` | None |
+| `add_restaurant` | AGENT-1 | ✅ READY | `lib/skills/telegram/add_restaurant.ts` | None |
+| `process_photos` | AGENT-1 | ✅ READY | `lib/skills/telegram/process_photos.ts` | None |
+| `rate_restaurant` | AGENT-1 | ✅ READY | `lib/skills/telegram/rate_restaurant.ts` | None |
+| `add_comment` | AGENT-1 | ✅ READY | `lib/skills/telegram/add_comment.ts` | None |
 | `use_restaurants` | AGENT-2 | ✅ READY | `lib/skills/ui/use_restaurants.ts` | None |
 | `use_photos` | AGENT-2 | ✅ READY | `lib/skills/ui/use_photos.ts` | None |
 | `use_geocoding` | AGENT-2 | ✅ READY | `lib/skills/ui/use_geocoding.ts` | `RestaurantMap.tsx` |
@@ -86,6 +90,7 @@ Central coordination hub for 4-agent parallel execution.
 ### [AGENT-1] Telegram Specialist
 ```
 [2026-01-31 10:40] Initialized. Awaiting Phase 2 (after AGENT-4 creates supabase_client skill)
+[2026-01-31 11:35] Refactored `lib/telegram-actions.ts` to use Modular Skills. Fixed signature mismatches and naming conflicts. Verified with TSC.
 ```
 
 ### [AGENT-2] UI/Client Specialist

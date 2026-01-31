@@ -18,5 +18,5 @@ export type { ProcessPhotosInput, ProcessPhotosOutput } from './process_photos';
 export { rateRestaurant } from './rate_restaurant';
 export type { RateRestaurantInput, RateRestaurantOutput } from './rate_restaurant';
 
-export { addComment } from './add_comment';
+export { addTelegramComment } from './add_comment';
 export type { AddCommentInput, AddCommentOutput } from './add_comment';

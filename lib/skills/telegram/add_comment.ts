@@ -48,7 +48,7 @@ export interface AddCommentOutput {
  *     commentText: 'הפיתה הכי טובה בעיר!'
  * });
  */
-export async function addComment(input: AddCommentInput): Promise<AddCommentOutput> {
+export async function addTelegramComment(input: AddCommentInput): Promise<AddCommentOutput> {
     try {
         const { chatId, restaurantName, commentText } = input;
 
@@ -88,16 +88,16 @@ export async function addComment(input: AddCommentInput): Promise<AddCommentOutp
 
         await sendMessage({ chatId, text: MESSAGES.COMMENT_SUCCESS(restaurant.name, commentText) });
 
-        return { 
-            success: true, 
-            data: { restaurantName: restaurant.name, commentText } 
+        return {
+            success: true,
+            data: { restaurantName: restaurant.name, commentText }
         };
 
     } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-        
+
         console.error('[TG] Comment failed:', error);
-        
+
         // Handle special case for missing environment variable
         if (errorMessage?.includes('SUPABASE_SERVICE_ROLE_KEY')) {
             try {
@@ -106,10 +106,10 @@ export async function addComment(input: AddCommentInput): Promise<AddCommentOutp
                 console.error('Failed to send error message:', sendError);
             }
         }
-        
-        return { 
-            success: false, 
-            error: errorMessage 
+
+        return {
+            success: false,
+            error: errorMessage
         };
     }
 }
