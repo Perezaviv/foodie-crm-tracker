@@ -9,7 +9,7 @@ Central coordination hub for 4-agent parallel execution.
 | Agent | Status | Current Task | Files Locked |
 |-------|--------|--------------|--------------|
 | **AGENT-1** (Telegram) | ✅ DONE | Refactored Telegram actions | — |
-| **AGENT-2** (UI/Client) | ✅ DONE | UI Refactor Complete | — |
+| **AGENT-2** (UI/Client) | ✅ DONE | Integrated Happy Hour UI, Toggle & Hook | — |
 | **AGENT-3** (AI/Search) | ✅ DONE | All AI skills complete and verified | — |
 | **AGENT-4** (API/Infra) | ✅ DONE (P) | Completed DB CRUD & API unification | — |
 
@@ -93,12 +93,15 @@ Central coordination hub for 4-agent parallel execution.
 [2026-01-31 11:55] Split `RestaurantDetail.tsx` into sub-components (Header, InfoTab, PhotosTab, CommentsTab).
 [2026-01-31 12:00] Fixed type errors in `app/api/parse/route.ts` (integration fix). Verified project compilation.
 [2026-01-31 12:05] All UI tasks completed. Status: DONE.
+[2026-01-31 23:40] Started Phase 4: Happy Hour Integration.
+[2026-01-31 23:55] Created `HappyHourSwitch.tsx`, updated `useRestaurants` hook, and integrated mode selection into `app/page.tsx`. Updated `RestaurantMap` and `RestaurantList` for HH branding and data display.
 ```
 
 ### [AGENT-3] AI/Search Specialist
 ```
 [2026-01-31 10:40] Initialized. Awaiting Phase 2 (after AGENT-4 creates supabase_client skill)
 [2026-01-31 11:15] Completed Phase 2 & 3 AI skills: geocode_address, parse_booking_link. Enhanced search_restaurant. Added unit tests for all 4 AI skills. Updated lib/ai/index.ts.
+[2026-02-01 00:15] Enhanced `search_restaurant` and `geocoding` logic for better robustness. Integrated Gemini AI fallback for address extraction to handle specific restaurant names and noisy search results (e.g., A.K.A, Sid and Nancy).
 ```
 
 ### [AGENT-4] API/Infra Specialist

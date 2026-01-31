@@ -15,6 +15,7 @@ interface RestaurantMapProps {
     restaurants: Restaurant[];
     isLoading?: boolean;
     onRestaurantClick?: (restaurant: Restaurant) => void;
+    isHappyHourMode?: boolean;
 }
 
 interface UserLocation {
@@ -45,23 +46,23 @@ const mapStyles = [
 ];
 
 // Create a cute emoji marker icon - smaller size
-function createEmojiMarkerIcon(): string {
+function createEmojiMarkerIcon(color: string = '#e11d48', emoji: string = '🍽️'): string {
     const svg = `
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 48 48">
+        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 48 48">
             <defs>
                 <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
                     <feDropShadow dx="0" dy="2" stdDeviation="2" flood-opacity="0.3"/>
                 </filter>
             </defs>
-            <circle cx="24" cy="20" r="18" fill="#e11d48" filter="url(#shadow)"/>
-            <text x="24" y="26" text-anchor="middle" font-size="20">🍽️</text>
-            <path d="M24 38 L18 28 L30 28 Z" fill="#e11d48"/>
+            <circle cx="24" cy="20" r="18" fill="${color}" filter="url(#shadow)"/>
+            <text x="24" y="26" text-anchor="middle" font-size="20">${emoji}</text>
+            <path d="M24 38 L18 28 L30 28 Z" fill="${color}"/>
         </svg>
     `;
     return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
 }
 
-export function RestaurantMap({ restaurants, isLoading = false, onRestaurantClick }: RestaurantMapProps) {
+export function RestaurantMap({ restaurants, isLoading = false, onRestaurantClick, isHappyHourMode = false }: RestaurantMapProps) {
     const [selectedRestaurant, setSelectedRestaurant] = useState<Restaurant | null>(null);
     const [userLocation, setUserLocation] = useState<UserLocation | null>(null);
     const [isLocating, setIsLocating] = useState(false);
@@ -72,6 +73,10 @@ export function RestaurantMap({ restaurants, isLoading = false, onRestaurantClic
     const markersRef = useRef<google.maps.Marker[]>([]);
     const restaurantMapRef = useRef<Map<google.maps.Marker, Restaurant>>(new Map());
     const initialCenterRef = useRef(false);
+
+    // Marker styling based on mode
+    const markerColor = isHappyHourMode ? '#f59e0b' : '#e11d48'; // Amber for HH, Rose for regular
+    const markerEmoji = isHappyHourMode ? '🍹' : '🍽️';
 
     // Calculate marker size based on zoom level (scales from 20px at zoom 8 to 48px at zoom 18)
     const getMarkerSize = useCallback((zoom: number) => {
@@ -217,7 +222,7 @@ export function RestaurantMap({ restaurants, isLoading = false, onRestaurantClic
         if (!mapRef.current || !isLoaded) return;
 
         const map = mapRef.current;
-        const markerIcon = createEmojiMarkerIcon();
+        const markerIcon = createEmojiMarkerIcon(markerColor, markerEmoji);
         const size = getMarkerSize(zoomLevel);
 
         // Clear previous markers
@@ -275,7 +280,7 @@ export function RestaurantMap({ restaurants, isLoading = false, onRestaurantClic
                 clustererRef.current.clearMarkers();
             }
         };
-    }, [isLoaded, restaurantsWithCoords, zoomLevel, getMarkerSize]);
+    }, [isLoaded, restaurantsWithCoords, zoomLevel, getMarkerSize, markerColor, markerEmoji]);
 
     // Handle "View Details" button in popup
     const handleViewDetails = useCallback((restaurant: Restaurant) => {
@@ -456,17 +461,36 @@ export function RestaurantMap({ restaurants, isLoading = false, onRestaurantClic
                                     )}
                                     <div style={{ flex: 1, minWidth: 0 }}>
                                         <h3 style={{ fontWeight: 'bold', color: '#111827', fontSize: '16px', margin: 0, wordBreak: 'break-word' }}>{selectedRestaurant.name}</h3>
-                                        {selectedRestaurant.cuisine && (
-                                            <span style={{ display: 'inline-block', fontSize: '12px', padding: '2px 8px', borderRadius: '9999px', backgroundColor: '#fed7aa', color: '#c2410c', fontWeight: 500, marginTop: '4px' }}>
-                                                {selectedRestaurant.cuisine}
-                                            </span>
-                                        )}
+                                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginTop: '4px' }}>
+                                            {selectedRestaurant.cuisine && (
+                                                <span style={{ display: 'inline-block', fontSize: '10px', padding: '2px 8px', borderRadius: '9999px', backgroundColor: isHappyHourMode ? '#fef3c7' : '#fed7aa', color: isHappyHourMode ? '#92400e' : '#c2410c', fontWeight: 600 }}>
+                                                    {selectedRestaurant.cuisine}
+                                                </span>
+                                            )}
+                                            {isHappyHourMode && (
+                                                <span style={{ display: 'inline-block', fontSize: '10px', padding: '2px 8px', borderRadius: '9999px', backgroundColor: '#dcfce7', color: '#166534', fontWeight: 600 }}>
+                                                    Happy Hour 🍹
+                                                </span>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
 
+                                {isHappyHourMode && (selectedRestaurant as any).discount_details && (
+                                    <div style={{ backgroundColor: '#fffbeb', border: '1px solid #fef3c7', borderRadius: '8px', padding: '8px', marginBottom: '8px' }}>
+                                        <p style={{ fontSize: '12px', fontWeight: 'bold', color: '#92400e', margin: 0 }}>Special Offer:</p>
+                                        <p style={{ fontSize: '11px', color: '#b45309', margin: '2px 0 0 0' }}>{(selectedRestaurant as any).discount_details}</p>
+                                        {(selectedRestaurant as any).hh_times && (
+                                            <p style={{ fontSize: '10px', color: '#d97706', margin: '4px 0 0 0', fontStyle: 'italic' }}>
+                                                🕒 {(selectedRestaurant as any).hh_times}
+                                            </p>
+                                        )}
+                                    </div>
+                                )}
+
                                 {selectedRestaurant.address && (
                                     <p style={{ fontSize: '12px', color: '#6b7280', display: 'flex', alignItems: 'flex-start', gap: '4px', marginBottom: '8px', margin: 0 }}>
-                                        <MapPin size={12} style={{ flexShrink: 0, marginTop: '2px', color: '#f97316' }} />
+                                        <MapPin size={12} style={{ flexShrink: 0, marginTop: '2px', color: markerColor }} />
                                         <span style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{selectedRestaurant.address}</span>
                                     </p>
                                 )}
@@ -474,7 +498,7 @@ export function RestaurantMap({ restaurants, isLoading = false, onRestaurantClic
                                 <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
                                     <button
                                         onClick={() => handleViewDetails(selectedRestaurant)}
-                                        style={{ flex: 1, padding: '8px 12px', borderRadius: '8px', backgroundColor: '#f97316', color: 'white', fontSize: '12px', fontWeight: 600, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}
+                                        style={{ flex: 1, padding: '8px 12px', borderRadius: '8px', backgroundColor: markerColor, color: 'white', fontSize: '12px', fontWeight: 600, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}
                                     >
                                         View Details <ChevronRight size={14} />
                                     </button>

@@ -72,6 +72,8 @@ const ADDRESS_PATTERNS = [
     /([\u0590-\u05FF]{3,}\s+\d+\s*,\s*[\u0590-\u05FF\s]+)/,
     // English street patterns with city: 99 Dizengoff St, Tel Aviv
     /(\d+\s+[A-Za-z\s]+(?:Street|St|Road|Rd|Avenue|Ave|Boulevard|Blvd)[^,]*,\s*(?:Tel Aviv|Jerusalem|Haifa|Herzliya|Netanya|Jaffa|Eilat|Ramat Gan|Rishon|Petah Tikva))/i,
+    // English street name first (common in Israel): Dizengoff 99, Tel Aviv
+    /([A-Za-z\s]{5,}\s+\d+[^,]*,\s*(?:Tel Aviv|Jerusalem|Haifa|Herzliya|Netanya|Jaffa|Eilat|Ramat Gan|Rishon|Petah Tikva))/i,
     // Generic numbered address with city
     /([A-Za-z\u0590-\u05FF]+\s+\d+[^,]*,\s*(?:Tel Aviv|Jerusalem|Haifa|Herzliya|Netanya|Jaffa|Eilat|Ramat Gan|Rishon|Petah Tikva)[^.\n]*)/i,
 ];
@@ -104,7 +106,9 @@ export async function searchRestaurant(input: SearchRestaurantInput): Promise<Se
     }
 
     try {
-        const query = city ? `${name} restaurant ${city} Israel address booking` : `${name} restaurant Israel address booking`;
+        const query = city
+            ? `restaurant "${name}" ${city} Israel physical address street number`
+            : `restaurant "${name}" Israel physical address street number`;
 
         const response = await fetchWithRetry('https://api.tavily.com/search', {
             method: 'POST',
@@ -191,6 +195,22 @@ async function parseAndEnrichResults(data: TavilyResponse, restaurantName: strin
         }
     }
 
+    // 1.5. Robust fallback using Gemini if regex fails or seems weak
+    // We prioritize Gemini if we have context, as regex is often too brittle for Israeli addresses.
+    if (!foundAddress || foundAddress.length < 10) {
+        const combinedContext = [
+            data.answer,
+            ...(data.results?.map(r => r.content) || [])
+        ].filter(Boolean).join('\n\n').slice(0, 3000);
+
+        if (combinedContext.length > 50) {
+            const aiAddress = await aiExtractAddress(combinedContext, restaurantName, city);
+            if (aiAddress) {
+                foundAddress = aiAddress;
+            }
+        }
+    }
+
     // 2. Parse booking links using the skill
     const bookingResult = await parseBookingLink({
         links: rawBookingLinks,
@@ -243,4 +263,44 @@ function extractAddress(text: string): string | undefined {
 function extractUrls(text: string): string[] {
     const urlPattern = /https?:\/\/[^\s<>"']+/g;
     return text.match(urlPattern) || [];
+}
+
+/**
+ * Uses Gemini to extract a clean address from search results context.
+ */
+async function aiExtractAddress(context: string, name: string, city?: string): Promise<string | undefined> {
+    const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_AI_API_KEY;
+    if (!apiKey) return undefined;
+
+    try {
+        const { GoogleGenerativeAI } = await import('@google/generative-ai');
+        const genAI = new GoogleGenerativeAI(apiKey);
+        const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+
+        const prompt = `You are a real estate and location expert in Israel. 
+Given the following search results about the restaurant "${name}" in ${city || 'Israel'}, extract its EXACT physical street address.
+
+Context:
+${context}
+
+Rules:
+- The address MUST be for "${name}". If the results mention multiple restaurants, pick the one that is clearly "${name}".
+- IMPORTANT: This is for a restaurant/bar. Ignore results about movies, bands, or historical figures unless they mention a physical venue location.
+- If multiple addresses are found, prioritize the one that appears most recent or is specifically mentioned as the location of "${name}".
+- If the restaurant is inside a shared space (like a food market or multi-concept bar), return the address of the main building.
+- Return ONLY the street address (e.g., "Dizengoff 99, Tel Aviv").
+- DO NOT include conversational text like "The address is..." or "Located at...". Just the address.
+- If the city is missing from the address but implied by context, include it.
+- If NO address is found, return "NULL".
+
+Address:`;
+
+        const result = await model.generateContent(prompt);
+        const text = result.response.text().trim();
+
+        return text === 'NULL' ? undefined : text;
+    } catch (e) {
+        console.error('AI address extraction failed:', e);
+        return undefined;
+    }
 }

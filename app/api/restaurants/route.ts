@@ -99,9 +99,13 @@ export async function POST(request: NextRequest): Promise<NextResponse<SaveRespo
     }
 }
 
-export async function GET(): Promise<NextResponse> {
+export async function GET(request: NextRequest): Promise<NextResponse> {
     try {
+        const { searchParams } = new URL(request.url);
+        const mode = searchParams.get('mode');
+
         if (!isSupabaseConfigured()) {
+            // ... demo logic remains the same ...
             return NextResponse.json({
                 success: true,
                 demo: true,
@@ -130,6 +134,22 @@ export async function GET(): Promise<NextResponse> {
                         created_at: new Date().toISOString(),
                     }
                 ]
+            });
+        }
+
+        if (mode === 'happy_hour') {
+            const { getHappyHours } = await import('@/lib/skills/db');
+            const result = await getHappyHours();
+            if (!result.success) {
+                return NextResponse.json({
+                    success: false,
+                    error: result.error,
+                    restaurants: []
+                });
+            }
+            return NextResponse.json({
+                success: true,
+                restaurants: result.data || []
             });
         }
 

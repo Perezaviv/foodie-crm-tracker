@@ -7,7 +7,8 @@ import confetti from 'canvas-confetti';
 import { Map, List, Plus, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useRestaurants } from '@/hooks';
-import { RestaurantMap, RestaurantList, RestaurantDetail } from '@/components';
+import { AppMode } from '@/hooks/useRestaurants';
+import { RestaurantMap, RestaurantList, RestaurantDetail, HappyHourSwitch } from '@/components';
 import { AddDrawer } from '@/components/AddDrawer';
 import type { Restaurant } from '@/lib/types';
 
@@ -15,9 +16,10 @@ type View = 'map' | 'list';
 
 export default function Home() {
   const [activeView, setActiveView] = useState<View>('list');
+  const [mode, setMode] = useState<AppMode>('regular');
   const [selectedRestaurant, setSelectedRestaurant] = useState<Restaurant | null>(null);
   const [isAddDrawerOpen, setIsAddDrawerOpen] = useState(false);
-  const { restaurants, isLoading: restaurantsLoading, refresh } = useRestaurants();
+  const { restaurants, isLoading: restaurantsLoading, refresh } = useRestaurants(mode);
 
   const handleRestaurantAdded = () => {
     refresh();
@@ -68,21 +70,34 @@ export default function Home() {
 
       {/* Header */}
       <header className="glass border-b px-4 py-3 sticky top-0 z-40 flex-shrink-0">
-        <div className="flex items-center justify-between max-w-7xl mx-auto">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center shadow-lg shadow-primary-500/20">
-              <span className="text-white font-bold text-sm">❤️‍🔥</span>
+        <div className="flex flex-col gap-3 max-w-7xl mx-auto">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center shadow-lg shadow-primary-500/20">
+                <span className="text-white font-bold text-sm">❤️‍🔥</span>
+              </div>
+              <h1 className="text-lg font-bold bg-gradient-to-r from-primary-500 to-primary-700 bg-clip-text text-transparent">
+                Burnt On Food
+              </h1>
             </div>
-            <h1 className="text-lg font-bold bg-gradient-to-r from-primary-500 to-primary-700 bg-clip-text text-transparent">
-              Burnt On Food
-            </h1>
+            <div className="text-sm text-muted-foreground font-medium bg-muted/50 px-3 py-1 rounded-full flex items-center gap-2">
+              {restaurantsLoading ? (
+                <Loader2 size={14} className="animate-spin text-primary-500" />
+              ) : (
+                <>
+                  <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                  {restaurants.length} {mode === 'happy_hour' ? 'happy hours' : 'places'}
+                </>
+              )}
+            </div>
           </div>
-          <div className="text-sm text-muted-foreground font-medium bg-muted/50 px-3 py-1 rounded-full">
-            {restaurantsLoading ? (
-              <Loader2 size={14} className="animate-spin" />
-            ) : (
-              `${restaurants.length} places`
-            )}
+
+          <div className="flex justify-center">
+            <HappyHourSwitch
+              isHappyHourMode={mode === 'happy_hour'}
+              onToggle={(enabled) => setMode(enabled ? 'happy_hour' : 'regular')}
+              isLoading={restaurantsLoading}
+            />
           </div>
         </div>
       </header>
@@ -102,6 +117,7 @@ export default function Home() {
                 restaurants={restaurants}
                 isLoading={restaurantsLoading}
                 onRestaurantClick={handleRestaurantClick}
+                isHappyHourMode={mode === 'happy_hour'}
               />
             </motion.div>
           )}
@@ -118,6 +134,7 @@ export default function Home() {
                 isLoading={restaurantsLoading}
                 onRestaurantClick={handleRestaurantClick}
                 onDelete={handleDeleteRestaurant}
+                isHappyHourMode={mode === 'happy_hour'}
               />
             </motion.div>
           )}

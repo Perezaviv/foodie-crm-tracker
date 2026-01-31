@@ -24,6 +24,7 @@ A comprehensive manual testing session was conducted on the "Testing App Functio
 | :--- | :--- | :--- | :--- |
 | **BUG-001** | High | **Map API Error**: `RefererNotAllowedMapError` in console. Map shows blank beige screen. <br> **Root Cause**: `localhost:3000` is not authorized in Google Cloud Console for the API key. | ⚠️ **Config Required** |
 | **BUG-002** | Low | **Accessibility**: `Drawer.Content` (vaul) missing `Title` and `Description`. <br> **Impact**: Screen readers cannot properly announce the dialog. | ✅ **Fixed** |
+| **BUG-003** | Medium | **Address Fetching**: Some restaurants (A.K.A, Sid and Nancy) were failing to geocode or returning incorrect addresses due to regex limitations and noisy search results. | ✅ **Fixed** |
 
 ## 📝 Observations & Notes
 1.  **Geolocation**: A timeout occurred during testing in the headless environment. This is expected behavior for the test runner and not necessarily a bug in the app, but worth noting for manual verification on a real device.

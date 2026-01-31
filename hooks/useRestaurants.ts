@@ -3,6 +3,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import type { Restaurant } from '@/lib/types';
 
+export type AppMode = 'regular' | 'happy_hour';
+
 interface UseRestaurantsReturn {
     restaurants: Restaurant[];
     isLoading: boolean;
@@ -10,7 +12,7 @@ interface UseRestaurantsReturn {
     refresh: () => Promise<void>;
 }
 
-export function useRestaurants(): UseRestaurantsReturn {
+export function useRestaurants(mode: AppMode = 'regular'): UseRestaurantsReturn {
     const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -20,7 +22,11 @@ export function useRestaurants(): UseRestaurantsReturn {
         setError(null);
 
         try {
-            const response = await fetch('/api/restaurants');
+            const url = mode === 'happy_hour'
+                ? '/api/restaurants?mode=happy_hour'
+                : '/api/restaurants';
+
+            const response = await fetch(url);
             const data = await response.json();
 
             if (!data.success) {
@@ -35,7 +41,7 @@ export function useRestaurants(): UseRestaurantsReturn {
         } finally {
             setIsLoading(false);
         }
-    }, []);
+    }, [mode]);
 
     useEffect(() => {
         refresh();

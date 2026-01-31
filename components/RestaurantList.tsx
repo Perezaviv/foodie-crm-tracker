@@ -11,6 +11,7 @@ interface RestaurantListProps {
     isLoading?: boolean;
     onRestaurantClick?: (restaurant: Restaurant) => void;
     onDelete?: (id: string) => void;
+    isHappyHourMode?: boolean;
 }
 
 const containerVariants = {
@@ -28,7 +29,7 @@ const itemVariants = {
     show: { opacity: 1, y: 0 }
 };
 
-export function RestaurantList({ restaurants = [], isLoading = false, onRestaurantClick, onDelete }: RestaurantListProps) {
+export function RestaurantList({ restaurants = [], isLoading = false, onRestaurantClick, onDelete, isHappyHourMode = false }: RestaurantListProps) {
     // console.log('RestaurantList rendered with:', restaurants); 
     // Commented out log to keep production clean, but keeping default prop to prevent crash
     const [searchQuery, setSearchQuery] = useState('');
@@ -224,6 +225,7 @@ export function RestaurantList({ restaurants = [], isLoading = false, onRestaura
                             restaurant={restaurant}
                             onClick={() => onRestaurantClick?.(restaurant)}
                             onDelete={onDelete ? () => onDelete(restaurant.id) : undefined}
+                            isHappyHourMode={isHappyHourMode}
                         />
                     ))
                 )}
@@ -232,7 +234,9 @@ export function RestaurantList({ restaurants = [], isLoading = false, onRestaura
     );
 }
 
-function RestaurantCard({ restaurant, onClick, onDelete }: { restaurant: Restaurant; onClick?: () => void; onDelete?: () => void }) {
+function RestaurantCard({ restaurant, onClick, onDelete, isHappyHourMode = false }: { restaurant: Restaurant; onClick?: () => void; onDelete?: () => void, isHappyHourMode?: boolean }) {
+    const hhData = restaurant as any;
+
     return (
         <motion.div
             variants={itemVariants}
@@ -240,7 +244,10 @@ function RestaurantCard({ restaurant, onClick, onDelete }: { restaurant: Restaur
             onClick={onClick}
             whileHover={{ scale: 1.01 }}
             whileTap={{ scale: 0.99 }}
-            className="group bg-white rounded-2xl border-2 border-neutral-200 p-4 shadow-md hover:shadow-xl transition-all duration-300 ease-out cursor-pointer hover:border-primary-400 relative"
+            className={cn(
+                "group bg-white rounded-2xl border-2 p-4 shadow-md hover:shadow-xl transition-all duration-300 ease-out cursor-pointer relative",
+                isHappyHourMode ? "border-amber-200 hover:border-amber-400" : "border-neutral-200 hover:border-primary-400"
+            )}
         >
             <div className="flex items-start justify-between">
                 <div className="flex items-start gap-3 flex-1 min-w-0 pr-4">
@@ -253,28 +260,51 @@ function RestaurantCard({ restaurant, onClick, onDelete }: { restaurant: Restaur
                             onError={(e) => { e.currentTarget.style.display = 'none'; }}
                         />
                     ) : (
-                        <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-primary-100 to-primary-200 flex items-center justify-center shadow-sm flex-shrink-0">
-                            <Utensils size={20} className="text-primary-500" />
+                        <div className={cn(
+                            "w-12 h-12 rounded-lg flex items-center justify-center shadow-sm flex-shrink-0",
+                            isHappyHourMode ? "bg-gradient-to-br from-amber-100 to-amber-200" : "bg-gradient-to-br from-primary-100 to-primary-200"
+                        )}>
+                            <Utensils size={20} className={isHappyHourMode ? "text-amber-600" : "text-primary-500"} />
                         </div>
                     )}
                     <div className="flex-1 min-w-0">
-                        <h3 className="font-bold text-lg truncate text-neutral-900">
-                            {restaurant.name}
-                        </h3>
+                        <div className="flex items-center gap-2">
+                            <h3 className="font-bold text-lg truncate text-neutral-900">
+                                {restaurant.name}
+                            </h3>
+                            {isHappyHourMode && (
+                                <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 font-bold border border-amber-200 animate-pulse-subtle">
+                                    HH 🍹
+                                </span>
+                            )}
+                            {restaurant.is_visited && !isHappyHourMode && (
+                                <span className="text-xs px-2.5 py-1 rounded-full bg-green-100 text-green-800 font-semibold border border-green-200">
+                                    ✓ Visited
+                                </span>
+                            )}
+                        </div>
+
+                        {isHappyHourMode && hhData.discount_details && (
+                            <div className="mt-2 bg-amber-50/50 border border-amber-100 rounded-lg p-2">
+                                <p className="text-xs font-bold text-amber-800 leading-tight">{hhData.discount_details}</p>
+                                {hhData.hh_times && (
+                                    <p className="text-[10px] text-amber-600 mt-1 font-medium">🕒 {hhData.hh_times}</p>
+                                )}
+                            </div>
+                        )}
+
                         <div className="flex flex-wrap gap-2 mt-2">
                             {restaurant.cuisine && (
-                                <span className="text-xs px-2.5 py-1 rounded-full bg-primary-100 text-primary-800 font-semibold border border-primary-200">
+                                <span className={cn(
+                                    "text-xs px-2.5 py-1 rounded-full font-semibold border",
+                                    isHappyHourMode ? "bg-amber-100 text-amber-800 border-amber-200" : "bg-primary-100 text-primary-800 border-primary-200"
+                                )}>
                                     {restaurant.cuisine}
                                 </span>
                             )}
                             {restaurant.city && (
                                 <span className="text-xs px-2.5 py-1 rounded-full bg-neutral-100 text-neutral-700 font-medium border border-neutral-200">
                                     📍 {restaurant.city}
-                                </span>
-                            )}
-                            {restaurant.is_visited && (
-                                <span className="text-xs px-2.5 py-1 rounded-full bg-green-100 text-green-800 font-semibold border border-green-200">
-                                    ✓ Visited
                                 </span>
                             )}
                         </div>

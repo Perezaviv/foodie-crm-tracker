@@ -131,14 +131,42 @@ export function InfoTab({ restaurant, currentRating, isRating, onRatingChange }:
                     </div>
                 </div>
 
+                {/* Happy Hour Info */}
+                {((restaurant as any).discount_details || (restaurant as any).hh_times) && (
+                    <div className="bg-amber-50 p-5 rounded-2xl border-2 border-amber-200 shadow-sm relative overflow-hidden group">
+                        <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:scale-110 transition-transform duration-500">
+                            <Clock size={48} className="text-amber-600" />
+                        </div>
+                        <span className="text-xs text-amber-700 uppercase tracking-wider font-bold flex items-center gap-1.5 mb-3">
+                            <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+                            Happy Hour Details
+                        </span>
+
+                        {(restaurant as any).discount_details && (
+                            <div className="mb-3">
+                                <p className="text-base font-bold text-amber-900 leading-tight">
+                                    {(restaurant as any).discount_details}
+                                </p>
+                            </div>
+                        )}
+
+                        {(restaurant as any).hh_times && (
+                            <div className="flex items-center gap-2 text-amber-700 bg-amber-100/50 px-3 py-2 rounded-xl border border-amber-200/50 w-fit">
+                                <Clock size={16} className="text-amber-600" />
+                                <span className="text-sm font-semibold">{(restaurant as any).hh_times}</span>
+                            </div>
+                        )}
+                    </div>
+                )}
+
                 {/* Notes */}
                 {restaurant.notes && (
-                    <div className="bg-amber-50 p-4 rounded-2xl border border-amber-100">
-                        <span className="text-xs text-amber-700 uppercase tracking-wider font-semibold flex items-center gap-1.5 mb-2">
+                    <div className="bg-muted/30 p-4 rounded-2xl border border-transparent">
+                        <span className="text-xs text-muted-foreground uppercase tracking-wider font-semibold flex items-center gap-1.5 mb-2">
                             <Edit2 size={12} />
                             My Notes
                         </span>
-                        <p className="text-sm text-amber-900 leading-relaxed">
+                        <p className="text-sm text-foreground leading-relaxed">
                             {restaurant.notes}
                         </p>
                     </div>

@@ -175,6 +175,48 @@ export type Database = {
                 }
                 Relationships: []
             }
+            happy_hours: {
+                Row: {
+                    id: string
+                    name: string
+                    address: string | null
+                    lat: number | null
+                    lng: number | null
+                    hh_times: string | null
+                    hh_drinks: string | null
+                    hh_food: string | null
+                    source_url: string | null
+                    created_at: string
+                    updated_at: string
+                }
+                Insert: {
+                    id?: string
+                    name: string
+                    address?: string | null
+                    lat?: number | null
+                    lng?: number | null
+                    hh_times?: string | null
+                    hh_drinks?: string | null
+                    hh_food?: string | null
+                    source_url?: string | null
+                    created_at?: string
+                    updated_at?: string
+                }
+                Update: {
+                    id?: string
+                    name?: string
+                    address?: string | null
+                    lat?: number | null
+                    lng?: number | null
+                    hh_times?: string | null
+                    hh_drinks?: string | null
+                    hh_food?: string | null
+                    source_url?: string | null
+                    created_at?: string
+                    updated_at?: string
+                }
+                Relationships: []
+            }
         }
 
         Views: {

@@ -16,6 +16,7 @@ export function cleanAddressForGeocoding(address: string, city?: string | null):
 
     // Remove common noise patterns
     const noisePhrases = [
+        /^.*?(is located at|at:?|address is)\s+/i, // Conversational prefixes
         /\.?\s*(To book|It is known|It is currently|Book a table|Booking|Instagram|Call|Phone|Reservation|Open|Close|Hours|Menu|Website|Map|Direction)/i,
         /\.\s*[A-Z]/,  // Any sentence after first (starts with capital letter)
     ];

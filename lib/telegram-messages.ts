@@ -30,6 +30,7 @@ export const MESSAGES = {
 
     // Restaurant
     ADDED_RESTAURANT: (name: string): string => `✅ נוסף *${name}*`,
+    RESTAURANT_EXISTS: (name: string): string => `⚠️ **שים לב:** המסעדה *${name}* כבר קיימת במערכת.\nהוספנו את המידע לכאורה, אבל בעצם השתמשנו ברשומה הקיימת.`,
     ERROR_SAVING: (error: string): string => `❌ שגיאה בשמירה: ${error}`,
     RESTAURANT_NOT_FOUND: (name: string): string => `❌ המסעדה "${name}" לא נמצאה. בדוק את השם ונסה שוב.`,
 
