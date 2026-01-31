@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerClient, isSupabaseConfigured, createAdminClient } from '@/lib/supabase';
+import { isSupabaseConfigured, getComments, addComment } from '@/lib/skills/db';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,24 +18,18 @@ export async function GET(
     try {
         const { id } = await context.params;
 
-        const supabase = createServerClient();
+        const result = await getComments(id);
 
-        const { data, error } = await supabase
-            .from('comments')
-            .select('*')
-            .eq('restaurant_id', id)
-            .order('created_at', { ascending: false });
-
-        if (error) {
+        if (!result.success) {
             return NextResponse.json({
                 success: false,
-                error: error.message,
+                error: result.error,
             });
         }
 
         return NextResponse.json({
             success: true,
-            comments: data || [],
+            comments: result.data || [],
         });
 
     } catch (error) {
@@ -70,29 +64,18 @@ export async function POST(
             );
         }
 
-        // Use admin client to bypass RLS for Telegram/anonymous comments
-        const supabase = createAdminClient();
+        const result = await addComment(id, body.content, body.author_name);
 
-        const { data, error } = await supabase
-            .from('comments')
-            .insert({
-                restaurant_id: id,
-                content: body.content.trim(),
-                author_name: body.author_name || 'Anonymous',
-            })
-            .select()
-            .single();
-
-        if (error) {
+        if (!result.success) {
             return NextResponse.json({
                 success: false,
-                error: error.message,
+                error: result.error,
             });
         }
 
         return NextResponse.json({
             success: true,
-            comment: data,
+            comment: result.data,
         });
 
     } catch (error) {

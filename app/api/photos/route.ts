@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerClient, createAdminClient, isSupabaseConfigured } from '@/lib/supabase';
+import { isSupabaseConfigured, getPhotos, uploadPhoto, deletePhoto } from '@/lib/skills/db';
 
 export const dynamic = 'force-dynamic';
 
@@ -41,14 +41,8 @@ export async function POST(request: NextRequest): Promise<NextResponse<UploadRes
             );
         }
 
-        const supabase = createAdminClient();
         const uploadedPhotos: UploadResponse['photos'] = [];
         const errors: string[] = [];
-
-        // Check for Service Role Key availability
-        if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
-            console.warn('[Photos API] SUPABASE_SERVICE_ROLE_KEY is missing. Photo uploads may fail if RLS is enabled.');
-        }
 
         for (const file of files) {
             // Validate file type
@@ -57,56 +51,21 @@ export async function POST(request: NextRequest): Promise<NextResponse<UploadRes
             }
 
             try {
-                // Generate unique filename
-                const ext = file.name.split('.').pop() || 'jpg';
-                const timestamp = Date.now();
-                const randomId = Math.random().toString(36).substring(7);
-                const storagePath = `restaurants/${restaurantId}/${timestamp}_${randomId}.${ext}`;
-
                 // Convert File to ArrayBuffer then to Buffer
                 const arrayBuffer = await file.arrayBuffer();
                 const buffer = Buffer.from(arrayBuffer);
 
-                // Upload to Supabase Storage
-                const { error: uploadError } = await supabase.storage
-                    .from('photos')
-                    .upload(storagePath, buffer, {
-                        contentType: file.type,
-                        upsert: false,
+                const result = await uploadPhoto(buffer, file.type, restaurantId, file.name);
+
+                if (result.success && result.data) {
+                    uploadedPhotos.push({
+                        id: result.data.id,
+                        storage_path: result.data.storage_path,
+                        url: result.data.url,
                     });
-
-                if (uploadError) {
-                    console.error('[Photos API] Storage upload error:', uploadError);
-                    errors.push(`Failed to upload ${file.name}: ${uploadError.message}`);
-                    continue;
+                } else {
+                    errors.push(`Failed to upload ${file.name}: ${result.error}`);
                 }
-
-                // Get public URL
-                const { data: urlData } = supabase.storage
-                    .from('photos')
-                    .getPublicUrl(storagePath);
-
-                // Save to photos table
-                const { data: photoRecord, error: dbError } = await supabase
-                    .from('photos')
-                    .insert({
-                        restaurant_id: restaurantId,
-                        storage_path: storagePath,
-                    })
-                    .select()
-                    .single();
-
-                if (dbError) {
-                    console.error('[Photos API] Database insert error:', dbError);
-                    errors.push(`Failed to save record for ${file.name}: ${dbError.message}`);
-                    continue;
-                }
-
-                uploadedPhotos.push({
-                    id: photoRecord.id,
-                    storage_path: storagePath,
-                    url: urlData.publicUrl,
-                });
             } catch (loopError) {
                 console.error('[Photos API] Error processing file:', file.name, loopError);
                 errors.push(`Error processing ${file.name}: ${loopError instanceof Error ? loopError.message : String(loopError)}`);
@@ -156,38 +115,19 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
             );
         }
 
-        const supabase = createServerClient();
+        const result = await getPhotos(restaurantId);
 
-        const { data: photos, error } = await supabase
-            .from('photos')
-            .select('*')
-            .eq('restaurant_id', restaurantId)
-            .order('uploaded_at', { ascending: false });
-
-        if (error) {
+        if (!result.success) {
             return NextResponse.json({
                 success: false,
-                error: error.message,
+                error: result.error,
                 photos: [],
             });
         }
 
-        // Add public URLs to photos
-        const photosWithUrls = photos.map(photo => {
-            const { data: urlData } = supabase.storage
-                .from('photos')
-                .getPublicUrl(photo.storage_path);
-
-            return {
-                ...photo,
-                url: urlData.publicUrl,
-            };
-        });
-
-
         return NextResponse.json({
             success: true,
-            photos: photosWithUrls,
+            photos: result.data || [],
         });
 
     } catch (error) {
@@ -219,29 +159,12 @@ export async function DELETE(request: NextRequest): Promise<NextResponse> {
             );
         }
 
-        const supabase = createAdminClient();
+        const result = await deletePhoto(id, storagePath);
 
-        // Delete from Storage first
-        const { error: storageError } = await supabase.storage
-            .from('photos')
-            .remove([storagePath]);
-
-        if (storageError) {
-            console.error('[Photos API] Storage delete error:', storageError);
-            // Continue to try deleting the DB record
-        }
-
-        // Delete from Database
-        const { error: dbError } = await supabase
-            .from('photos')
-            .delete()
-            .eq('id', id);
-
-        if (dbError) {
-            console.error('[Photos API] Database delete error:', dbError);
+        if (!result.success) {
             return NextResponse.json({
                 success: false,
-                error: dbError.message,
+                error: result.error,
             });
         }
 

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerClient, isSupabaseConfigured } from '@/lib/supabase';
+import { isSupabaseConfigured, getRestaurantById, updateRestaurant, deleteRestaurant } from '@/lib/skills/db';
 
 export const dynamic = 'force-dynamic';
 
@@ -25,29 +25,12 @@ export async function DELETE(
             );
         }
 
-        const supabase = createServerClient();
+        const result = await deleteRestaurant(id);
 
-        // First delete associated photos from storage
-        const { data: photos } = await supabase
-            .from('photos')
-            .select('storage_path')
-            .eq('restaurant_id', id);
-
-        if (photos && photos.length > 0) {
-            const paths = photos.map(p => p.storage_path);
-            await supabase.storage.from('photos').remove(paths);
-        }
-
-        // Delete from database (photos will cascade due to foreign key)
-        const { error } = await supabase
-            .from('restaurants')
-            .delete()
-            .eq('id', id);
-
-        if (error) {
+        if (!result.success) {
             return NextResponse.json({
                 success: false,
-                error: error.message,
+                error: result.error,
             });
         }
 
@@ -77,24 +60,18 @@ export async function GET(
     try {
         const { id } = await context.params;
 
-        const supabase = createServerClient();
+        const result = await getRestaurantById(id);
 
-        const { data, error } = await supabase
-            .from('restaurants')
-            .select('*')
-            .eq('id', id)
-            .single();
-
-        if (error) {
+        if (!result.success) {
             return NextResponse.json({
                 success: false,
-                error: error.message,
+                error: result.error,
             });
         }
 
         return NextResponse.json({
             success: true,
-            restaurant: data,
+            restaurant: result.data,
         });
 
     } catch (error) {
@@ -122,25 +99,18 @@ export async function PATCH(
         const { id } = await context.params;
         const body = await request.json();
 
-        const supabase = createServerClient();
+        const result = await updateRestaurant(id, body);
 
-        const { data, error } = await supabase
-            .from('restaurants')
-            .update(body)
-            .eq('id', id)
-            .select()
-            .single();
-
-        if (error) {
+        if (!result.success) {
             return NextResponse.json({
                 success: false,
-                error: error.message,
+                error: result.error,
             });
         }
 
         return NextResponse.json({
             success: true,
-            restaurant: data,
+            restaurant: result.data,
         });
 
     } catch (error) {

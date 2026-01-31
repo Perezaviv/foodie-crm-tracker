@@ -6,6 +6,7 @@ import { createAdminClient } from './supabase';
 import { MESSAGES, MENU_KEYBOARD } from './telegram-messages';
 import { 
     sendMessage, 
+    answerCallbackQuery,
     addRestaurant, 
     processPhotos, 
     rateRestaurant, 
@@ -144,7 +145,7 @@ async function handleCallbackQuery(query: NonNullable<TelegramUpdate['callback_q
             const results = session.metadata.searchResults as SearchResult[];
             if (results && results[index]) {
                 const selected = results[index];
-                await addRestaurantToDb(chatId, selected);
+                await addRestaurant({ chatId, data: selected });
                 await clearSession(chatId);
             } else {
                 await sendMessage(chatId, MESSAGES.SELECTION_INVALID);

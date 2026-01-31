@@ -7,7 +7,9 @@ import { MarkerClusterer } from '@googlemaps/markerclusterer';
 import { Utensils, Loader2, ExternalLink, Locate, MapPin, ChevronRight, X } from 'lucide-react';
 import { toast } from 'sonner';
 import type { Restaurant } from '@/lib/types';
-import { cleanAddressForGeocoding } from '@/lib/geocoding';
+import { useGeocoding, usePhotos } from '@/lib/skills/ui';
+import { createMapClusterer } from '@/lib/utils/map-utils';
+import { MapSidePanel } from './MapSidePanel';
 
 interface RestaurantMapProps {
     restaurants: Restaurant[];
@@ -61,7 +63,6 @@ function createEmojiMarkerIcon(): string {
 
 export function RestaurantMap({ restaurants, isLoading = false, onRestaurantClick }: RestaurantMapProps) {
     const [selectedRestaurant, setSelectedRestaurant] = useState<Restaurant | null>(null);
-    const [selectedRestaurantPhotos, setSelectedRestaurantPhotos] = useState<any[]>([]);
     const [userLocation, setUserLocation] = useState<UserLocation | null>(null);
     const [isLocating, setIsLocating] = useState(false);
     const [zoomLevel, setZoomLevel] = useState(12);
@@ -113,27 +114,14 @@ export function RestaurantMap({ restaurants, isLoading = false, onRestaurantClic
         }
     }, []);
 
+    const { photos: selectedRestaurantPhotos, fetchPhotos } = usePhotos();
+
     // Fetch photos for the selected restaurant
     useEffect(() => {
-        if (!selectedRestaurant) {
-            setSelectedRestaurantPhotos([]);
-            return;
+        if (selectedRestaurant) {
+            fetchPhotos(selectedRestaurant.id);
         }
-
-        const fetchPhotos = async () => {
-            try {
-                const res = await fetch(`/api/photos?restaurantId=${selectedRestaurant.id}`);
-                const data = await res.json();
-                if (data.success) {
-                    setSelectedRestaurantPhotos(data.photos || []);
-                }
-            } catch (err) {
-                console.error('Error fetching photos for marker:', err);
-            }
-        };
-
-        fetchPhotos();
-    }, [selectedRestaurant]);
+    }, [selectedRestaurant, fetchPhotos]);
 
     // Function to center map on user's location
     const getCenter = useCallback(() => {
@@ -272,32 +260,10 @@ export function RestaurantMap({ restaurants, isLoading = false, onRestaurantClic
         markersRef.current = newMarkers;
 
         // Create clusterer
-        clustererRef.current = new MarkerClusterer({
-            map,
-            markers: newMarkers,
-            renderer: {
-                render: ({ count, position }) => {
-                    return new google.maps.Marker({
-                        position,
-                        icon: {
-                            path: google.maps.SymbolPath.CIRCLE,
-                            scale: 18 + Math.min(count, 10) * 2,
-                            fillColor: '#e11d48',
-                            fillOpacity: 1,
-                            strokeColor: '#ffffff',
-                            strokeWeight: 3,
-                        },
-                        label: {
-                            text: String(count),
-                            color: 'white',
-                            fontWeight: 'bold',
-                            fontSize: '12px',
-                        },
-                        zIndex: Number(google.maps.Marker.MAX_ZINDEX) + count,
-                    });
-                },
-            },
-        });
+        clustererRef.current = createMapClusterer(map, newMarkers);
+
+        // Add clusters click listeners if needed (handled by default in createMapClusterer usually, 
+        // but here it's just initialized)
 
         // Cleanup
         return () => {
@@ -585,101 +551,11 @@ export function RestaurantMap({ restaurants, isLoading = false, onRestaurantClic
                 </div>
             )}
 
-            {/* Warning for restaurants without coordinates */}
-            {restaurants.length > restaurantsWithCoords.length && (
-                <div className="absolute top-4 right-4 z-10 max-w-[250px]">
-                    <div className="bg-amber-50 backdrop-blur-sm border border-amber-200 rounded-lg p-3 shadow-lg flex flex-col gap-2">
-                        <div className="flex items-start gap-2">
-                            <div className="p-1 rounded-full bg-amber-100 text-amber-600 flex-shrink-0">
-                                <MapPin size={14} className="opacity-50" />
-                            </div>
-                            <div>
-                                <p className="text-xs font-medium text-amber-800">
-                                    {restaurants.length - restaurantsWithCoords.length} restaurants missing location
-                                </p>
-                                <button
-                                    onClick={async (e) => {
-                                        e.preventDefault();
-                                        const targetBtn = e.currentTarget;
-                                        targetBtn.disabled = true;
-                                        const originalText = targetBtn.innerText;
-                                        targetBtn.innerText = 'Fixing...';
-
-                                        try {
-                                            const missing = restaurants.filter(r => r.lat === null || r.lng === null);
-                                            let fixed = 0;
-
-                                            for (const rest of missing) {
-                                                let geocodeQuery: string;
-
-                                                if (rest.address) {
-                                                    geocodeQuery = cleanAddressForGeocoding(rest.address, rest.city);
-                                                } else if (rest.city) {
-                                                    geocodeQuery = `${rest.name}, ${rest.city}, Israel`;
-                                                } else {
-                                                    geocodeQuery = `${rest.name} restaurant, Israel`;
-                                                }
-
-                                                const res = await fetch('/api/geocode', {
-                                                    method: 'POST',
-                                                    headers: { 'Content-Type': 'application/json' },
-                                                    body: JSON.stringify({ address: geocodeQuery })
-                                                });
-
-                                                const coords = await res.json();
-                                                if (coords.success) {
-                                                    const patchRes = await fetch(`/api/restaurants/${rest.id}`, {
-                                                        method: 'PATCH',
-                                                        headers: { 'Content-Type': 'application/json' },
-                                                        body: JSON.stringify({
-                                                            lat: Number(coords.lat),
-                                                            lng: Number(coords.lng)
-                                                        })
-                                                    });
-
-                                                    if (patchRes.ok) {
-                                                        fixed++;
-                                                    } else {
-                                                        const patchData = await patchRes.json();
-                                                        console.error(`[Auto-Fix] PATCH failed for "${rest.name}":`, patchData.error);
-                                                        toast.error(`Permission denied fixing "${rest.name}". Make sure you ran the SQL snippet.`);
-                                                    }
-                                                } else {
-                                                    console.warn(`[Auto-Fix] Geocoding failed for "${rest.name}":`, coords.error);
-                                                }
-                                            }
-
-                                            if (fixed > 0) {
-                                                toast.success(`Successfully fixed ${fixed} locations!`);
-                                                window.location.reload();
-                                            } else {
-                                                toast.info('Could not find coordinates for these addresses. Check console logs.');
-                                            }
-                                        } catch (err) {
-                                            console.error('Auto-fix error:', err);
-                                            toast.error('Failed to fix locations. See console.');
-                                        } finally {
-                                            targetBtn.disabled = false;
-                                            targetBtn.innerText = originalText;
-                                        }
-                                    }}
-                                    className="text-[10px] bg-amber-200 hover:bg-amber-300 text-amber-800 px-2 py-0.5 rounded-full mt-1 transition-colors disabled:opacity-50"
-                                >
-                                    Auto-Fix Locations
-                                </button>
-                            </div>
-                            <button
-                                onClick={(e) => {
-                                    e.currentTarget.parentElement?.parentElement?.remove(); // Simple dismiss
-                                }}
-                                className="text-amber-500 hover:text-amber-700 ml-auto"
-                            >
-                                <X size={14} />
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
+            {/* Warning/Side Panel for restaurants without coordinates */}
+            <MapSidePanel
+                restaurants={restaurants}
+                restaurantsWithCoords={restaurantsWithCoords}
+            />
         </div>
     );
 }

@@ -61,6 +61,8 @@ Central coordination hub for 4-agent parallel execution.
 | `handle_callback` | AGENT-1 | ✅ READY | `lib/skills/telegram/handle_callback.ts` | None |
 | `use_restaurants` | AGENT-2 | ✅ READY | `lib/skills/ui/use_restaurants.ts` | None |
 | `use_photos` | AGENT-2 | ✅ READY | `lib/skills/ui/use_photos.ts` | None |
+| `use_geocoding` | AGENT-2 | ✅ READY | `lib/skills/ui/use_geocoding.ts` | `RestaurantMap.tsx` |
+| `use_comments` | AGENT-2 | ✅ READY | `lib/skills/ui/use_comments.ts` | `RestaurantDetail.tsx` |
 | `restaurant_crud` | AGENT-4 | ✅ READY | `lib/skills/db/restaurant_crud.ts` | None |
 | `photo_crud` | AGENT-4 | ✅ READY | `lib/skills/db/photo_crud.ts` | None |
 | `comment_crud` | AGENT-4 | ✅ READY | `lib/skills/db/comment_crud.ts` | None |
@@ -89,6 +91,9 @@ Central coordination hub for 4-agent parallel execution.
 [2026-01-31 10:40] Initialized. Awaiting Phase 2 (after AGENT-4 creates supabase_client skill)
 [2026-01-31 11:10] Started Task 1 & 2: Creating `use_geocoding` and `use_comments` hooks.
 [2026-01-31 11:14] Examining RestaurantDetail.tsx and RestaurantMap.tsx for extraction logic.
+[2026-01-31 11:30] Created `use_geocoding` and `use_comments` hooks.
+[2026-01-31 11:45] Refactored `RestaurantMap.tsx`, extracted `MapSidePanel.tsx` and `map-utils.ts`.
+[2026-01-31 11:50] Refactored `RestaurantDetail.tsx` logic to use hooks. Ready for splitting.
 ```
 
 ### [AGENT-3] AI/Search Specialist

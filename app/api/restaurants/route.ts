@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerClient, isSupabaseConfigured } from '@/lib/supabase';
-import { geocodeAddress } from '@/lib/ai';
+import { isSupabaseConfigured, getRestaurants, createRestaurant } from '@/lib/skills/db';
+import { geocodeAddress } from '@/lib/skills/ai';
 import { cleanAddressForGeocoding } from '@/lib/geocoding';
 import type { Restaurant } from '@/lib/types';
 
@@ -40,7 +40,6 @@ export async function POST(request: NextRequest): Promise<NextResponse<SaveRespo
             );
         }
 
-        const supabase = createServerClient();
         const restaurantData = body.restaurant;
 
         // GEOLOCATION:
@@ -52,8 +51,8 @@ export async function POST(request: NextRequest): Promise<NextResponse<SaveRespo
                     restaurantData.city
                 );
 
-                const coords = await geocodeAddress(cleanedAddress);
-                if (coords) {
+                const { success, data: coords } = await geocodeAddress({ address: cleanedAddress });
+                if (success && coords) {
                     restaurantData.lat = coords.lat;
                     restaurantData.lng = coords.lng;
                 }
@@ -77,23 +76,18 @@ export async function POST(request: NextRequest): Promise<NextResponse<SaveRespo
             rating: restaurantData.rating ?? null,
         };
 
-        const { data, error } = await supabase
-            .from('restaurants')
-            .insert(insertData)
-            .select()
-            .single();
+        const result = await createRestaurant(insertData);
 
-        if (error) {
-            console.error('Database error:', error);
+        if (!result.success) {
             return NextResponse.json({
                 success: false,
-                error: error.message,
+                error: result.error,
             });
         }
 
         return NextResponse.json({
             success: true,
-            restaurant: data as Restaurant,
+            restaurant: result.data,
         });
 
     } catch (error) {
@@ -139,18 +133,20 @@ export async function GET(): Promise<NextResponse> {
             });
         }
 
-        const supabase = createServerClient();
+        const result = await getRestaurants();
 
-        const { data, error } = await supabase
-            .from('restaurants')
-            .select('*')
-            .order('created_at', { ascending: false });
-
-        if (error) {
-            return NextResponse.json({ success: false, error: error.message, restaurants: [] });
+        if (!result.success) {
+            return NextResponse.json({
+                success: false,
+                error: result.error,
+                restaurants: []
+            });
         }
 
-        return NextResponse.json({ success: true, restaurants: data });
+        return NextResponse.json({
+            success: true,
+            restaurants: result.data || []
+        });
 
     } catch (error) {
         console.error('Get restaurants error:', error);
