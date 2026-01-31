@@ -4,6 +4,13 @@ import { getSession, updateSession, clearSession, TelegramStep, TelegramSession 
 import { searchRestaurant, SearchResult, extractRestaurantInfo } from './ai';
 import { createAdminClient } from './supabase';
 import { MESSAGES, MENU_KEYBOARD } from './telegram-messages';
+import { 
+    sendMessage, 
+    addRestaurant, 
+    processPhotos, 
+    rateRestaurant, 
+    addComment 
+} from './skills/telegram';
 
 // Get token at runtime to ensure env var is available in serverless
 function getTelegramApiBase(): string {
@@ -633,35 +640,4 @@ interface TelegramReplyMarkup {
     }>>;
 }
 
-async function sendMessage(chatId: number, text: string, replyMarkup?: TelegramReplyMarkup): Promise<void> {
-    try {
-        const response = await fetch(`${getTelegramApiBase()}/sendMessage`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                chat_id: chatId,
-                text: text,
-                parse_mode: 'Markdown',
-                reply_markup: replyMarkup
-            }),
-        });
 
-        // Log send result for debugging
-        if (!response.ok) {
-            const errorData = await response.text();
-            console.error('[TG] sendMessage failed:', response.status, errorData);
-        }
-    } catch (error) {
-        console.error('[TG] Failed to send Telegram message:', error);
-    }
-}
-
-async function answerCallbackQuery(callbackQueryId: string) {
-    try {
-        await fetch(`${getTelegramApiBase()}/answerCallbackQuery`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ callback_query_id: callbackQueryId }),
-        });
-    } catch (e) { console.error('[TG] Error answering callback', e); }
-}

@@ -1,5 +1,10 @@
-export { extractRestaurantInfo, normalizeRestaurantName, detectSocialLink } from './parser';
-export type { ExtractedRestaurantInfo, ParseResult } from './parser';
+/**
+ * AI/Search Module
+ * Re-exports from skills to maintain compatibility and centralize logic.
+ */
 
-export { searchRestaurant, geocodeAddress } from './search';
-export type { SearchResult, EnrichmentResult } from './search';
+export * from '../skills/ai';
+
+// Backward compatibility aliases if needed
+import { extractInfo } from '../skills/ai';
+export const extractRestaurantInfo = (text: string) => extractInfo({ text });

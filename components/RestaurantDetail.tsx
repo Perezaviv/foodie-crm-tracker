@@ -1,12 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Drawer } from 'vaul';
 import { MapPin, ExternalLink, Star, Clock, Edit2, Upload, Trash2, X, MessageSquare, Send, Utensils } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { PhotoUpload } from './PhotoUpload';
 import { PhotoGallery } from './PhotoGallery';
 import type { Restaurant, Comment } from '@/lib/types';
+import { useRestaurants, useComments } from '@/lib/skills/ui';
 
 interface RestaurantDetailProps {
     restaurant: Restaurant;
@@ -16,59 +17,35 @@ interface RestaurantDetailProps {
 }
 
 export function RestaurantDetail({ restaurant, onClose, onEdit, onDelete }: RestaurantDetailProps) {
+
     const [activeTab, setActiveTab] = useState<'info' | 'photos' | 'comments'>('info');
     const [showUpload, setShowUpload] = useState(false);
     const [photosKey, setPhotosKey] = useState(0);
     const [currentRating, setCurrentRating] = useState(restaurant.rating);
     const [isRating, setIsRating] = useState(false);
-
-    // Comments state
-    const [comments, setComments] = useState<Comment[]>([]);
     const [newComment, setNewComment] = useState('');
-    const [isLoadingComments, setIsLoadingComments] = useState(false);
-    const [isSubmittingComment, setIsSubmittingComment] = useState(false);
+
+    const { updateRestaurant, deleteRestaurant } = useRestaurants();
+    const {
+        comments,
+        isLoading: isLoadingComments,
+        isSubmitting: isSubmittingComment,
+        fetchComments,
+        submitComment
+    } = useComments();
 
     // Fetch comments when tab switches to comments
     useEffect(() => {
         if (activeTab === 'comments') {
-            fetchComments();
+            fetchComments(restaurant.id);
         }
-    }, [activeTab]);
+    }, [activeTab, restaurant.id, fetchComments]);
 
-    const fetchComments = async () => {
-        setIsLoadingComments(true);
-        try {
-            const response = await fetch(`/api/restaurants/${restaurant.id}/comments`);
-            const data = await response.json();
-            if (data.success) {
-                setComments(data.comments);
-            }
-        } catch (error) {
-            console.error('Failed to fetch comments:', error);
-        } finally {
-            setIsLoadingComments(false);
-        }
-    };
-
-    const handleSubmitComment = async () => {
-        if (!newComment.trim() || isSubmittingComment) return;
-
-        setIsSubmittingComment(true);
-        try {
-            const response = await fetch(`/api/restaurants/${restaurant.id}/comments`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ content: newComment.trim() }),
-            });
-            const data = await response.json();
-            if (data.success) {
-                setComments(prev => [data.comment, ...prev]);
-                setNewComment('');
-            }
-        } catch (error) {
-            console.error('Failed to submit comment:', error);
-        } finally {
-            setIsSubmittingComment(false);
+    const onSubmitComment = async () => {
+        if (!newComment.trim()) return;
+        const comment = await submitComment(restaurant.id, newComment);
+        if (comment) {
+            setNewComment('');
         }
     };
 
@@ -79,22 +56,11 @@ export function RestaurantDetail({ restaurant, onClose, onEdit, onDelete }: Rest
         const previousRating = currentRating;
         setCurrentRating(newRating); // Optimistic update
 
-        try {
-            const response = await fetch(`/api/restaurants/${restaurant.id}`, {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ rating: newRating }),
-            });
-
-            if (!response.ok) {
-                setCurrentRating(previousRating); // Revert on failure
-            }
-        } catch (error) {
-            console.error('Rating update failed:', error);
-            setCurrentRating(previousRating);
-        } finally {
-            setIsRating(false);
+        const success = await updateRestaurant(restaurant.id, { rating: newRating });
+        if (!success) {
+            setCurrentRating(previousRating); // Revert on failure
         }
+        setIsRating(false);
     };
 
     const handleUploadComplete = () => {
@@ -105,17 +71,10 @@ export function RestaurantDetail({ restaurant, onClose, onEdit, onDelete }: Rest
     const handleDelete = async () => {
         if (!confirm(`Delete "${restaurant.name}"? This cannot be undone.`)) return;
 
-        try {
-            const response = await fetch(`/api/restaurants/${restaurant.id}`, {
-                method: 'DELETE',
-            });
-
-            if (response.ok) {
-                onDelete?.(restaurant);
-                onClose();
-            }
-        } catch (error) {
-            console.error('Delete error:', error);
+        const success = await deleteRestaurant(restaurant.id);
+        if (success) {
+            onDelete?.(restaurant);
+            onClose();
         }
     };
 
@@ -413,12 +372,12 @@ export function RestaurantDetail({ restaurant, onClose, onEdit, onDelete }: Rest
                                                 type="text"
                                                 value={newComment}
                                                 onChange={(e) => setNewComment(e.target.value)}
-                                                onKeyDown={(e) => e.key === 'Enter' && handleSubmitComment()}
+                                                onKeyDown={(e) => e.key === 'Enter' && onSubmitComment()}
                                                 placeholder="Write a comment..."
                                                 className="flex-1 px-4 py-2 rounded-xl border border-muted focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 transition-all"
                                             />
                                             <button
-                                                onClick={handleSubmitComment}
+                                                onClick={onSubmitComment}
                                                 disabled={!newComment.trim() || isSubmittingComment}
                                                 className={cn(
                                                     'p-3 rounded-xl transition-all',
