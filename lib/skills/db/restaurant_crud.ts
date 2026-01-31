@@ -47,7 +47,7 @@ export async function getRestaurants(): Promise<RestaurantCRUDOutput<Restaurant[
     } catch (error) {
         return {
             success: false,
-            error: error instanceof Error ? error.message : 'Unknown error'
+            error: error instanceof Error ? error.message : JSON.stringify(error)
         };
     }
 }
@@ -77,7 +77,7 @@ export async function getRestaurantById(id: string): Promise<RestaurantCRUDOutpu
     } catch (error) {
         return {
             success: false,
-            error: error instanceof Error ? error.message : 'Unknown error'
+            error: error instanceof Error ? error.message : JSON.stringify(error)
         };
     }
 }
@@ -90,7 +90,7 @@ export async function getRestaurantById(id: string): Promise<RestaurantCRUDOutpu
  */
 export async function createRestaurant(data: RestaurantInsert): Promise<RestaurantCRUDOutput<Restaurant>> {
     try {
-        const { client, error: clientError } = getSupabaseClient({ type: 'server' });
+        const { client, error: clientError } = getSupabaseClient({ type: 'admin' });
         if (clientError || !client) {
             throw new Error(clientError || 'Failed to get Supabase client');
         }
@@ -107,7 +107,7 @@ export async function createRestaurant(data: RestaurantInsert): Promise<Restaura
     } catch (error) {
         return {
             success: false,
-            error: error instanceof Error ? error.message : 'Unknown error'
+            error: error instanceof Error ? error.message : JSON.stringify(error)
         };
     }
 }
@@ -120,7 +120,7 @@ export async function createRestaurant(data: RestaurantInsert): Promise<Restaura
  */
 export async function updateRestaurant(id: string, data: RestaurantUpdate): Promise<RestaurantCRUDOutput<Restaurant>> {
     try {
-        const { client, error: clientError } = getSupabaseClient({ type: 'server' });
+        const { client, error: clientError } = getSupabaseClient({ type: 'admin' });
         if (clientError || !client) {
             throw new Error(clientError || 'Failed to get Supabase client');
         }
@@ -138,7 +138,7 @@ export async function updateRestaurant(id: string, data: RestaurantUpdate): Prom
     } catch (error) {
         return {
             success: false,
-            error: error instanceof Error ? error.message : 'Unknown error'
+            error: error instanceof Error ? error.message : JSON.stringify(error)
         };
     }
 }
@@ -151,7 +151,7 @@ export async function updateRestaurant(id: string, data: RestaurantUpdate): Prom
  */
 export async function deleteRestaurant(id: string): Promise<RestaurantCRUDOutput<void>> {
     try {
-        const { client, error: clientError } = getSupabaseClient({ type: 'server' });
+        const { client, error: clientError } = getSupabaseClient({ type: 'admin' });
         if (clientError || !client) {
             throw new Error(clientError || 'Failed to get Supabase client');
         }
@@ -179,7 +179,7 @@ export async function deleteRestaurant(id: string): Promise<RestaurantCRUDOutput
     } catch (error) {
         return {
             success: false,
-            error: error instanceof Error ? error.message : 'Unknown error'
+            error: error instanceof Error ? error.message : JSON.stringify(error)
         };
     }
 }
