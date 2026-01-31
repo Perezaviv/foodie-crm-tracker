@@ -2,41 +2,28 @@
  * @jest-environment node
  */
 import { GET, POST } from '../../app/api/restaurants/route';
-import { createServerClient, isSupabaseConfigured } from '../../lib/supabase';
 import { NextRequest } from 'next/server';
 
-// Mock lib/supabase
-jest.mock('../../lib/supabase', () => ({
-    createServerClient: jest.fn(),
+// Mock DB skills
+jest.mock('../../lib/skills/db', () => ({
     isSupabaseConfigured: jest.fn(),
+    getRestaurants: jest.fn(),
+    createRestaurant: jest.fn(),
 }));
 
-describe('/api/restaurants Integration', () => {
-    const mockInsert = jest.fn();
-    const mockSelect = jest.fn();
-    const mockSingle = jest.fn();
-    const mockOrder = jest.fn();
-    const mockFrom = jest.fn();
+// Mock AI skills
+jest.mock('../../lib/skills/ai', () => ({
+    geocodeAddress: jest.fn(),
+}));
 
-    const mockSupabase = {
-        from: mockFrom,
-    };
+import { isSupabaseConfigured, getRestaurants, createRestaurant } from '../../lib/skills/db';
+import { geocodeAddress } from '../../lib/skills/ai';
+
+describe('/api/restaurants Integration', () => {
 
     beforeEach(() => {
         jest.clearAllMocks();
         (isSupabaseConfigured as jest.Mock).mockReturnValue(true);
-        (createServerClient as jest.Mock).mockReturnValue(mockSupabase);
-
-        // Default mock implementation
-        mockFrom.mockReturnValue({
-            insert: mockInsert,
-            select: mockSelect,
-            order: mockOrder,
-        });
-        mockInsert.mockReturnValue({ select: mockSelect });
-        mockSelect.mockReturnValue({ single: mockSingle, order: mockOrder }); // Chainable
-        mockSingle.mockReturnValue({ data: null, error: null });
-        mockOrder.mockReturnValue({ data: [], error: null });
     });
 
     describe('GET', () => {
@@ -51,8 +38,8 @@ describe('/api/restaurants Integration', () => {
         });
 
         it('returns a list of restaurants on success', async () => {
-            const mockData = [{ id: 1, name: 'Burger King' }];
-            mockOrder.mockResolvedValue({ data: mockData, error: null });
+            const mockData = [{ id: '1', name: 'Burger King' }];
+            (getRestaurants as jest.Mock).mockResolvedValue({ success: true, data: mockData });
 
             const res = await GET();
             const json = await res.json();
@@ -63,7 +50,7 @@ describe('/api/restaurants Integration', () => {
         });
 
         it('handles database errors', async () => {
-            mockOrder.mockResolvedValue({ data: null, error: { message: 'DB Error' } });
+            (getRestaurants as jest.Mock).mockResolvedValue({ success: false, error: 'DB Error' });
 
             const res = await GET();
             const json = await res.json();
@@ -85,7 +72,10 @@ describe('/api/restaurants Integration', () => {
 
         it('creates a restaurant successfully', async () => {
             const newResto = { name: 'Pizza Hut', city: 'NYC' };
-            mockSingle.mockResolvedValue({ data: { id: 123, ...newResto }, error: null });
+            const mockCreated = { id: '123', ...newResto };
+
+            (createRestaurant as jest.Mock).mockResolvedValue({ success: true, data: mockCreated });
+            (geocodeAddress as jest.Mock).mockResolvedValue({ success: false }); // skip geo for this test
 
             const req = new NextRequest('http://localhost/api/restaurants', {
                 method: 'POST',
@@ -99,15 +89,16 @@ describe('/api/restaurants Integration', () => {
             expect(json.success).toBe(true);
             expect(json.restaurant.name).toBe('Pizza Hut');
 
-            // Verify insert was called with correct data
-            expect(mockInsert).toHaveBeenCalledWith(expect.objectContaining({
+            // Verify create was called with correct data
+            expect(createRestaurant).toHaveBeenCalledWith(expect.objectContaining({
                 name: 'Pizza Hut',
                 city: 'NYC',
             }));
         });
 
         it('handles insert errors', async () => {
-            mockSingle.mockResolvedValue({ data: null, error: { message: 'Insert Failed' } });
+            (createRestaurant as jest.Mock).mockResolvedValue({ success: false, error: 'Insert Failed' });
+            (geocodeAddress as jest.Mock).mockResolvedValue({ success: false });
 
             const req = new NextRequest('http://localhost/api/restaurants', {
                 method: 'POST',
@@ -119,6 +110,28 @@ describe('/api/restaurants Integration', () => {
 
             expect(json.success).toBe(false);
             expect(json.error).toBe('Insert Failed');
+        });
+
+        it('attempts geocoding when address provided', async () => {
+            const newResto = { name: 'Geo Spot', address: '123 Main St', city: 'City' };
+            const mockCreated = { id: '124', ...newResto, lat: 10, lng: 10 };
+
+            (geocodeAddress as jest.Mock).mockResolvedValue({ success: true, data: { lat: 10, lng: 10 } });
+            (createRestaurant as jest.Mock).mockResolvedValue({ success: true, data: mockCreated });
+
+            const req = new NextRequest('http://localhost/api/restaurants', {
+                method: 'POST',
+                body: JSON.stringify({ restaurant: newResto }),
+            });
+
+            await POST(req);
+
+            expect(geocodeAddress).toHaveBeenCalled();
+            expect(createRestaurant).toHaveBeenCalledWith(expect.objectContaining({
+                address: '123 Main St',
+                lat: 10,
+                lng: 10
+            }));
         });
     });
 });

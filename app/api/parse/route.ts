@@ -54,7 +54,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<ParseResp
         const extracted = parseResult.data;
 
         // Step 2: Search for additional details (address, booking link)
-        const searchResult = await searchRestaurant(extracted.name, extracted.city);
+        const searchResult = await searchRestaurant({ name: extracted.name, city: extracted.city });
 
         // Step 3: Handle multiple results (ambiguity)
         if (searchResult.requiresSelection && searchResult.results.length > 1) {
@@ -86,10 +86,10 @@ export async function POST(request: NextRequest): Promise<NextResponse<ParseResp
 
             // Geocode the address
             if (enriched.address) {
-                const coords = await geocodeAddress(enriched.address);
-                if (coords) {
-                    restaurant.lat = coords.lat;
-                    restaurant.lng = coords.lng;
+                const coords = await geocodeAddress({ address: enriched.address });
+                if (coords.success && coords.data) {
+                    restaurant.lat = coords.data.lat;
+                    restaurant.lng = coords.data.lng;
                 }
             }
         }

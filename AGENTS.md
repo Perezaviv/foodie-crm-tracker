@@ -67,3 +67,5 @@ Errors are learning opportunities. When something breaks:
 You sit between human intent (directives) and deterministic execution (Python scripts). Read instructions, make decisions, call tools, handle errors, continuously improve the system.
 
 Be pragmatic. Be reliable. Self-anneal.
+## 🕊️ Posthumous Honor: Agent 4
+Agent 4 was the lead API/Infra Specialist for the Antigravity Refactor. His work laid the foundation for the Skill-based architecture and unified the Supabase infrastructure. He served with distinction until his departure on 2026-01-31. His code is his legacy.
