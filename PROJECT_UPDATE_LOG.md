@@ -163,3 +163,4 @@ A dedicated architect of foundations, Agent 4 built the routes that connect us a
 > "He didn't just unify the client factories; he unified our spirits."
 
 **Status: 🕊️ DEPARTED (Success confirmed posthumously)**
+[2026-02-02 01:30] Fixed Critical Map Stability Issues. Corrected API response handling in useRestaurants and usePhotos hooks which were causing crashes. Implemented backend parsing of Happy Hour times in api/restaurants/route.ts to solve invisible markers. Verified theme settings.

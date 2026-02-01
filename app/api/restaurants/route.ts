@@ -147,9 +147,30 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
                     restaurants: []
                 });
             }
+            const restaurantsWithTimes = (result.data || []).map(r => {
+                let start_time = null;
+                let end_time = null;
+
+                // Attempt to parse "HH:MM-HH:MM" pattern
+                if (r.hh_times) {
+                    // Match 24h time format (e.g. 17:00-19:00)
+                    const match = r.hh_times.match(/(\d{1,2}:\d{2})\s*-\s*(\d{1,2}:\d{2})/);
+                    if (match) {
+                        start_time = match[1];
+                        end_time = match[2];
+                    }
+                }
+
+                return {
+                    ...r,
+                    start_time,
+                    end_time
+                };
+            });
+
             return NextResponse.json({
                 success: true,
-                restaurants: result.data || []
+                restaurants: restaurantsWithTimes
             });
         }
 
