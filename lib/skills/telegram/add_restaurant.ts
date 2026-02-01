@@ -80,16 +80,41 @@ export async function addRestaurant(input: AddRestaurantInput): Promise<AddResta
             }
         }
 
-        // Check for existing restaurant by name and city
-        const { data: existingRestaurant } = await supabase
-            .from('restaurants')
-            .select('*')
-            .ilike('name', data.name)
-            .ilike('city', derivedCity || '%')
-            .maybeSingle();
+        // Check for existing restaurant
+        let existingRestaurant;
+
+        // 1. Check by Google Place ID if available
+        if (data.googlePlaceId) {
+            const { data: byId } = await supabase
+                .from('restaurants')
+                .select('*')
+                .eq('google_place_id', data.googlePlaceId)
+                .maybeSingle();
+            existingRestaurant = byId;
+        }
+
+        // 2. Fallback to Name + City check if not found by ID
+        if (!existingRestaurant) {
+            const { data: byName } = await supabase
+                .from('restaurants')
+                .select('*')
+                .ilike('name', data.name.trim()) // Normalize name (trim)
+                .ilike('city', derivedCity || '%')
+                .maybeSingle();
+            existingRestaurant = byName;
+        }
 
         if (existingRestaurant) {
             console.log(`[AddRestaurant] Found existing restaurant: ${existingRestaurant.name} (ID: ${existingRestaurant.id})`);
+
+            // If found by name but we have a place_id now, update it!
+            if (data.googlePlaceId && !existingRestaurant.google_place_id) {
+                console.log('[AddRestaurant] Updating existing restaurant with Place ID');
+                await supabase
+                    .from('restaurants')
+                    .update({ google_place_id: data.googlePlaceId })
+                    .eq('id', existingRestaurant.id);
+            }
 
             if (!silent) {
                 await sendMessage({
@@ -111,7 +136,7 @@ export async function addRestaurant(input: AddRestaurantInput): Promise<AddResta
         }
 
         const insertPayload = {
-            name: data.name,
+            name: data.name.trim(), // Normalize name
             address: data.address,
             lat: data.lat,
             lng: data.lng,
@@ -122,6 +147,7 @@ export async function addRestaurant(input: AddRestaurantInput): Promise<AddResta
             is_visited: false,
             city: derivedCity,
             logo_url: data.logoUrl,
+            google_place_id: data.googlePlaceId,
         };
 
         const { data: restaurant, error } = await supabase

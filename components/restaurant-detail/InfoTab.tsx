@@ -132,7 +132,7 @@ export function InfoTab({ restaurant, currentRating, isRating, onRatingChange }:
                 </div>
 
                 {/* Happy Hour Info */}
-                {((restaurant as any).discount_details || (restaurant as any).hh_times) && (
+                {(restaurant.hh_drinks || restaurant.hh_food || restaurant.hh_times) && (
                     <div className="bg-amber-50 p-5 rounded-2xl border-2 border-amber-200 shadow-sm relative overflow-hidden group">
                         <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:scale-110 transition-transform duration-500">
                             <Clock size={48} className="text-amber-600" />
@@ -142,18 +142,26 @@ export function InfoTab({ restaurant, currentRating, isRating, onRatingChange }:
                             Happy Hour Details
                         </span>
 
-                        {(restaurant as any).discount_details && (
-                            <div className="mb-3">
-                                <p className="text-base font-bold text-amber-900 leading-tight">
-                                    {(restaurant as any).discount_details}
+                        {restaurant.hh_drinks && (
+                            <div className="mb-2">
+                                <p className="text-sm font-bold text-amber-900 leading-tight">
+                                    🍸 {restaurant.hh_drinks}
                                 </p>
                             </div>
                         )}
 
-                        {(restaurant as any).hh_times && (
+                        {restaurant.hh_food && (
+                            <div className="mb-2">
+                                <p className="text-sm font-bold text-amber-900 leading-tight">
+                                    🍴 {restaurant.hh_food}
+                                </p>
+                            </div>
+                        )}
+
+                        {restaurant.hh_times && (
                             <div className="flex items-center gap-2 text-amber-700 bg-amber-100/50 px-3 py-2 rounded-xl border border-amber-200/50 w-fit">
                                 <Clock size={16} className="text-amber-600" />
-                                <span className="text-sm font-semibold">{(restaurant as any).hh_times}</span>
+                                <span className="text-sm font-semibold">{restaurant.hh_times}</span>
                             </div>
                         )}
                     </div>

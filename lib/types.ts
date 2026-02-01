@@ -55,9 +55,13 @@ export type Database = {
                     is_visited: boolean
                     rating: number | null
                     logo_url: string | null
+                    google_place_id: string | null
                     created_at: string
                     updated_at: string
                     created_by: string | null
+                    hh_times?: string | null
+                    hh_drinks?: string | null
+                    hh_food?: string | null
                 }
                 Insert: {
                     id?: string
@@ -73,6 +77,7 @@ export type Database = {
                     is_visited?: boolean
                     rating?: number | null
                     logo_url?: string | null
+                    google_place_id?: string | null
                     created_at?: string
                     updated_at?: string
                     created_by?: string | null
@@ -91,6 +96,7 @@ export type Database = {
                     is_visited?: boolean
                     rating?: number | null
                     logo_url?: string | null
+                    google_place_id?: string | null
                     created_at?: string
                     updated_at?: string
                     created_by?: string | null

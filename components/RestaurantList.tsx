@@ -284,9 +284,14 @@ function RestaurantCard({ restaurant, onClick, onDelete, isHappyHourMode = false
                             )}
                         </div>
 
-                        {isHappyHourMode && hhData.discount_details && (
+                        {isHappyHourMode && ((restaurant as any).hh_drinks || (restaurant as any).hh_food) && (
                             <div className="mt-2 bg-amber-50/50 border border-amber-100 rounded-lg p-2">
-                                <p className="text-xs font-bold text-amber-800 leading-tight">{hhData.discount_details}</p>
+                                {(restaurant as any).hh_drinks && (
+                                    <p className="text-[11px] font-bold text-amber-800 leading-tight">🍸 {(restaurant as any).hh_drinks}</p>
+                                )}
+                                {(restaurant as any).hh_food && (
+                                    <p className="text-[11px] font-bold text-amber-800 leading-tight">🍴 {(restaurant as any).hh_food}</p>
+                                )}
                                 {hhData.hh_times && (
                                     <p className="text-[10px] text-amber-600 mt-1 font-medium">🕒 {hhData.hh_times}</p>
                                 )}

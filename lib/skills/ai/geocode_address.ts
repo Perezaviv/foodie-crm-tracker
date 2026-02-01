@@ -22,6 +22,7 @@ export interface GeocodeAddressOutput {
         lng: number;
         formattedAddress: string;
         placeId?: string;
+        types?: string[];
     };
     error?: string;
 }
@@ -79,7 +80,7 @@ export async function geocodeAddress(input: GeocodeAddressInput): Promise<Geocod
         }
 
         if (data.status !== 'OK' || !data.results || data.results.length === 0) {
-            return { success: false, error: `Geocoding failed: ${data.status}` };
+            return { success: false, error: `Geocoding failed: ${data.status} - ${data.error_message || ''}` };
         }
 
         const result = data.results[0];
@@ -90,6 +91,7 @@ export async function geocodeAddress(input: GeocodeAddressInput): Promise<Geocod
             lng: location.lng,
             formattedAddress: result.formatted_address,
             placeId: result.place_id,
+            types: result.types,
         };
 
         // Save to cache

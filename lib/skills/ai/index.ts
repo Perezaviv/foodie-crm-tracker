@@ -12,5 +12,9 @@ export type { SearchRestaurantInput, SearchRestaurantOutput, SearchResult } from
 export { geocodeAddress } from './geocode_address';
 export type { GeocodeAddressInput, GeocodeAddressOutput } from './geocode_address';
 
+
 export { parseBookingLink } from './parse_booking_link';
 export type { ParseBookingLinkInput, ParseBookingLinkOutput, ScoredLink } from './parse_booking_link';
+
+export { findPlace } from './find_place';
+export type { FindPlaceInput, FindPlaceOutput } from './find_place';

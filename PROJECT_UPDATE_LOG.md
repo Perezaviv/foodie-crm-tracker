@@ -102,6 +102,7 @@ Central coordination hub for 4-agent parallel execution.
 [2026-01-31 10:40] Initialized. Awaiting Phase 2 (after AGENT-4 creates supabase_client skill)
 [2026-01-31 11:15] Completed Phase 2 & 3 AI skills: geocode_address, parse_booking_link. Enhanced search_restaurant. Added unit tests for all 4 AI skills. Updated lib/ai/index.ts.
 [2026-02-01 00:15] Enhanced `search_restaurant` and `geocoding` logic for better robustness. Integrated Gemini AI fallback for address extraction to handle specific restaurant names and noisy search results (e.g., A.K.A, Sid and Nancy).
+[2026-02-01 18:30] Integrated Google Places API and Google Place ID for duplication prevention. Added `find_place` skill. Fixed "Sid and Nancy" duplication and address issues by filtering out generic city place IDs.
 ```
 
 ### [AGENT-4] API/Infra Specialist

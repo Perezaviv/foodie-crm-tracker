@@ -476,10 +476,15 @@ export function RestaurantMap({ restaurants, isLoading = false, onRestaurantClic
                                     </div>
                                 </div>
 
-                                {isHappyHourMode && (selectedRestaurant as any).discount_details && (
+                                {isHappyHourMode && ((selectedRestaurant as any).hh_drinks || (selectedRestaurant as any).hh_food || (selectedRestaurant as any).hh_times) && (
                                     <div style={{ backgroundColor: '#fffbeb', border: '1px solid #fef3c7', borderRadius: '8px', padding: '8px', marginBottom: '8px' }}>
-                                        <p style={{ fontSize: '12px', fontWeight: 'bold', color: '#92400e', margin: 0 }}>Special Offer:</p>
-                                        <p style={{ fontSize: '11px', color: '#b45309', margin: '2px 0 0 0' }}>{(selectedRestaurant as any).discount_details}</p>
+                                        <p style={{ fontSize: '10px', fontWeight: 'bold', color: '#92400e', marginBottom: '4px', textTransform: 'uppercase' }}>Happy Hour:</p>
+                                        {(selectedRestaurant as any).hh_drinks && (
+                                            <p style={{ fontSize: '11px', color: '#b45309', margin: '0 0 2px 0' }}>🍸 {(selectedRestaurant as any).hh_drinks}</p>
+                                        )}
+                                        {(selectedRestaurant as any).hh_food && (
+                                            <p style={{ fontSize: '11px', color: '#b45309', margin: '0 0 2px 0' }}>🍴 {(selectedRestaurant as any).hh_food}</p>
+                                        )}
                                         {(selectedRestaurant as any).hh_times && (
                                             <p style={{ fontSize: '10px', color: '#d97706', margin: '4px 0 0 0', fontStyle: 'italic' }}>
                                                 🕒 {(selectedRestaurant as any).hh_times}

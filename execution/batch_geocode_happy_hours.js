@@ -16,6 +16,8 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 function cleanAddress(address, city = 'Tel Aviv') {
     if (!address) return city;
     let cleaned = address.replace(/\n/g, ' ').replace(/\s+/g, ' ').trim();
+    // Remove emojis
+    cleaned = cleaned.replace(/[\u{1F300}-\u{1F6FF}]/gu, '');
     if (!cleaned.toLowerCase().includes(city.toLowerCase())) {
         cleaned = `${cleaned}, ${city}`;
     }
@@ -35,9 +37,11 @@ async function geocodeAddress(address) {
         if (data.status === 'OK' && data.results.length > 0) {
             return data.results[0].geometry.location;
         }
+        console.log(`  Status: ${data.status}`);
+        if (data.error_message) console.log(`  Message: ${data.error_message}`);
         return null;
     } catch (error) {
-        console.error(`Error geocoding ${address}:`, error.message);
+        console.error(`  Fetch error for ${address}:`, error.message);
         return null;
     }
 }
@@ -70,11 +74,9 @@ async function start() {
                 .from('happy_hours')
                 .update({ lat: coords.lat, lng: coords.lng })
                 .eq('id', item.id);
-        } else {
-            console.log(`  No results found for: ${cleaned}`);
         }
 
-        await new Promise(r => setTimeout(r, 100));
+        await new Promise(r => setTimeout(r, 200));
     }
 
     console.log('Batch geocoding complete!');
