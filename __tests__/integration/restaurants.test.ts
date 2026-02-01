@@ -29,7 +29,8 @@ describe('/api/restaurants Integration', () => {
     describe('GET', () => {
         it('returns demo data when Supabase is not configured', async () => {
             (isSupabaseConfigured as jest.Mock).mockReturnValue(false);
-            const res = await GET();
+            const req = new NextRequest('http://localhost/api/restaurants');
+            const res = await GET(req);
             const json = await res.json();
             expect(res.status).toBe(200);
             expect(json.demo).toBe(true);
@@ -41,7 +42,8 @@ describe('/api/restaurants Integration', () => {
             const mockData = [{ id: '1', name: 'Burger King' }];
             (getRestaurants as jest.Mock).mockResolvedValue({ success: true, data: mockData });
 
-            const res = await GET();
+            const req = new NextRequest('http://localhost/api/restaurants');
+            const res = await GET(req);
             const json = await res.json();
 
             expect(res.status).toBe(200);
@@ -52,7 +54,8 @@ describe('/api/restaurants Integration', () => {
         it('handles database errors', async () => {
             (getRestaurants as jest.Mock).mockResolvedValue({ success: false, error: 'DB Error' });
 
-            const res = await GET();
+            const req = new NextRequest('http://localhost/api/restaurants');
+            const res = await GET(req);
             const json = await res.json();
 
             expect(json.success).toBe(false);

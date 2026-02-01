@@ -12,7 +12,7 @@ const ADDRESS_PATTERNS = [
     /([A-Za-z\u0590-\u05FF]+\s+\d+[^,]*,\s*(?:Tel Aviv|Jerusalem|Haifa|Herzliya|Netanya|Jaffa|Eilat|Ramat Gan|Rishon|Petah Tikva)[^.\n]*)/i,
 ];
 
-function extractAddress(text) {
+function extractAddress(text: string) {
     for (const pattern of ADDRESS_PATTERNS) {
         const match = text.match(pattern);
         if (match) {

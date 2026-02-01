@@ -50,7 +50,8 @@ const mockRestaurants: Restaurant[] = [
         social_link: null,
         notes: null,
         rating: null,
-        logo_url: null
+        logo_url: null,
+        google_place_id: null
     },
     {
         id: '2',
@@ -68,7 +69,8 @@ const mockRestaurants: Restaurant[] = [
         social_link: null,
         notes: null,
         rating: null,
-        logo_url: null
+        logo_url: null,
+        google_place_id: null
     }
 ];
 
