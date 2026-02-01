@@ -14,9 +14,11 @@ export function cleanAddressForGeocoding(address: string, city?: string | null):
     // Remove newlines and extra whitespace
     let cleaned = address.replace(/\n/g, ' ').replace(/\s+/g, ' ').trim();
 
-    // Remove common noise patterns
+    // Remove conversational prefixes (Prefix removal)
+    cleaned = cleaned.replace(/^.*?(is located at|address is)\s+/i, '');
+
+    // Remove common noise patterns (Suffix truncation)
     const noisePhrases = [
-        /^.*?(is located at|at:?|address is)\s+/i, // Conversational prefixes
         /\.?\s*(To book|It is known|It is currently|Book a table|Booking|Instagram|Call|Phone|Reservation|Open|Close|Hours|Menu|Website|Map|Direction)/i,
         /\.\s*[A-Z]/,  // Any sentence after first (starts with capital letter)
     ];

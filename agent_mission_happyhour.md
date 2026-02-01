@@ -33,24 +33,7 @@ UI Toggle: Create a "Happy Hour Mode" switch component.
 State Management: Ensure the app refreshes the location list immediately when the switch is flipped.
 
 🛠️ Step-by-Step Task List
-[ ] Phase 1: Extraction - Write scraper.py to target the URL.
-
-Output data to happy_hour_data.json.
-
-[ ] Phase 2: Database Injection
-
-Create the database migration/schema for Happy Hour locations.
-
-Run the bulk "shove" script to populate the DB.
-
-[ ] Phase 3: Logic Refactor
-
-Implement the LocationProvider interface to support multiple data sources.
-
-Add the toggle logic in the backend controllers.
-
-[ ] Phase 4: UI Update
-
-Add the Switch component to the main dashboard.
-
-Link the switch state to the data fetching logic.
+[x] Phase 1: Extraction - Write scraper.py to target the URL. (Completed: Data extracted and stored)
+[x] Phase 2: Database Injection (Completed: Seeded 161+ records)
+[x] Phase 3: Logic Refactor (Completed: Integrated into LocationService and API routes)
+[x] Phase 4: UI Update (Completed: Added Switch and Detail views with deal info)

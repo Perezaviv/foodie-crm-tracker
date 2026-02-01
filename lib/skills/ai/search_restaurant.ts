@@ -211,7 +211,6 @@ async function parseAndEnrichResults(
         if (aiAddresses && aiAddresses.length > 0) {
             // First one is primary
             foundAddress = aiAddresses[0];
-            console.log('[Search] AI found address:', foundAddress);
 
             // If multiple addresses found, add them as alternatives
             if (aiAddresses.length > 1) {
@@ -222,8 +221,8 @@ async function parseAndEnrichResults(
                         city: city,
                     };
                     // Geocode alternative
-                    const cleaned = cleanAddressForGeocoding(aiAddresses[i], city);
-                    const geoResult = await geocodeAddress({ address: cleaned });
+                    const cleanedAddress = cleanAddressForGeocoding(aiAddresses[i], city);
+                    const geoResult = await geocodeAddress({ address: cleanedAddress });
                     if (geoResult.success && geoResult.data) {
                         altResult.lat = geoResult.data.lat;
                         altResult.lng = geoResult.data.lng;
@@ -247,7 +246,6 @@ async function parseAndEnrichResults(
                 if (foundAddress) break;
             }
         }
-        if (foundAddress) console.log('[Search] Regex found address:', foundAddress);
     }
 
     // 2. Parse booking links using the skill
@@ -283,7 +281,8 @@ async function parseAndEnrichResults(
 
             // Only use placeId if it's a specific location/establishment, not a generic city
             const types = geoResult.data.types || [];
-            const isGeneric = types.includes('locality') || types.includes('administrative_area_level_1') || types.includes('political');
+            const genericTypes = ['locality', 'administrative_area_level_1', 'political', 'street_address', 'route'];
+            const isGeneric = types.some(t => genericTypes.includes(t));
             if (!isGeneric) {
                 primaryResult.googlePlaceId = geoResult.data.placeId;
             }
@@ -349,16 +348,13 @@ ${context}
 Rules:
 - Identify if there are multiple branches or if the search results mention different possible addresses for "${name}".
 - If the results mention OTHER restaurants/hotels (like "Rothschild 12" or hotels nearby), ignore them UNLESS they are specifically the location of "${name}".
-            // First one is primary
-            foundAddress = aiAddresses[0];
-            console.log('[Search] AI found address:', foundAddress);
-            
-    // ... (rest of logic)
+- Return a JSON array of strings, where each string is a clean street address.
+- If multiple addresses are for the same branch (e.g., Hebrew and English versions), just return the clearest one.
+- Include 7-digit zip code if available in the text.
+- If NO address is found for "${name}", return an empty array [].
+- Don't include phone numbers or extra text.
 
-    } else if (foundAddress) {
-        const cleaned = cleanAddressForGeocoding(foundAddress, city);
-        console.log('[Search] Cleaned address:', cleaned);
-        const geoResult = await geocodeAddress({ address: cleaned });
+Return ONLY the JSON array, e.g., ["Street 1, City", "Street 2, City"] or [].`;
 
         const result = await model.generateContent(prompt);
         let text = result.response.text().trim();
