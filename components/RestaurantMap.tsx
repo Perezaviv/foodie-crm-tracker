@@ -36,21 +36,16 @@ const containerStyle = {
 };
 
 // Create a high-quality emoji marker icon using base64 for better compatibility
-function createEmojiMarkerIcon(color: string = '#e11d48', emoji: string = '🍽️', isGlow: boolean = false): string {
+function createEmojiMarkerIcon(color: string = '#e11d48', emoji: string = '🍽️'): string {
     const svg = `
-        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48">
-            <defs>
-                <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
-                    <feGaussianBlur stdDeviation="3" result="blur" />
-                    <feComposite in="SourceGraphic" in2="blur" operator="over" />
-                </filter>
-            </defs>
-            <path d="M24 44 L16 32 A16 16 0 1 1 32 32 Z" fill="white" />
-            <path d="M24 42 L17 31 A15 15 0 1 1 31 31 Z" fill="${color}" ${isGlow ? 'filter="url(#glow)"' : ''} />
-            <text x="24" y="26" text-anchor="middle" font-size="22" font-family="sans-serif" dy=".3em">${emoji}</text>
+        <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40">
+            <circle cx="20" cy="20" r="18" fill="white" />
+            <circle cx="20" cy="20" r="16" fill="${color}" />
+            <text x="20" y="24" text-anchor="middle" font-size="20" font-family="Arial">${emoji}</text>
         </svg>
     `;
-    return `data:image/svg+xml;base64,${btoa(unescape(encodeURIComponent(svg)))}`;
+    if (typeof window === 'undefined') return '';
+    return `data:image/svg+xml;base64,${window.btoa(svg)}`;
 }
 
 function isHappyHourActive(startStr?: string | null, endStr?: string | null): boolean {
@@ -194,16 +189,16 @@ export function RestaurantMap({
                 emoji = style.emoji;
             }
 
-            const markerIcon = createEmojiMarkerIcon(color, emoji, isHappyHourMode);
+            const markerIcon = createEmojiMarkerIcon(color, emoji);
 
             const marker = new google.maps.Marker({
                 position: { lat: restaurant.lat!, lng: restaurant.lng! },
                 icon: {
                     url: markerIcon,
                     scaledSize: new google.maps.Size(size, size),
-                    anchor: new google.maps.Point(size / 2, size),
+                    anchor: new google.maps.Point(size / 2, size / 2),
                 },
-                optimized: false, // Performance test: disable optimized for complex SVGs
+                optimized: false,
                 title: restaurant.name
             });
 
