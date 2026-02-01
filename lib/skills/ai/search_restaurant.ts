@@ -360,9 +360,9 @@ Return ONLY the JSON array, e.g., ["Street 1, City", "Street 2, City"] or [].`;
         let text = result.response.text().trim();
 
         // Clean markdown
-        if (text.startsWith('```json')) text = text.slice(7);
-        if (text.startsWith('```')) text = text.slice(3);
-        if (text.endsWith('```')) text = text.slice(0, -3);
+        if (text.startsWith("```json")) text = text.slice(7);
+        if (text.startsWith("```")) text = text.slice(3);
+        if (text.endsWith("```")) text = text.slice(0, -3);
         text = text.trim();
 
         if (text === '[]' || !text.startsWith('[')) return [];

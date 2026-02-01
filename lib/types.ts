@@ -81,6 +81,9 @@ export type Database = {
                     created_at?: string
                     updated_at?: string
                     created_by?: string | null
+                    hh_times?: string | null
+                    hh_drinks?: string | null
+                    hh_food?: string | null
                 }
                 Update: {
                     id?: string
@@ -100,6 +103,9 @@ export type Database = {
                     created_at?: string
                     updated_at?: string
                     created_by?: string | null
+                    hh_times?: string | null
+                    hh_drinks?: string | null
+                    hh_food?: string | null
                 }
                 Relationships: []
             }
