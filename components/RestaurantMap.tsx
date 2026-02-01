@@ -45,7 +45,7 @@ function createEmojiMarkerIcon(color: string = '#e11d48', emoji: string = 'üçΩÔ
         </svg>
     `;
     if (typeof window === 'undefined') return '';
-    return `data:image/svg+xml;base64,${window.btoa(svg)}`;
+    return `data:image/svg+xml;base64,${window.btoa(unescape(encodeURIComponent(svg)))}`;
 }
 
 function isHappyHourActive(startStr?: string | null, endStr?: string | null): boolean {
