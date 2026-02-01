@@ -109,7 +109,7 @@ export function RestaurantMapPopup({
                             </div>
                         </div>
 
-                        <p className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1 mb-3">
+                        <p className="text-xs text-slate-500 dark:text-slate-300 flex items-center gap-1 mb-3">
                             <MapPin size={10} />
                             <span className="truncate">{restaurant.address}</span>
                         </p>
@@ -118,7 +118,7 @@ export function RestaurantMapPopup({
                         {isHappyHourMode && (
                             <div className="mb-3 p-2 rounded-lg bg-rose-50/50 dark:bg-rose-900/20 border border-rose-100 dark:border-rose-800/30">
                                 <p className="text-[10px] font-bold text-rose-500 uppercase tracking-wide mb-1">Current Deal</p>
-                                <p className="text-xs font-medium text-slate-700 dark:text-slate-200">
+                                <p className="text-xs font-bold text-slate-700 dark:text-white">
                                     {(restaurant as any).hh_drinks || "Special Happy Hour Menu 🍹"}
                                 </p>
                             </div>

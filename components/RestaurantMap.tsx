@@ -87,7 +87,16 @@ export function RestaurantMap({
     // Memoize filtered restaurants
     const filteredRestaurants = useMemo(() => {
         return restaurants.filter(r => {
-            if (typeof r.lat !== 'number' || typeof r.lng !== 'number') return false;
+            const lat = Number(r.lat);
+            const lng = Number(r.lng);
+            if (isNaN(lat) || isNaN(lng)) return false;
+            // Also update the object for downstream usage if needed, or just let the map component cast it?
+            // The map component uses r.lat which is typed as number but might be string at runtime.
+            // Google Maps component requires numbers.
+            // I should override the properties on the object or cast them when passing to Marker.
+            // But this filter runs on 'filteredRestaurants'. If I don't mutate r, downsteam will still see string.
+            // Let's rely on JS loose typing or cast in the map loop.
+            // Actually, best to ensure they are numbers for the filter first.
             if (isHappyHourMode && !showAllHappyHours) {
                 const hh = r as any;
                 if (!isHappyHourActive(hh.start_time, hh.end_time)) {
@@ -149,7 +158,8 @@ export function RestaurantMap({
             },
             () => {
                 setIsLocating(false);
-                toast.error('Unable to get location');
+                setIsLocating(false);
+                // toast.error('Unable to get location'); // Suppress noise as per user request
             },
             { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
         );
@@ -192,7 +202,7 @@ export function RestaurantMap({
             const markerIcon = createEmojiMarkerIcon(color, emoji);
 
             const marker = new google.maps.Marker({
-                position: { lat: restaurant.lat!, lng: restaurant.lng! },
+                position: { lat: Number(restaurant.lat), lng: Number(restaurant.lng) },
                 icon: {
                     url: markerIcon,
                     scaledSize: new google.maps.Size(size, size),
