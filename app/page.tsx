@@ -133,6 +133,7 @@ export default function Home() {
                 restaurants={restaurants}
                 isLoading={restaurantsLoading}
                 onRestaurantClick={handleRestaurantClick}
+                onModeChange={(enabled) => setMode(enabled ? 'happy_hour' : 'regular')}
                 isHappyHourMode={mode === 'happy_hour'}
                 showAllHappyHours={showAllHappyHours}
               />

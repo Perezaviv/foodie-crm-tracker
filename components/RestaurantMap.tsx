@@ -1,20 +1,24 @@
 'use client';
 
-import { useCallback, useState, useEffect, useRef } from 'react';
-import { GoogleMap, InfoWindow, Circle, Marker } from '@react-google-maps/api';
+import { useCallback, useState, useEffect, useRef, useMemo } from 'react';
+import { GoogleMap, Circle, Marker } from '@react-google-maps/api';
 import { useGoogleMaps } from './GoogleMapsProvider';
 import { MarkerClusterer } from '@googlemaps/markerclusterer';
-import { Utensils, Loader2, ExternalLink, Locate, MapPin, ChevronRight, X } from 'lucide-react';
+import { Utensils, Loader2, MapPin } from 'lucide-react';
 import { toast } from 'sonner';
 import type { Restaurant } from '@/lib/types';
-import { useGeocoding, usePhotos } from '@/lib/skills/ui';
+import { useGeocoding } from '@/lib/skills/ui';
 import { createMapClusterer } from '@/lib/utils/map-utils';
 import { MapSidePanel } from './MapSidePanel';
+import { MAP_STYLES } from '@/lib/utils/map-styles';
+import { RestaurantMapPopup } from './RestaurantMapPopup';
+import { MapControls } from './MapControls';
 
 interface RestaurantMapProps {
     restaurants: Restaurant[];
     isLoading?: boolean;
     onRestaurantClick?: (restaurant: Restaurant) => void;
+    onModeChange?: (isHappyHour: boolean) => void;
     isHappyHourMode?: boolean;
     showAllHappyHours?: boolean;
 }
@@ -25,7 +29,6 @@ interface UserLocation {
     accuracy: number;
 }
 
-// Default to Tel Aviv
 const DEFAULT_CENTER = { lat: 32.0853, lng: 34.7818 };
 
 const containerStyle = {
@@ -33,128 +36,75 @@ const containerStyle = {
     height: '100%',
 };
 
-// Map styles for a modern look
-const mapStyles = [
-    {
-        featureType: 'poi.business',
-        stylers: [{ visibility: 'off' }],
-    },
-    {
-        featureType: 'poi.park',
-        elementType: 'labels.text',
-        stylers: [{ visibility: 'off' }],
-    },
-];
-
-// Create a cute emoji marker icon - smaller size
-function createEmojiMarkerIcon(color: string = '#e11d48', emoji: string = '🍽️'): string {
+// Create a high-quality emoji marker icon
+function createEmojiMarkerIcon(color: string = '#e11d48', emoji: string = '🍽️', isGlow: boolean = false): string {
     const svg = `
-        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 48 48">
+        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48">
             <defs>
-                <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
-                    <feDropShadow dx="0" dy="2" stdDeviation="2" flood-opacity="0.3"/>
+                <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%">
+                    <feDropShadow dx="0" dy="2" stdDeviation="3" flood-opacity="${isGlow ? '0.6' : '0.3'}" flood-color="${isGlow ? color : 'black'}"/>
                 </filter>
             </defs>
-            <circle cx="24" cy="20" r="18" fill="${color}" filter="url(#shadow)"/>
-            <text x="24" y="26" text-anchor="middle" font-size="20">${emoji}</text>
-            <path d="M24 38 L18 28 L30 28 Z" fill="${color}"/>
+            <circle cx="24" cy="20" r="18" fill="white" />
+            <circle cx="24" cy="20" r="16" fill="${color}" filter="url(#shadow)"/>
+            <text x="24" y="27" text-anchor="middle" font-size="22" font-family="sans-serif">${emoji}</text>
+            <path d="M24 44 L16 32 L32 32 Z" fill="${color}"/>
         </svg>
     `;
     return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
 }
 
-// Helper to check if Happy Hour is active NOW
 function isHappyHourActive(startStr?: string | null, endStr?: string | null): boolean {
     if (!startStr || !endStr) return false;
-
     const now = new Date();
     const currentStr = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
-
-    // Handle overnight ranges (e.g., 22:00 - 02:00)
-    if (endStr < startStr) {
-        return currentStr >= startStr || currentStr <= endStr;
-    }
-
+    if (endStr < startStr) return currentStr >= startStr || currentStr <= endStr;
     return currentStr >= startStr && currentStr <= endStr;
 }
 
-// Helper to get marker color/emoji based on Rating
 function getHappyHourStyle(rating?: number) {
     switch (rating) {
-        case 3: // Gold
-            return { color: '#fbbf24', emoji: '🏆' }; // Amber-400
-        case 2: // Silver
-            return { color: '#94a3b8', emoji: '🥈' }; // Slate-400
-        case 1: // Bronze
-            return { color: '#d97706', emoji: '🥉' }; // Amber-600
-        default:
-            return { color: '#f59e0b', emoji: '🍹' }; // Default Amber
+        case 3: return { color: '#fbbf24', emoji: '🏆' };
+        case 2: return { color: '#94a3b8', emoji: '🥈' };
+        case 1: return { color: '#d97706', emoji: '🥉' };
+        default: return { color: '#f59e0b', emoji: '🍹' };
     }
 }
 
-export function RestaurantMap({ restaurants, isLoading = false, onRestaurantClick, isHappyHourMode = false, showAllHappyHours = false }: RestaurantMapProps) {
+export function RestaurantMap({
+    restaurants,
+    isLoading = false,
+    onRestaurantClick,
+    onModeChange,
+    isHappyHourMode = false,
+    showAllHappyHours = false
+}: RestaurantMapProps) {
     const [selectedRestaurant, setSelectedRestaurant] = useState<Restaurant | null>(null);
     const [userLocation, setUserLocation] = useState<UserLocation | null>(null);
     const [isLocating, setIsLocating] = useState(false);
-    const [zoomLevel, setZoomLevel] = useState(12);
     const mapRef = useRef<google.maps.Map | null>(null);
-    const zoomTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const clustererRef = useRef<MarkerClusterer | null>(null);
     const markersRef = useRef<google.maps.Marker[]>([]);
     const restaurantMapRef = useRef<Map<google.maps.Marker, Restaurant>>(new Map());
     const initialCenterRef = useRef(false);
 
-    // Calculate marker size based on zoom level (scales from 20px at zoom 8 to 48px at zoom 18)
-    const getMarkerSize = useCallback((zoom: number) => {
-        const minZoom = 8;
-        const maxZoom = 18;
-        const minSize = 20;
-        const maxSize = 48;
-        const clampedZoom = Math.max(minZoom, Math.min(maxZoom, zoom));
-        const ratio = (clampedZoom - minZoom) / (maxZoom - minZoom);
-        return Math.round(minSize + ratio * (maxSize - minSize));
-    }, []);
-
     const { isLoaded, loadError } = useGoogleMaps();
 
-    // Filter Restaurants
-    const filteredRestaurants = restaurants.filter(r => {
-        // Base check: must have coords
-        if (typeof r.lat !== 'number' || typeof r.lng !== 'number') return false;
-
-        // If Happy Hour Mode
-        if (isHappyHourMode) {
-            // 1. Must be a happy hour place (implied by the data source usually, but let's be safe)
-            // (Passed 'restaurants' should already be fetched with mode=happy_hour, but good to be careful)
-
-            // 2. Filter by Time (unless "See All" is on)
-            if (!showAllHappyHours) {
-                const hh = r as any; // Cast to access extra props if needed
+    // Memoize filtered restaurants to avoid unnecessary calculations
+    const filteredRestaurants = useMemo(() => {
+        return restaurants.filter(r => {
+            if (typeof r.lat !== 'number' || typeof r.lng !== 'number') return false;
+            if (isHappyHourMode && !showAllHappyHours) {
+                const hh = r as any;
                 if (!isHappyHourActive(hh.start_time, hh.end_time)) {
-                    // Try parsing raw string if parsed fields missing (legacy/fallback)
-                    // But for now, we rely on passed props.
-                    // If rating/time are not populated yet, we might hide everything.
-                    // Let's be lenient: if NO time info, maybe show it? No, requirements say "only when occur".
-                    // So if no time info, hide it.
                     if (!hh.start_time) return false;
                     return false;
                 }
             }
-        }
+            return true;
+        });
+    }, [restaurants, isHappyHourMode, showAllHappyHours]);
 
-        return true;
-    });
-
-    const restaurantsWithCoords = filteredRestaurants;
-
-    // Log warnings only when there's an actual issue
-    useEffect(() => {
-        if (restaurants.length > 0 && restaurantsWithCoords.length === 0 && !isHappyHourMode) {
-            console.warn('[RestaurantMap] All restaurants missing coordinates');
-        }
-    }, [restaurants, restaurantsWithCoords, isHappyHourMode]);
-
-    // Get user's location on mount
     useEffect(() => {
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(
@@ -165,51 +115,31 @@ export function RestaurantMap({ restaurants, isLoading = false, onRestaurantClic
                         accuracy: position.coords.accuracy,
                     });
                 },
-                (error) => {
-                    // Silently handle geolocation errors
-                },
+                () => { },
                 { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
             );
         }
     }, []);
 
-    const { photos: selectedRestaurantPhotos, fetchPhotos } = usePhotos();
-
-    // Fetch photos for the selected restaurant
-    useEffect(() => {
-        if (selectedRestaurant) {
-            fetchPhotos(selectedRestaurant.id);
-        }
-    }, [selectedRestaurant, fetchPhotos]);
-
-    // Function to center map on user's location
     const getCenter = useCallback(() => {
-        if (restaurantsWithCoords.length === 1) {
-            return { lat: restaurantsWithCoords[0].lat!, lng: restaurantsWithCoords[0].lng! };
-        } else if (restaurantsWithCoords.length > 1) {
-            const avgLat = restaurantsWithCoords.reduce((sum, r) => sum + r.lat!, 0) / restaurantsWithCoords.length;
-            const avgLng = restaurantsWithCoords.reduce((sum, r) => sum + r.lng!, 0) / restaurantsWithCoords.length;
+        if (filteredRestaurants.length === 1) {
+            return { lat: filteredRestaurants[0].lat!, lng: filteredRestaurants[0].lng! };
+        } else if (filteredRestaurants.length > 1) {
+            const avgLat = filteredRestaurants.reduce((sum, r) => sum + r.lat!, 0) / filteredRestaurants.length;
+            const avgLng = filteredRestaurants.reduce((sum, r) => sum + r.lng!, 0) / filteredRestaurants.length;
             return { lat: avgLat, lng: avgLng };
         }
         return DEFAULT_CENTER;
-    }, [restaurantsWithCoords]);
+    }, [filteredRestaurants]);
 
     const getZoom = useCallback(() => {
-        if (restaurantsWithCoords.length === 1) return 14;
-        if (restaurantsWithCoords.length > 1) return 11;
+        if (filteredRestaurants.length === 1) return 14;
+        if (filteredRestaurants.length > 1) return 11;
         return 12;
-    }, [restaurantsWithCoords]);
+    }, [filteredRestaurants]);
 
-    // Function to center map on user's location
     const centerOnUserLocation = useCallback(() => {
         setIsLocating(true);
-
-        if (!navigator.geolocation) {
-            toast.error('Geolocation is not supported by your browser');
-            setIsLocating(false);
-            return;
-        }
-
         navigator.geolocation.getCurrentPosition(
             (position) => {
                 const newLocation = {
@@ -219,7 +149,6 @@ export function RestaurantMap({ restaurants, isLoading = false, onRestaurantClic
                 };
                 setUserLocation(newLocation);
                 setIsLocating(false);
-
                 if (mapRef.current) {
                     mapRef.current.panTo({ lat: newLocation.lat, lng: newLocation.lng });
                     mapRef.current.setZoom(15);
@@ -227,19 +156,7 @@ export function RestaurantMap({ restaurants, isLoading = false, onRestaurantClic
             },
             (error) => {
                 setIsLocating(false);
-                let errorMessage = 'Unable to get location';
-                switch (error.code) {
-                    case error.PERMISSION_DENIED:
-                        errorMessage = 'Location access denied. Please enable location permissions.';
-                        break;
-                    case error.POSITION_UNAVAILABLE:
-                        errorMessage = 'Location unavailable. Please try again.';
-                        break;
-                    case error.TIMEOUT:
-                        errorMessage = 'Location request timed out. Please try again.';
-                        break;
-                }
-                toast.error(errorMessage);
+                toast.error('Unable to get location');
             },
             { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
         );
@@ -247,51 +164,28 @@ export function RestaurantMap({ restaurants, isLoading = false, onRestaurantClic
 
     const onMapLoad = useCallback((map: google.maps.Map) => {
         mapRef.current = map;
-        // Set initial zoom level
-        setZoomLevel(map.getZoom() || 12);
-
-        // Perform initial centering
-        if (!initialCenterRef.current && restaurantsWithCoords.length > 0) {
-            const center = getCenter();
-            const zoom = getZoom();
-            map.setCenter(center);
-            map.setZoom(zoom);
+        if (!initialCenterRef.current && filteredRestaurants.length > 0) {
+            map.setCenter(getCenter());
+            map.setZoom(getZoom());
             initialCenterRef.current = true;
         }
+    }, [getCenter, getZoom, filteredRestaurants.length]);
 
-        // Listen for zoom changes with debounce to prevent thrashing
-        map.addListener('zoom_changed', () => {
-            if (zoomTimeoutRef.current) {
-                clearTimeout(zoomTimeoutRef.current);
-            }
-            zoomTimeoutRef.current = setTimeout(() => {
-                const newZoom = map.getZoom();
-                if (newZoom) setZoomLevel(newZoom);
-            }, 100); // Wait 100ms after zooming stops
-        });
-    }, [getCenter, getZoom, restaurantsWithCoords.length]);
-
-    // Setup marker clustering
+    // Setup marker clustering and markers - Optimized to only run when data changes
     useEffect(() => {
         if (!mapRef.current || !isLoaded) return;
 
         const map = mapRef.current;
-        const size = getMarkerSize(zoomLevel);
+        const size = 44; // Fixed optimized size for performance
 
-        // Clear previous markers
+        // Clear previous state
         markersRef.current.forEach(marker => marker.setMap(null));
         markersRef.current = [];
         restaurantMapRef.current.clear();
+        if (clustererRef.current) clustererRef.current.clearMarkers();
 
-        // Clear previous clusterer
-        if (clustererRef.current) {
-            clustererRef.current.clearMarkers();
-        }
-
-        // Create new markers
-        const newMarkers = restaurantsWithCoords.map(restaurant => {
-            // Determine Color & Emoji
-            let color = '#e11d48'; // Default Rose
+        const newMarkers = filteredRestaurants.map(restaurant => {
+            let color = '#f43f5e'; // Vibrant Rose 500
             let emoji = '🍽️';
 
             if (isHappyHourMode) {
@@ -300,7 +194,7 @@ export function RestaurantMap({ restaurants, isLoading = false, onRestaurantClic
                 emoji = style.emoji;
             }
 
-            const markerIcon = createEmojiMarkerIcon(color, emoji);
+            const markerIcon = createEmojiMarkerIcon(color, emoji, isHappyHourMode);
 
             const marker = new google.maps.Marker({
                 position: { lat: restaurant.lat!, lng: restaurant.lng! },
@@ -309,296 +203,76 @@ export function RestaurantMap({ restaurants, isLoading = false, onRestaurantClic
                     scaledSize: new google.maps.Size(size, size),
                     anchor: new google.maps.Point(size / 2, size * 0.9),
                 },
+                optimized: true, // Use optimized rendering
+                animation: google.maps.Animation.DROP,
             });
 
-            // Store restaurant reference
             restaurantMapRef.current.set(marker, restaurant);
-
-            // Add click listener
             marker.addListener('click', () => {
-                const clickedRestaurant = restaurantMapRef.current.get(marker);
-                if (clickedRestaurant) {
-                    setSelectedRestaurant(current =>
-                        current?.id === clickedRestaurant.id ? null : clickedRestaurant
-                    );
-                }
+                setSelectedRestaurant(restaurant);
             });
 
             return marker;
         });
 
         markersRef.current = newMarkers;
-
-        // Create clusterer
         clustererRef.current = createMapClusterer(map, newMarkers);
 
-        // Add clusters click listeners if needed (handled by default in createMapClusterer usually, 
-        // but here it's just initialized)
-
-        // Cleanup
         return () => {
-            markersRef.current.forEach(marker => {
-                google.maps.event.clearInstanceListeners(marker);
-                marker.setMap(null);
-            });
-            if (clustererRef.current) {
-                clustererRef.current.clearMarkers();
-            }
+            markersRef.current.forEach(m => google.maps.event.clearInstanceListeners(m));
+            if (clustererRef.current) clustererRef.current.clearMarkers();
         };
-    }, [isLoaded, restaurantsWithCoords, zoomLevel, getMarkerSize, isHappyHourMode]);
-
-    // Handle "View Details" button in popup
-    const handleViewDetails = useCallback((restaurant: Restaurant) => {
-        setSelectedRestaurant(null);
-        onRestaurantClick?.(restaurant);
-    }, [onRestaurantClick]);
+    }, [isLoaded, filteredRestaurants, isHappyHourMode]);
 
     if (loadError) {
-        // Demo mode map fallback - show a simulated map with restaurant list
-        console.error('[RestaurantMap] Google Maps load error:', loadError);
-
         return (
-            <div className="relative h-full w-full bg-gradient-to-br from-slate-100 to-slate-200 overflow-auto">
-                {/* Simulated map background */}
-                <div className="absolute inset-0 opacity-20">
-                    <div className="w-full h-full" style={{
-                        backgroundImage: 'radial-gradient(circle, #94a3b8 1px, transparent 1px)',
-                        backgroundSize: '20px 20px'
-                    }} />
-                </div>
-
-                {/* Error notice with details */}
-                <div className="absolute top-4 left-4 right-4 z-10">
-                    <div className="bg-red-100 border border-red-300 rounded-xl p-4 shadow-lg">
-                        <p className="text-red-800 text-sm font-medium mb-2">
-                            🗺️ Google Maps failed to load
-                        </p>
-                        <p className="text-red-700 text-xs mb-3">
-                            Error: {loadError.message || 'Unknown error'}
-                        </p>
-                        <details className="text-xs text-red-600">
-                            <summary className="cursor-pointer hover:underline">Troubleshooting steps</summary>
-                            <ul className="mt-2 ml-4 list-disc space-y-1">
-                                <li>Check that NEXT_PUBLIC_GOOGLE_MAPS_API_KEY is set in .env</li>
-                                <li>Verify the API key has "Maps JavaScript API" enabled</li>
-                                <li>Ensure localhost is allowed in API key restrictions</li>
-                                <li>Check browser console (F12) for more details</li>
-                            </ul>
-                        </details>
-                    </div>
-                </div>
-
-                {/* Restaurant markers as cards */}
-                <div className="pt-20 pb-4 px-4 space-y-3">
-                    {restaurantsWithCoords.length > 0 ? (
-                        restaurantsWithCoords.map((restaurant) => (
-                            <button
-                                key={restaurant.id}
-                                onClick={() => onRestaurantClick?.(restaurant)}
-                                className="w-full bg-white rounded-xl p-4 shadow-md border border-slate-200 text-left hover:shadow-lg hover:border-primary-400 transition-all"
-                            >
-                                <div className="flex items-start gap-3">
-                                    {restaurant.logo_url ? (
-                                        <img
-                                            src={restaurant.logo_url}
-                                            alt={`${restaurant.name} logo`}
-                                            className="w-10 h-10 rounded-lg object-contain bg-muted flex-shrink-0"
-                                            onError={(e) => { e.currentTarget.style.display = 'none'; }}
-                                        />
-                                    ) : (
-                                        <div className="w-10 h-10 rounded-lg bg-primary-100 flex items-center justify-center flex-shrink-0">
-                                            <span className="text-lg">🍽️</span>
-                                        </div>
-                                    )}
-                                    <div className="flex-1 min-w-0">
-                                        <h3 className="font-bold text-foreground truncate">{restaurant.name}</h3>
-                                        {restaurant.cuisine && (
-                                            <span className="inline-block text-xs px-2 py-0.5 rounded-full bg-primary-100 text-primary-700 font-medium mt-1">
-                                                {restaurant.cuisine}
-                                            </span>
-                                        )}
-                                        {restaurant.address && (
-                                            <p className="text-xs text-muted-foreground flex items-center gap-1 mt-2">
-                                                <MapPin size={12} className="flex-shrink-0" />
-                                                <span className="truncate">{restaurant.address}</span>
-                                            </p>
-                                        )}
-                                    </div>
-                                    <ChevronRight size={20} className="text-muted-foreground flex-shrink-0" />
-                                </div>
-                            </button>
-                        ))
-                    ) : (
-                        <div className="flex flex-col items-center justify-center py-12 text-center">
-                            <Utensils size={48} className="text-muted-foreground mb-4" />
-                            <p className="text-muted-foreground">
-                                No restaurants with locations yet.<br />
-                                Add restaurants to see them here!
-                            </p>
-                        </div>
-                    )}
-                </div>
+            <div className="flex flex-col items-center justify-center h-full bg-rose-50 p-8 text-center">
+                <Utensils size={48} className="text-rose-300 mb-4" />
+                <h2 className="text-xl font-bold text-rose-900 mb-2">Maps failed to load</h2>
+                <p className="text-rose-700 text-sm max-w-xs">{loadError.message}</p>
             </div>
         );
     }
 
     if (!isLoaded || isLoading) {
         return (
-            <div className="flex items-center justify-center h-full bg-muted/50">
-                <div className="flex flex-col items-center gap-2">
-                    <Loader2 size={32} className="animate-spin text-primary-500" />
-                    <p className="text-sm font-medium text-muted-foreground animate-pulse">Loading map...</p>
+            <div className="flex items-center justify-center h-full bg-slate-50 dark:bg-slate-900">
+                <div className="flex flex-col items-center gap-4">
+                    <div className="relative">
+                        <Loader2 size={40} className="animate-spin text-rose-500" />
+                        <div className="absolute inset-0 blur-lg bg-rose-500/20 animate-pulse rounded-full" />
+                    </div>
+                    <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">Loading Vibes...</p>
                 </div>
             </div>
         );
     }
 
     return (
-        <div className="relative h-full w-full">
+        <div className="relative h-full w-full bg-slate-100 overflow-hidden">
             <GoogleMap
                 mapContainerStyle={containerStyle}
                 onLoad={onMapLoad}
+                onClick={() => setSelectedRestaurant(null)}
                 options={{
-                    styles: mapStyles,
-                    disableDefaultUI: false,
-                    zoomControl: true,
-                    mapTypeControl: false,
-                    streetViewControl: false,
-                    fullscreenControl: true,
-                    gestureHandling: 'greedy', // Better for mobile
+                    styles: isHappyHourMode ? MAP_STYLES.night : MAP_STYLES.light,
+                    disableDefaultUI: true, // Modern approach: use custom UI
+                    gestureHandling: 'greedy',
                     clickableIcons: false,
+                    backgroundColor: isHappyHourMode ? '#242f3e' : '#f5f5f5',
                 }}
             >
-                {/* Markers are now managed by the clusterer in useEffect */}
-
-                {selectedRestaurant && selectedRestaurant.lat !== null && selectedRestaurant.lng !== null && (
-                    <InfoWindow
-                        position={{ lat: selectedRestaurant.lat, lng: selectedRestaurant.lng }}
-                        onCloseClick={() => setSelectedRestaurant(null)}
-                        options={{
-                            pixelOffset: new google.maps.Size(0, -40),
-                            disableAutoPan: true // Don't move the map when selecting
-                        }}
-                    >
-                        <div style={{ minWidth: '220px', maxWidth: '280px', padding: '0px', backgroundColor: 'white', borderRadius: '12px', overflow: 'hidden' }}>
-                            {/* Photo Preview Section */}
-                            {selectedRestaurantPhotos && selectedRestaurantPhotos.length > 0 && (
-                                <div style={{ width: '100%', height: '120px', overflow: 'hidden', backgroundColor: '#f3f4f6', position: 'relative' }}>
-                                    <div style={{ display: 'flex', overflowX: 'auto', scrollSnapType: 'x mandatory', scrollbarWidth: 'none', height: '100%' }}>
-                                        {selectedRestaurantPhotos.map((photo, i) => (
-                                            <img
-                                                key={photo.id}
-                                                src={photo.url}
-                                                alt={`${selectedRestaurant.name} - ${i + 1}`}
-                                                style={{
-                                                    width: '100%',
-                                                    height: '100%',
-                                                    objectFit: 'cover',
-                                                    flexShrink: 0,
-                                                    scrollSnapAlign: 'start'
-                                                }}
-                                            />
-                                        ))}
-                                    </div>
-                                    {selectedRestaurantPhotos.length > 1 && (
-                                        <div style={{ position: 'absolute', bottom: '8px', right: '8px', backgroundColor: 'rgba(0,0,0,0.6)', color: 'white', fontSize: '10px', padding: '3px 8px', borderRadius: '20px', fontWeight: 'bold', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                            <span>Swipe</span>
-                                            <span style={{ opacity: 0.7 }}>•</span>
-                                            <span>{selectedRestaurantPhotos.length} photos</span>
-                                        </div>
-                                    )}
-                                </div>
-                            )}
-
-                            <div style={{ padding: '12px' }}>
-                                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', marginBottom: '8px' }}>
-                                    {selectedRestaurant.logo_url ? (
-                                        <img
-                                            src={selectedRestaurant.logo_url}
-                                            alt={`${selectedRestaurant.name} logo`}
-                                            style={{ width: '40px', height: '40px', borderRadius: '8px', objectFit: 'contain', backgroundColor: '#f3f4f6', flexShrink: 0 }}
-                                            onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
-                                        />
-                                    ) : (
-                                        <div style={{ width: '40px', height: '40px', borderRadius: '8px', backgroundColor: '#fed7aa', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                                            <span style={{ fontSize: '18px' }}>🍽️</span>
-                                        </div>
-                                    )}
-                                    <div style={{ flex: 1, minWidth: 0 }}>
-                                        <h3 style={{ fontWeight: 'bold', color: '#111827', fontSize: '16px', margin: 0, wordBreak: 'break-word' }}>{selectedRestaurant.name}</h3>
-                                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginTop: '4px' }}>
-                                            {selectedRestaurant.cuisine && (
-                                                <span style={{ display: 'inline-block', fontSize: '10px', padding: '2px 8px', borderRadius: '9999px', backgroundColor: isHappyHourMode ? '#fef3c7' : '#fed7aa', color: isHappyHourMode ? '#92400e' : '#c2410c', fontWeight: 600 }}>
-                                                    {selectedRestaurant.cuisine}
-                                                </span>
-                                            )}
-                                            {isHappyHourMode && (
-                                                <span style={{ display: 'inline-block', fontSize: '10px', padding: '2px 8px', borderRadius: '9999px', backgroundColor: '#dcfce7', color: '#166534', fontWeight: 600 }}>
-                                                    Happy Hour 🍹
-                                                </span>
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {isHappyHourMode && ((selectedRestaurant as any).hh_drinks || (selectedRestaurant as any).hh_food || (selectedRestaurant as any).hh_times) && (
-                                    <div style={{ backgroundColor: '#fffbeb', border: '1px solid #fef3c7', borderRadius: '8px', padding: '8px', marginBottom: '8px' }}>
-                                        <p style={{ fontSize: '10px', fontWeight: 'bold', color: '#92400e', marginBottom: '4px', textTransform: 'uppercase' }}>Happy Hour:</p>
-                                        {(selectedRestaurant as any).hh_drinks && (
-                                            <p style={{ fontSize: '11px', color: '#b45309', margin: '0 0 2px 0' }}>🍸 {(selectedRestaurant as any).hh_drinks}</p>
-                                        )}
-                                        {(selectedRestaurant as any).hh_food && (
-                                            <p style={{ fontSize: '11px', color: '#b45309', margin: '0 0 2px 0' }}>🍴 {(selectedRestaurant as any).hh_food}</p>
-                                        )}
-                                        {(selectedRestaurant as any).hh_times && (
-                                            <p style={{ fontSize: '10px', color: '#d97706', margin: '4px 0 0 0', fontStyle: 'italic' }}>
-                                                🕒 {(selectedRestaurant as any).hh_times}
-                                            </p>
-                                        )}
-                                    </div>
-                                )}
-
-                                {selectedRestaurant.address && (
-                                    <p style={{ fontSize: '12px', color: '#6b7280', display: 'flex', alignItems: 'flex-start', gap: '4px', marginBottom: '8px', margin: 0 }}>
-                                        <MapPin size={12} style={{ flexShrink: 0, marginTop: '2px', color: isHappyHourMode ? getHappyHourStyle((selectedRestaurant as any).rating).color : '#e11d48' }} />
-                                        <span style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{selectedRestaurant.address}</span>
-                                    </p>
-                                )}
-
-                                <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
-                                    <button
-                                        onClick={() => handleViewDetails(selectedRestaurant)}
-                                        style={{ flex: 1, padding: '8px 12px', borderRadius: '8px', backgroundColor: isHappyHourMode ? getHappyHourStyle((selectedRestaurant as any).rating).color : '#e11d48', color: 'white', fontSize: '12px', fontWeight: 600, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}
-                                    >
-                                        View Details <ChevronRight size={14} />
-                                    </button>
-                                    {selectedRestaurant.booking_link && (
-                                        <a
-                                            href={selectedRestaurant.booking_link}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid #e5e7eb', color: '#374151', fontSize: '12px', fontWeight: 500, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '4px' }}
-                                        >
-                                            Book <ExternalLink size={12} />
-                                        </a>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
-                    </InfoWindow>
-                )}
-
-                {/* User location marker */}
+                {/* User location marker with pulse effect simulated by Circles */}
                 {userLocation && (
                     <>
                         <Circle
                             center={{ lat: userLocation.lat, lng: userLocation.lng }}
-                            radius={userLocation.accuracy}
+                            radius={userLocation.accuracy * 2}
                             options={{
-                                fillColor: '#4285F4',
-                                fillOpacity: 0.15,
-                                strokeColor: '#4285F4',
-                                strokeOpacity: 0.3,
+                                fillColor: '#3b82f6',
+                                fillOpacity: 0.1,
+                                strokeColor: '#3b82f6',
+                                strokeOpacity: 0.2,
                                 strokeWeight: 1,
                             }}
                         />
@@ -606,50 +280,78 @@ export function RestaurantMap({ restaurants, isLoading = false, onRestaurantClic
                             position={{ lat: userLocation.lat, lng: userLocation.lng }}
                             icon={{
                                 path: google.maps.SymbolPath.CIRCLE,
-                                scale: 10,
-                                fillColor: '#4285F4',
+                                scale: 8,
+                                fillColor: '#3b82f6',
                                 fillOpacity: 1,
                                 strokeColor: '#ffffff',
                                 strokeWeight: 3,
                             }}
-                            title="Your location"
+                            zIndex={999}
                         />
                     </>
                 )}
+
+                {/* Custom Glassmorphism Popup */}
+                {selectedRestaurant && (
+                    <RestaurantMapPopup
+                        restaurant={selectedRestaurant}
+                        isHappyHourMode={isHappyHourMode}
+                        onClose={() => setSelectedRestaurant(null)}
+                        onClick={() => onRestaurantClick?.(selectedRestaurant)}
+                    />
+                )}
             </GoogleMap>
 
-            {/* Locate me button */}
+            {/* Custom Modern Map Controls */}
+            <MapControls
+                isHappyHour={isHappyHourMode}
+                onToggleHappyHour={() => {
+                    onModeChange?.(!isHappyHourMode);
+                    toast.info(isHappyHourMode ? "Back to Standard Mode" : "Happy Hour Vibes Active! 🍹");
+                }}
+                onLocate={centerOnUserLocation}
+                isLocating={isLocating}
+                currentTheme={isHappyHourMode ? 'dark' : 'light'}
+            />
+
+            {/* Floating Locate Button (Standalone) */}
             <button
                 onClick={centerOnUserLocation}
                 disabled={isLocating}
-                className="absolute bottom-4 right-4 z-10 bg-white hover:bg-gray-50 shadow-lg rounded-full p-3 transition-all duration-200 hover:scale-105 active:scale-95 disabled:opacity-50"
-                aria-label="Center on my location"
-                title="Center on my location"
+                className="absolute bottom-6 right-6 z-10 w-12 h-12 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 shadow-2xl rounded-2xl flex items-center justify-center transition-all active:scale-90 border border-white/50 dark:border-slate-700"
             >
                 {isLocating ? (
-                    <Loader2 size={24} className="animate-spin text-blue-500" />
+                    <Loader2 size={20} className="animate-spin text-rose-500" />
                 ) : (
-                    <Locate size={24} className="text-blue-500" />
+                    <div className="relative">
+                        <div className="absolute inset-0 bg-blue-500 blur-md opacity-20" />
+                        <MapPin size={22} className="text-blue-500 relative" />
+                    </div>
                 )}
             </button>
 
-            {restaurantsWithCoords.length === 0 && (
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
-                    <div className="bg-card/90 backdrop-blur-sm rounded-2xl p-6 shadow-lg text-center max-w-xs pointer-events-auto">
-                        <Utensils size={32} className="text-primary-500 mx-auto mb-2" />
-                        <p className="text-sm text-muted-foreground">
-                            No restaurants with locations yet.<br />
-                            Add restaurants with addresses to see them on the map!
+            {filteredRestaurants.length === 0 && (
+                <div className="absolute inset-x-4 top-24 flex justify-center pointer-events-none z-10">
+                    <div className="bg-white/40 dark:bg-black/40 backdrop-blur-md rounded-2xl p-4 border border-white/20 shadow-lg text-center max-w-xs pointer-events-auto">
+                        <p className="text-xs font-bold text-slate-800 dark:text-white uppercase tracking-wider mb-1">
+                            Nothing here yet
+                        </p>
+                        <p className="text-[10px] text-slate-600 dark:text-slate-400">
+                            No places found for this mode. Try adding some!
                         </p>
                     </div>
                 </div>
             )}
 
-            {/* Warning/Side Panel for restaurants without coordinates */}
-            <MapSidePanel
-                restaurants={restaurants}
-                restaurantsWithCoords={restaurantsWithCoords}
-            />
+            {/* Side Panel (Mainly for geocoding errors) */}
+            {!isHappyHourMode && (
+                <div className="scale-75 origin-top-right">
+                    <MapSidePanel
+                        restaurants={restaurants}
+                        restaurantsWithCoords={filteredRestaurants}
+                    />
+                </div>
+            )}
         </div>
     );
 }
