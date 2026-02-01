@@ -16,6 +16,7 @@ interface RestaurantMapProps {
     isLoading?: boolean;
     onRestaurantClick?: (restaurant: Restaurant) => void;
     isHappyHourMode?: boolean;
+    showAllHappyHours?: boolean;
 }
 
 interface UserLocation {
@@ -62,7 +63,36 @@ function createEmojiMarkerIcon(color: string = '#e11d48', emoji: string = '🍽�
     return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
 }
 
-export function RestaurantMap({ restaurants, isLoading = false, onRestaurantClick, isHappyHourMode = false }: RestaurantMapProps) {
+// Helper to check if Happy Hour is active NOW
+function isHappyHourActive(startStr?: string | null, endStr?: string | null): boolean {
+    if (!startStr || !endStr) return false;
+
+    const now = new Date();
+    const currentStr = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+
+    // Handle overnight ranges (e.g., 22:00 - 02:00)
+    if (endStr < startStr) {
+        return currentStr >= startStr || currentStr <= endStr;
+    }
+
+    return currentStr >= startStr && currentStr <= endStr;
+}
+
+// Helper to get marker color/emoji based on Rating
+function getHappyHourStyle(rating?: number) {
+    switch (rating) {
+        case 3: // Gold
+            return { color: '#fbbf24', emoji: '🏆' }; // Amber-400
+        case 2: // Silver
+            return { color: '#94a3b8', emoji: '🥈' }; // Slate-400
+        case 1: // Bronze
+            return { color: '#d97706', emoji: '🥉' }; // Amber-600
+        default:
+            return { color: '#f59e0b', emoji: '🍹' }; // Default Amber
+    }
+}
+
+export function RestaurantMap({ restaurants, isLoading = false, onRestaurantClick, isHappyHourMode = false, showAllHappyHours = false }: RestaurantMapProps) {
     const [selectedRestaurant, setSelectedRestaurant] = useState<Restaurant | null>(null);
     const [userLocation, setUserLocation] = useState<UserLocation | null>(null);
     const [isLocating, setIsLocating] = useState(false);
@@ -73,10 +103,6 @@ export function RestaurantMap({ restaurants, isLoading = false, onRestaurantClic
     const markersRef = useRef<google.maps.Marker[]>([]);
     const restaurantMapRef = useRef<Map<google.maps.Marker, Restaurant>>(new Map());
     const initialCenterRef = useRef(false);
-
-    // Marker styling based on mode
-    const markerColor = isHappyHourMode ? '#f59e0b' : '#e11d48'; // Amber for HH, Rose for regular
-    const markerEmoji = isHappyHourMode ? '🍹' : '🍽️';
 
     // Calculate marker size based on zoom level (scales from 20px at zoom 8 to 48px at zoom 18)
     const getMarkerSize = useCallback((zoom: number) => {
@@ -91,14 +117,42 @@ export function RestaurantMap({ restaurants, isLoading = false, onRestaurantClic
 
     const { isLoaded, loadError } = useGoogleMaps();
 
-    const restaurantsWithCoords = restaurants.filter(r => r.lat !== null && r.lng !== null && typeof r.lat === 'number' && typeof r.lng === 'number');
+    // Filter Restaurants
+    const filteredRestaurants = restaurants.filter(r => {
+        // Base check: must have coords
+        if (typeof r.lat !== 'number' || typeof r.lng !== 'number') return false;
+
+        // If Happy Hour Mode
+        if (isHappyHourMode) {
+            // 1. Must be a happy hour place (implied by the data source usually, but let's be safe)
+            // (Passed 'restaurants' should already be fetched with mode=happy_hour, but good to be careful)
+
+            // 2. Filter by Time (unless "See All" is on)
+            if (!showAllHappyHours) {
+                const hh = r as any; // Cast to access extra props if needed
+                if (!isHappyHourActive(hh.start_time, hh.end_time)) {
+                    // Try parsing raw string if parsed fields missing (legacy/fallback)
+                    // But for now, we rely on passed props.
+                    // If rating/time are not populated yet, we might hide everything.
+                    // Let's be lenient: if NO time info, maybe show it? No, requirements say "only when occur".
+                    // So if no time info, hide it.
+                    if (!hh.start_time) return false;
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    });
+
+    const restaurantsWithCoords = filteredRestaurants;
 
     // Log warnings only when there's an actual issue
     useEffect(() => {
-        if (restaurants.length > 0 && restaurantsWithCoords.length === 0) {
+        if (restaurants.length > 0 && restaurantsWithCoords.length === 0 && !isHappyHourMode) {
             console.warn('[RestaurantMap] All restaurants missing coordinates');
         }
-    }, [restaurants, restaurantsWithCoords]);
+    }, [restaurants, restaurantsWithCoords, isHappyHourMode]);
 
     // Get user's location on mount
     useEffect(() => {
@@ -222,7 +276,6 @@ export function RestaurantMap({ restaurants, isLoading = false, onRestaurantClic
         if (!mapRef.current || !isLoaded) return;
 
         const map = mapRef.current;
-        const markerIcon = createEmojiMarkerIcon(markerColor, markerEmoji);
         const size = getMarkerSize(zoomLevel);
 
         // Clear previous markers
@@ -237,6 +290,18 @@ export function RestaurantMap({ restaurants, isLoading = false, onRestaurantClic
 
         // Create new markers
         const newMarkers = restaurantsWithCoords.map(restaurant => {
+            // Determine Color & Emoji
+            let color = '#e11d48'; // Default Rose
+            let emoji = '🍽️';
+
+            if (isHappyHourMode) {
+                const style = getHappyHourStyle((restaurant as any).rating);
+                color = style.color;
+                emoji = style.emoji;
+            }
+
+            const markerIcon = createEmojiMarkerIcon(color, emoji);
+
             const marker = new google.maps.Marker({
                 position: { lat: restaurant.lat!, lng: restaurant.lng! },
                 icon: {
@@ -280,7 +345,7 @@ export function RestaurantMap({ restaurants, isLoading = false, onRestaurantClic
                 clustererRef.current.clearMarkers();
             }
         };
-    }, [isLoaded, restaurantsWithCoords, zoomLevel, getMarkerSize, markerColor, markerEmoji]);
+    }, [isLoaded, restaurantsWithCoords, zoomLevel, getMarkerSize, isHappyHourMode]);
 
     // Handle "View Details" button in popup
     const handleViewDetails = useCallback((restaurant: Restaurant) => {
@@ -495,7 +560,7 @@ export function RestaurantMap({ restaurants, isLoading = false, onRestaurantClic
 
                                 {selectedRestaurant.address && (
                                     <p style={{ fontSize: '12px', color: '#6b7280', display: 'flex', alignItems: 'flex-start', gap: '4px', marginBottom: '8px', margin: 0 }}>
-                                        <MapPin size={12} style={{ flexShrink: 0, marginTop: '2px', color: markerColor }} />
+                                        <MapPin size={12} style={{ flexShrink: 0, marginTop: '2px', color: isHappyHourMode ? getHappyHourStyle((selectedRestaurant as any).rating).color : '#e11d48' }} />
                                         <span style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{selectedRestaurant.address}</span>
                                     </p>
                                 )}
@@ -503,7 +568,7 @@ export function RestaurantMap({ restaurants, isLoading = false, onRestaurantClic
                                 <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
                                     <button
                                         onClick={() => handleViewDetails(selectedRestaurant)}
-                                        style={{ flex: 1, padding: '8px 12px', borderRadius: '8px', backgroundColor: markerColor, color: 'white', fontSize: '12px', fontWeight: 600, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}
+                                        style={{ flex: 1, padding: '8px 12px', borderRadius: '8px', backgroundColor: isHappyHourMode ? getHappyHourStyle((selectedRestaurant as any).rating).color : '#e11d48', color: 'white', fontSize: '12px', fontWeight: 600, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}
                                     >
                                         View Details <ChevronRight size={14} />
                                     </button>

@@ -8,6 +8,9 @@ export interface HappyHour extends Partial<Restaurant> {
     hh_food: string | null;
     address: string | null;
     source_url: string;
+    rating?: number; // 1=Bronze, 2=Silver, 3=Gold
+    start_time?: string | null; // HH:MM
+    end_time?: string | null;   // HH:MM
 }
 
 export type LocationMode = 'regular' | 'happy_hour';

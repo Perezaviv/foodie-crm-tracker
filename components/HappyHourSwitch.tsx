@@ -62,3 +62,27 @@ export function HappyHourSwitch({ isHappyHourMode, onToggle, isLoading }: HappyH
         </div>
     );
 }
+
+interface SeeAllToggleProps {
+    showAll: boolean;
+    onToggle: (show: boolean) => void;
+}
+
+export function SeeAllToggle({ showAll, onToggle }: SeeAllToggleProps) {
+    return (
+        <div className="flex items-center gap-2 bg-muted/30 p-1.5 rounded-xl glass border border-white/10 shadow-inner ml-2">
+            <button
+                onClick={() => onToggle(!showAll)}
+                className={cn(
+                    "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200",
+                    showAll
+                        ? "bg-primary-100 text-primary-700"
+                        : "text-muted-foreground hover:text-foreground"
+                )}
+            >
+                <span className={cn("w-2 h-2 rounded-full", showAll ? "bg-primary-500" : "bg-gray-300")} />
+                See All
+            </button>
+        </div>
+    );
+}

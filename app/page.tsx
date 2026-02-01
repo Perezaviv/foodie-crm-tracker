@@ -8,7 +8,7 @@ import { Map, List, Plus, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useRestaurants } from '@/hooks';
 import { AppMode } from '@/hooks/useRestaurants';
-import { RestaurantMap, RestaurantList, RestaurantDetail, HappyHourSwitch } from '@/components';
+import { RestaurantMap, RestaurantList, RestaurantDetail, HappyHourSwitch, SeeAllToggle } from '@/components';
 import { AddDrawer } from '@/components/AddDrawer';
 import type { Restaurant } from '@/lib/types';
 
@@ -17,6 +17,7 @@ type View = 'map' | 'list';
 export default function Home() {
   const [activeView, setActiveView] = useState<View>('list');
   const [mode, setMode] = useState<AppMode>('regular');
+  const [showAllHappyHours, setShowAllHappyHours] = useState(false);
   const [selectedRestaurant, setSelectedRestaurant] = useState<Restaurant | null>(null);
   const [isAddDrawerOpen, setIsAddDrawerOpen] = useState(false);
   const { restaurants, isLoading: restaurantsLoading, refresh } = useRestaurants(mode);
@@ -92,12 +93,27 @@ export default function Home() {
             </div>
           </div>
 
-          <div className="flex justify-center">
+          <div className="flex justify-center items-center">
             <HappyHourSwitch
               isHappyHourMode={mode === 'happy_hour'}
               onToggle={(enabled) => setMode(enabled ? 'happy_hour' : 'regular')}
               isLoading={restaurantsLoading}
             />
+            <AnimatePresence>
+              {mode === 'happy_hour' && (
+                <motion.div
+                  initial={{ opacity: 0, width: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, width: 'auto', scale: 1 }}
+                  exit={{ opacity: 0, width: 0, scale: 0.8 }}
+                  className="overflow-hidden"
+                >
+                  <SeeAllToggle
+                    showAll={showAllHappyHours}
+                    onToggle={setShowAllHappyHours}
+                  />
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         </div>
       </header>
@@ -118,6 +134,7 @@ export default function Home() {
                 isLoading={restaurantsLoading}
                 onRestaurantClick={handleRestaurantClick}
                 isHappyHourMode={mode === 'happy_hour'}
+                showAllHappyHours={showAllHappyHours}
               />
             </motion.div>
           )}
