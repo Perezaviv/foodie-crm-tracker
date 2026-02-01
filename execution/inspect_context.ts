@@ -1,5 +1,5 @@
 
-import { searchRestaurant } from './lib/skills/ai/search_restaurant';
+import { searchRestaurant } from '../lib/skills/ai/search_restaurant';
 import fetch from 'node-fetch';
 import dotenv from 'dotenv';
 dotenv.config({ path: '.env.local' });
