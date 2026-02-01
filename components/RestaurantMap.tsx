@@ -7,7 +7,6 @@ import { MarkerClusterer } from '@googlemaps/markerclusterer';
 import { Utensils, Loader2, MapPin } from 'lucide-react';
 import { toast } from 'sonner';
 import type { Restaurant } from '@/lib/types';
-import { useGeocoding } from '@/lib/skills/ui';
 import { createMapClusterer } from '@/lib/utils/map-utils';
 import { MapSidePanel } from './MapSidePanel';
 import { MAP_STYLES } from '@/lib/utils/map-styles';
@@ -36,22 +35,22 @@ const containerStyle = {
     height: '100%',
 };
 
-// Create a high-quality emoji marker icon
+// Create a high-quality emoji marker icon using base64 for better compatibility
 function createEmojiMarkerIcon(color: string = '#e11d48', emoji: string = '🍽️', isGlow: boolean = false): string {
     const svg = `
         <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48">
             <defs>
-                <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%">
-                    <feDropShadow dx="0" dy="2" stdDeviation="3" flood-opacity="${isGlow ? '0.6' : '0.3'}" flood-color="${isGlow ? color : 'black'}"/>
+                <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+                    <feGaussianBlur stdDeviation="3" result="blur" />
+                    <feComposite in="SourceGraphic" in2="blur" operator="over" />
                 </filter>
             </defs>
-            <circle cx="24" cy="20" r="18" fill="white" />
-            <circle cx="24" cy="20" r="16" fill="${color}" filter="url(#shadow)"/>
-            <text x="24" y="27" text-anchor="middle" font-size="22" font-family="sans-serif">${emoji}</text>
-            <path d="M24 44 L16 32 L32 32 Z" fill="${color}"/>
+            <path d="M24 44 L16 32 A16 16 0 1 1 32 32 Z" fill="white" />
+            <path d="M24 42 L17 31 A15 15 0 1 1 31 31 Z" fill="${color}" ${isGlow ? 'filter="url(#glow)"' : ''} />
+            <text x="24" y="26" text-anchor="middle" font-size="22" font-family="sans-serif" dy=".3em">${emoji}</text>
         </svg>
     `;
-    return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
+    return `data:image/svg+xml;base64,${btoa(unescape(encodeURIComponent(svg)))}`;
 }
 
 function isHappyHourActive(startStr?: string | null, endStr?: string | null): boolean {
@@ -90,14 +89,13 @@ export function RestaurantMap({
 
     const { isLoaded, loadError } = useGoogleMaps();
 
-    // Memoize filtered restaurants to avoid unnecessary calculations
+    // Memoize filtered restaurants
     const filteredRestaurants = useMemo(() => {
         return restaurants.filter(r => {
             if (typeof r.lat !== 'number' || typeof r.lng !== 'number') return false;
             if (isHappyHourMode && !showAllHappyHours) {
                 const hh = r as any;
                 if (!isHappyHourActive(hh.start_time, hh.end_time)) {
-                    if (!hh.start_time) return false;
                     return false;
                 }
             }
@@ -133,8 +131,8 @@ export function RestaurantMap({
     }, [filteredRestaurants]);
 
     const getZoom = useCallback(() => {
-        if (filteredRestaurants.length === 1) return 14;
-        if (filteredRestaurants.length > 1) return 11;
+        if (filteredRestaurants.length === 1) return 15;
+        if (filteredRestaurants.length > 1) return 12;
         return 12;
     }, [filteredRestaurants]);
 
@@ -154,7 +152,7 @@ export function RestaurantMap({
                     mapRef.current.setZoom(15);
                 }
             },
-            (error) => {
+            () => {
                 setIsLocating(false);
                 toast.error('Unable to get location');
             },
@@ -171,21 +169,23 @@ export function RestaurantMap({
         }
     }, [getCenter, getZoom, filteredRestaurants.length]);
 
-    // Setup marker clustering and markers - Optimized to only run when data changes
+    // Setup markers and clustering
     useEffect(() => {
         if (!mapRef.current || !isLoaded) return;
 
         const map = mapRef.current;
-        const size = 44; // Fixed optimized size for performance
+        const size = 42;
 
-        // Clear previous state
-        markersRef.current.forEach(marker => marker.setMap(null));
+        // Clear previous state safely
+        if (clustererRef.current) {
+            clustererRef.current.clearMarkers();
+        }
+        markersRef.current.forEach(m => m.setMap(null));
         markersRef.current = [];
         restaurantMapRef.current.clear();
-        if (clustererRef.current) clustererRef.current.clearMarkers();
 
         const newMarkers = filteredRestaurants.map(restaurant => {
-            let color = '#f43f5e'; // Vibrant Rose 500
+            let color = '#f43f5e';
             let emoji = '🍽️';
 
             if (isHappyHourMode) {
@@ -201,10 +201,10 @@ export function RestaurantMap({
                 icon: {
                     url: markerIcon,
                     scaledSize: new google.maps.Size(size, size),
-                    anchor: new google.maps.Point(size / 2, size * 0.9),
+                    anchor: new google.maps.Point(size / 2, size),
                 },
-                optimized: true, // Use optimized rendering
-                animation: google.maps.Animation.DROP,
+                optimized: false, // Performance test: disable optimized for complex SVGs
+                title: restaurant.name
             });
 
             restaurantMapRef.current.set(marker, restaurant);
@@ -223,6 +223,15 @@ export function RestaurantMap({
             if (clustererRef.current) clustererRef.current.clearMarkers();
         };
     }, [isLoaded, filteredRestaurants, isHappyHourMode]);
+
+    // Map options memoization to prevent unnecessary re-renders/crashes
+    const mapOptions = useMemo(() => ({
+        styles: isHappyHourMode ? MAP_STYLES.night : MAP_STYLES.light,
+        disableDefaultUI: true,
+        gestureHandling: 'greedy' as const,
+        clickableIcons: false,
+        backgroundColor: isHappyHourMode ? '#1e293b' : '#f8fafc',
+    }), [isHappyHourMode]);
 
     if (loadError) {
         return (
@@ -254,20 +263,14 @@ export function RestaurantMap({
                 mapContainerStyle={containerStyle}
                 onLoad={onMapLoad}
                 onClick={() => setSelectedRestaurant(null)}
-                options={{
-                    styles: isHappyHourMode ? MAP_STYLES.night : MAP_STYLES.light,
-                    disableDefaultUI: true, // Modern approach: use custom UI
-                    gestureHandling: 'greedy',
-                    clickableIcons: false,
-                    backgroundColor: isHappyHourMode ? '#242f3e' : '#f5f5f5',
-                }}
+                options={mapOptions}
             >
-                {/* User location marker with pulse effect simulated by Circles */}
+                {/* User location */}
                 {userLocation && (
                     <>
                         <Circle
                             center={{ lat: userLocation.lat, lng: userLocation.lng }}
-                            radius={userLocation.accuracy * 2}
+                            radius={userLocation.accuracy * 1.5}
                             options={{
                                 fillColor: '#3b82f6',
                                 fillOpacity: 0.1,
@@ -280,19 +283,19 @@ export function RestaurantMap({
                             position={{ lat: userLocation.lat, lng: userLocation.lng }}
                             icon={{
                                 path: google.maps.SymbolPath.CIRCLE,
-                                scale: 8,
+                                scale: 7,
                                 fillColor: '#3b82f6',
                                 fillOpacity: 1,
                                 strokeColor: '#ffffff',
-                                strokeWeight: 3,
+                                strokeWeight: 2,
                             }}
                             zIndex={999}
                         />
                     </>
                 )}
 
-                {/* Custom Glassmorphism Popup */}
-                {selectedRestaurant && (
+                {/* Custom Popup */}
+                {selectedRestaurant && selectedRestaurant.lat && selectedRestaurant.lng && (
                     <RestaurantMapPopup
                         restaurant={selectedRestaurant}
                         isHappyHourMode={isHappyHourMode}
@@ -302,48 +305,42 @@ export function RestaurantMap({
                 )}
             </GoogleMap>
 
-            {/* Custom Modern Map Controls */}
+            {/* Floating Controls */}
             <MapControls
                 isHappyHour={isHappyHourMode}
                 onToggleHappyHour={() => {
                     onModeChange?.(!isHappyHourMode);
-                    toast.info(isHappyHourMode ? "Back to Standard Mode" : "Happy Hour Vibes Active! 🍹");
+                    setSelectedRestaurant(null); // Clear popup on mode switch to prevent crashes
                 }}
                 onLocate={centerOnUserLocation}
                 isLocating={isLocating}
                 currentTheme={isHappyHourMode ? 'dark' : 'light'}
             />
 
-            {/* Floating Locate Button (Standalone) */}
+            {/* Standalone Locate Button */}
             <button
                 onClick={centerOnUserLocation}
                 disabled={isLocating}
-                className="absolute bottom-6 right-6 z-10 w-12 h-12 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 shadow-2xl rounded-2xl flex items-center justify-center transition-all active:scale-90 border border-white/50 dark:border-slate-700"
+                className="absolute bottom-6 right-6 z-10 w-12 h-12 bg-white dark:bg-slate-800 shadow-2xl rounded-2xl flex items-center justify-center transition-all active:scale-90 border border-slate-200 dark:border-slate-700"
             >
                 {isLocating ? (
                     <Loader2 size={20} className="animate-spin text-rose-500" />
                 ) : (
-                    <div className="relative">
-                        <div className="absolute inset-0 bg-blue-500 blur-md opacity-20" />
-                        <MapPin size={22} className="text-blue-500 relative" />
-                    </div>
+                    <MapPin size={22} className="text-blue-500" />
                 )}
             </button>
 
-            {filteredRestaurants.length === 0 && (
-                <div className="absolute inset-x-4 top-24 flex justify-center pointer-events-none z-10">
-                    <div className="bg-white/40 dark:bg-black/40 backdrop-blur-md rounded-2xl p-4 border border-white/20 shadow-lg text-center max-w-xs pointer-events-auto">
-                        <p className="text-xs font-bold text-slate-800 dark:text-white uppercase tracking-wider mb-1">
-                            Nothing here yet
-                        </p>
-                        <p className="text-[10px] text-slate-600 dark:text-slate-400">
-                            No places found for this mode. Try adding some!
-                        </p>
+            {filteredRestaurants.length === 0 && !isLoading && (
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
+                    <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-md rounded-2xl p-6 border border-slate-200 dark:border-slate-800 shadow-xl text-center max-w-xs pointer-events-auto">
+                        <Utensils size={32} className="text-rose-500 mx-auto mb-3" />
+                        <p className="text-sm font-bold text-slate-900 dark:text-white mb-1">No spots found</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">Try adjusting your filters or adding new places.</p>
                     </div>
                 </div>
             )}
 
-            {/* Side Panel (Mainly for geocoding errors) */}
+            {/* Error Fixing Side Panel */}
             {!isHappyHourMode && (
                 <div className="scale-75 origin-top-right">
                     <MapSidePanel
