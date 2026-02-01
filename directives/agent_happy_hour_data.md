@@ -28,6 +28,8 @@ Scrape Happy Hour data from HappyTLV and ingest it into the Supabase database.
 -   `execution/seed_happy_hours.py`
 -   Populated `happy_hours` table.
 
-## Edge Cases
--   **Duplicate Locations**: Use strict name matching or address fuzzy matching to avoid duplicates if linking to existing restaurants.
 -   **Missing Data**: If address is missing, flag for manual review or use AI Geocoding skill.
+
+---
+#### 🏁 Status: Completed (2026-02-01)
+Scraped data seeded into `restaurants` table with Happy Hour fields. Geocoding completed via `scripts/fix_happy_hour_data.ts`.

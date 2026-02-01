@@ -28,5 +28,8 @@ Create a UI toggle for "Happy Hour Mode" and update the map/list view.
 -   Updated `RestaurantMap.tsx`
 -   Working Toggle UI.
 
-## Edge Cases
 -   **Loading States**: Ensure smooth transition when toggling (show skeleton or loading spinner).
+
+---
+#### 🏁 Status: Completed (2026-02-01)
+Created `HappyHourSwitch.tsx`, updated `useRestaurants` hook, and integrated mode selection into `app/page.tsx`. Map and List views updated for HH branding.
