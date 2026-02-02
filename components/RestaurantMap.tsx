@@ -74,7 +74,7 @@ export function RestaurantMap({
     const [selectedRestaurant, setSelectedRestaurant] = useState<Restaurant | null>(null);
     const [userLocation, setUserLocation] = useState<UserLocation | null>(null);
     const [isLocating, setIsLocating] = useState(false);
-    const mapRef = useRef<google.maps.Map | null>(null);
+    const [mapInstance, setMapInstance] = useState<google.maps.Map | null>(null);
     const clustererRef = useRef<MarkerClusterer | null>(null);
     const markersRef = useRef<google.maps.Marker[]>([]);
     const restaurantMapRef = useRef<Map<google.maps.Marker, Restaurant>>(new Map());
@@ -165,9 +165,9 @@ export function RestaurantMap({
                 };
                 setUserLocation(newLocation);
                 setIsLocating(false);
-                if (mapRef.current) {
-                    mapRef.current.panTo({ lat: newLocation.lat, lng: newLocation.lng });
-                    mapRef.current.setZoom(15);
+                if (mapInstance) {
+                    mapInstance.panTo({ lat: newLocation.lat, lng: newLocation.lng });
+                    mapInstance.setZoom(15);
                 }
             },
             () => {
@@ -180,7 +180,7 @@ export function RestaurantMap({
     }, []);
 
     const onMapLoad = useCallback((map: google.maps.Map) => {
-        mapRef.current = map;
+        setMapInstance(map);
         if (!initialCenterRef.current && filteredRestaurants.length > 0) {
             map.setCenter(getCenter());
             map.setZoom(getZoom());
@@ -190,9 +190,9 @@ export function RestaurantMap({
 
     // Setup markers and clustering
     useEffect(() => {
-        if (!mapRef.current || !isLoaded) return;
+        if (!mapInstance || !isLoaded) return;
 
-        const map = mapRef.current;
+        const map = mapInstance;
         const size = 42;
 
         // Clear previous state safely
@@ -234,7 +234,7 @@ export function RestaurantMap({
             markersRef.current.forEach(m => google.maps.event.clearInstanceListeners(m));
             if (clustererRef.current) clustererRef.current.clearMarkers();
         };
-    }, [isLoaded, filteredRestaurants, isHappyHourMode]);
+    }, [isLoaded, filteredRestaurants, isHappyHourMode, mapInstance]);
 
     // Map options memoization to prevent unnecessary re-renders/crashes
     const mapOptions = useMemo(() => ({
