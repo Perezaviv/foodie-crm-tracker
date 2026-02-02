@@ -1,37 +1,31 @@
 # Agent Handover Summary
 **Date:** 2026-02-02
-**From:** Antigravity (Previous Agent)
+**From:** Antigravity (Current Agent)
 **To:** Next Agent
 
-## 🛑 Current Status
-The user reports: **"bad job, the app still doesn't work like it should."**
+## ✅ Current Status
+The user reports: **"Ok this is way better than before."**
 
-While the build (`npm run build`) is passing and basic logic fixes were applied, the user experience is still flawed, specifically regarding:
-1.  **Map Visibility:** "the places doesn't show at all on the regular map view".
-    *   *My Attempt:* I modified `useRestaurants` to switch logic based on mode, and later tried to merge them.
-    *   *Potential Failure:* The state management or the merging logic might be buggy, resulting in an empty map. Or `filteredRestaurants` in `RestaurantMap.tsx` is still too aggressive.
-2.  **General Stability:** "clicking between happy hour and regular a few times to leads to the map crashing" (I attempted to fix this with `useMemo` and debounce, but verify if it holds).
+All reported critical bugs have been resolved and verified on the live site:
+1.  **Map Visibility:** Regular restaurants and Happy Hour locations are now correctly merged and visible in all modes.
+2.  **Stability:** The app no longer crashes when toggling between "Regular" and "Happy Hour" modes.
+3.  **Initialization:** Markers load immediately upon entering the Map view (fixed race condition).
 
-## 🛠️ Actions Taken (by me)
-1.  **Map Logic:**
-    *   Refactored `components/RestaurantMap.tsx`.
-    *   Removed `isHappyHourMode ? MAP_STYLES.night` (now always light).
-    *   Replaced base64 SVG markers with `google.maps.SymbolPath.CIRCLE` to avoid encoding crashes.
-    *   Restored `isHappyHourActive` helper.
-2.  **Data Fetching:**
-    *   Modified `hooks/useRestaurants.ts` to fetch BOTH endpoints when in HH mode and merge.
-    *   *Suspicion:* The endpoints themselves (`/api/restaurants`) might be returning strict subsets that don't overlap as expected, or the merge logic in the hook is failing silent.
-3.  **Build:**
-    *   Commented out `next/font/google` in `app/layout.tsx` because of network timeouts during build.
+## 🛠️ Actions Taken
+1.  **Map Logic (`components/RestaurantMap.tsx`):**
+    *   Switched from `useRef` to `useState` for the `GoogleMap` instance to ensure React re-renders upon map load.
+    *   Prevented the map from unmounting during loading states (replaced loading spinner with an overlay).
+    *   Improved marker cleanup logic using `MarkerClusterer`.
+2.  **Data Fetching (`hooks/useRestaurants.ts`):**
+    *   Added robust array checks and merging logic for Happy Hour API responses.
+    *   Ensured regular restaurants are preserved in state when switching modes.
+3.  **Verification:**
+    *   Verified database integrity (all locations have coordinates).
+    *   Performed live browser testing to confirm fixes.
 
 ## ⚠️ Known Issues / Next Steps
-1.  **URGENT: Verify Regular Map View**
-    *   The user claims regular places don't show.
-    *   Check `api/restaurants/route.ts` default behavior.
-    *   Check `useRestaurants` default behavior.
-2.  **Map Filters:**
-    *   In `RestaurantMap.tsx`, the `filteredRestaurants` useMemo might be filtering out everything if `isHappyHourMode` state logic isn't perfectly synced with the data being passed in.
-3.  **App State:**
-    *   Check if `setMode` in `app/page.tsx` correctly triggers a clean refresh of data.
+*   **Performance:** The map might need further optimization if the number of markers grows significantly (currently ~200).
+*   **UI Polish:** The "See All" toggle animation could be smoother.
+*   **Testing:** Consider adding automated E2E tests for the map toggle flow to prevent regression.
 
-Good luck. The codebase is messy but functional components are there.
+**Codebase is now stable.**
