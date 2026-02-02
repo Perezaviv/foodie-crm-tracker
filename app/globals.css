@@ -43,6 +43,12 @@
   --text-secondary: #404040;
   --text-muted: #525252;
   --text-disabled: #a3a3a3;
+
+  /* NEW UI: Midnight Snack Palette */
+  --hot-coral: #FF4D4D;
+  --electric-rose: #FF0055;
+  --acid-lime: #DFFF00;
+  --cyber-blue: #00F0FF;
 }
 
 
@@ -60,6 +66,13 @@
   --color-ring: var(--ring);
   --color-primary: var(--primary-500);
   --color-primary-foreground: #ffffff;
+
+  /* New Colors */
+  --color-hot-coral: var(--hot-coral);
+  --color-electric-rose: var(--electric-rose);
+  --color-acid-lime: var(--acid-lime);
+  --color-cyber-blue: var(--cyber-blue);
+
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
@@ -133,7 +146,39 @@ a {
   padding-top: env(safe-area-inset-top);
 }
 
-/* Glassmorphism effect - responsive to color scheme */
+/* --- GLASSMORPHISM SYSTEM (NEW) --- */
+
+/* The holy grail of glass */
+.glass-panel {
+  @apply backdrop-blur-xl bg-white/10 dark:bg-zinc-900/40;
+  @apply border border-white/20 dark:border-white/10;
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.36);
+  @apply ring-1 ring-white/5;
+}
+
+/* Interactive Glass (Hover) */
+.glass-panel-interactive {
+  @apply backdrop-blur-xl bg-white/10 dark:bg-zinc-900/40;
+  @apply border border-white/20 dark:border-white/10;
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.36);
+  @apply ring-1 ring-white/5;
+
+  @apply transition-all duration-300 ease-out;
+  @apply hover:bg-white/20 dark:hover:bg-zinc-800/50;
+  @apply hover:scale-[1.02];
+  @apply hover:border-white/30;
+  cursor: pointer;
+}
+
+.glass-panel-interactive:hover {
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+}
+
+.shadow-glow-amber {
+  box-shadow: 0 0 20px -5px rgba(245, 158, 11, 0.3);
+}
+
+/* Legacy Glass (Keep for backward compat but mark deprecated) */
 .glass {
   background: rgba(255, 255, 255, 0.7);
   backdrop-filter: blur(16px) saturate(180%);
@@ -259,5 +304,6 @@ button {
 @media screen and (max-width: 768px) {
   [vaul-drawer] {
     height: auto !important;
+    max-height: 85dvh !important;
   }
 }

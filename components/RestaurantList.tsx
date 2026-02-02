@@ -245,8 +245,8 @@ function RestaurantCard({ restaurant, onClick, onDelete, isHappyHourMode = false
             whileHover={{ scale: 1.01 }}
             whileTap={{ scale: 0.99 }}
             className={cn(
-                "group bg-white rounded-2xl border-2 p-4 shadow-md hover:shadow-xl transition-all duration-300 ease-out cursor-pointer relative",
-                isHappyHourMode ? "border-amber-200 hover:border-amber-400" : "border-neutral-200 hover:border-primary-400"
+                "group glass-panel-interactive p-4 relative overflow-hidden",
+                isHappyHourMode && "ring-1 ring-amber-500/50 shadow-glow-amber"
             )}
         >
             <div className="flex items-start justify-between">
