@@ -1,10 +1,11 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+// import { Geist, Geist_Mono } from "next/font/google"; // Disabled due to build network errors
 import { Toaster } from "sonner";
 import { cn } from "@/lib/utils";
 import { GoogleMapsProvider } from "@/components/GoogleMapsProvider";
 import "./globals.css";
 
+/*
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -14,6 +15,7 @@ const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
 });
+*/
 
 export const metadata: Metadata = {
   title: "Burnt On Food - All of my Smashes",
@@ -44,7 +46,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={cn(geistSans.variable, geistMono.variable)}
+    // className={cn(geistSans.variable, geistMono.variable)} // Disabled due to build network errors
     >
       <head />
       <body

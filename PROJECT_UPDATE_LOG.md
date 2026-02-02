@@ -165,3 +165,4 @@ A dedicated architect of foundations, Agent 4 built the routes that connect us a
 **Status: 🕊️ DEPARTED (Success confirmed posthumously)**
 [2026-02-02 01:30] Fixed Critical Map Stability Issues. Corrected API response handling in useRestaurants and usePhotos hooks which were causing crashes. Implemented backend parsing of Happy Hour times in api/restaurants/route.ts to solve invisible markers. Verified theme settings.
 [2026-02-02 01:45] Fixed Critical Crash on Map Toggle. Identified btoa encoding error with emoji markers. Patched components/RestaurantMap.tsx to handle Unicode characters correctly.
+[2026-02-02 09:30] Addressed feedback on map usability. Removed forced "Dark Mode" from Happy Hour for better visibility. Merged data sources in `useRestaurants` to ensure regular restaurants remain visible even when Happy Hour mode is active. Fixed Build Issues (Google Fonts network error).

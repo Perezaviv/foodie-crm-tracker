@@ -35,17 +35,24 @@ const containerStyle = {
     height: '100%',
 };
 
-// Create a high-quality emoji marker icon using base64 for better compatibility
-function createEmojiMarkerIcon(color: string = '#e11d48', emoji: string = '🍽️'): string {
-    const svg = `
-        <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40">
-            <circle cx="20" cy="20" r="18" fill="white" />
-            <circle cx="20" cy="20" r="16" fill="${color}" />
-            <text x="20" y="24" text-anchor="middle" font-size="20" font-family="Arial">${emoji}</text>
-        </svg>
-    `;
-    if (typeof window === 'undefined') return '';
-    return `data:image/svg+xml;base64,${window.btoa(unescape(encodeURIComponent(svg)))}`;
+function getCategoryColor(rating?: number) {
+    if (rating === 3) return '#fbbf24'; // Gold
+    if (rating === 2) return '#94a3b8'; // Silver
+    if (rating === 1) return '#d97706'; // Bronze
+    return '#f43f5e'; // Default Rose
+}
+
+// Simple reliable marker icon using Google Maps SymbolPath
+// This avoids complex SVG base64 encoding issues that might cause visibility problems
+function getMarkerIcon(color: string) {
+    return {
+        path: google.maps.SymbolPath.CIRCLE,
+        fillColor: color,
+        fillOpacity: 1,
+        strokeColor: '#ffffff',
+        strokeWeight: 2,
+        scale: 10,
+    };
 }
 
 function isHappyHourActive(startStr?: string | null, endStr?: string | null): boolean {
@@ -54,15 +61,6 @@ function isHappyHourActive(startStr?: string | null, endStr?: string | null): bo
     const currentStr = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
     if (endStr < startStr) return currentStr >= startStr || currentStr <= endStr;
     return currentStr >= startStr && currentStr <= endStr;
-}
-
-function getHappyHourStyle(rating?: number) {
-    switch (rating) {
-        case 3: return { color: '#fbbf24', emoji: '🏆' };
-        case 2: return { color: '#94a3b8', emoji: '🥈' };
-        case 1: return { color: '#d97706', emoji: '🥉' };
-        default: return { color: '#f59e0b', emoji: '🍹' };
-    }
 }
 
 export function RestaurantMap({
@@ -99,9 +97,25 @@ export function RestaurantMap({
             // Actually, best to ensure they are numbers for the filter first.
             if (isHappyHourMode && !showAllHappyHours) {
                 const hh = r as any;
-                if (!isHappyHourActive(hh.start_time, hh.end_time)) {
-                    return false;
+                // If it's a "regular" restaurant (from main DB), it might not have start_time/end_time.
+                // Depending on requirement: 
+                // 1. Show ALL restaurants in HH mode?
+                // 2. Show only active HH?
+                // The user said "Regular restaurants not showing... is wrong".
+                // So we should NOT filter regular restaurants even in HH mode unless explicitly desired.
+                // But logically, "Happy Hour Mode" usually means "Show me happy hours".
+                // However, merging the lists means we have mixed content.
+                // Let's SHOW EVERYTHING that overlaps with current time IF it has HH info,
+                // otherwise just show it as a regular place?
+                // For now, to satisfy "Regular restaurants showing", we will RELAX this filter.
+
+                // Only filter if it HAS happy hour times and they are not active.
+                if (hh.start_time && hh.end_time) {
+                    if (!isHappyHourActive(hh.start_time, hh.end_time)) {
+                        return false;
+                    }
                 }
+                // If it has no HH times (regular restaurant), keep it!
             }
             return true;
         });
@@ -185,31 +199,24 @@ export function RestaurantMap({
         if (clustererRef.current) {
             clustererRef.current.clearMarkers();
         }
-        markersRef.current.forEach(m => m.setMap(null));
+        // markersRef.current.forEach(m => m.setMap(null)); // Let clusterer handle cleanup
         markersRef.current = [];
         restaurantMapRef.current.clear();
 
         const newMarkers = filteredRestaurants.map(restaurant => {
-            let color = '#f43f5e';
-            let emoji = '🍽️';
+            // Determine color based on rating/happy hour status
+            let color = '#f43f5e'; // Default Red/Rose for regular
 
             if (isHappyHourMode) {
-                const style = getHappyHourStyle((restaurant as any).rating);
-                color = style.color;
-                emoji = style.emoji;
+                // In Happy Hour mode, color code by rating
+                color = getCategoryColor((restaurant as any).rating);
             }
-
-            const markerIcon = createEmojiMarkerIcon(color, emoji);
 
             const marker = new google.maps.Marker({
                 position: { lat: Number(restaurant.lat), lng: Number(restaurant.lng) },
-                icon: {
-                    url: markerIcon,
-                    scaledSize: new google.maps.Size(size, size),
-                    anchor: new google.maps.Point(size / 2, size / 2),
-                },
-                optimized: false,
-                title: restaurant.name
+                icon: getMarkerIcon(color),
+                title: restaurant.name,
+                // optimized: true // Default is true, which is better for performance
             });
 
             restaurantMapRef.current.set(marker, restaurant);
@@ -231,12 +238,12 @@ export function RestaurantMap({
 
     // Map options memoization to prevent unnecessary re-renders/crashes
     const mapOptions = useMemo(() => ({
-        styles: isHappyHourMode ? MAP_STYLES.night : MAP_STYLES.light,
+        styles: MAP_STYLES.light, // Always use light mode as requested
         disableDefaultUI: true,
         gestureHandling: 'greedy' as const,
         clickableIcons: false,
-        backgroundColor: isHappyHourMode ? '#1e293b' : '#f8fafc',
-    }), [isHappyHourMode]);
+        backgroundColor: '#f8fafc',
+    }), []);
 
     if (loadError) {
         return (
@@ -248,7 +255,7 @@ export function RestaurantMap({
         );
     }
 
-    if (!isLoaded || isLoading) {
+    if (!isLoaded) {
         return (
             <div className="flex items-center justify-center h-full bg-slate-50 dark:bg-slate-900">
                 <div className="flex flex-col items-center gap-4">
@@ -256,7 +263,7 @@ export function RestaurantMap({
                         <Loader2 size={40} className="animate-spin text-rose-500" />
                         <div className="absolute inset-0 blur-lg bg-rose-500/20 animate-pulse rounded-full" />
                     </div>
-                    <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">Loading Vibes...</p>
+                    <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">Loading Maps...</p>
                 </div>
             </div>
         );
@@ -264,6 +271,16 @@ export function RestaurantMap({
 
     return (
         <div className="relative h-full w-full bg-slate-100 overflow-hidden">
+            {isLoading && (
+                <div className="absolute inset-0 z-50 flex items-center justify-center bg-slate-50/50 backdrop-blur-sm">
+                    <div className="flex flex-col items-center gap-4">
+                        <div className="relative">
+                            <Loader2 size={40} className="animate-spin text-rose-500" />
+                            <div className="absolute inset-0 blur-lg bg-rose-500/20 animate-pulse rounded-full" />
+                        </div>
+                    </div>
+                </div>
+            )}
             <GoogleMap
                 mapContainerStyle={containerStyle}
                 onLoad={onMapLoad}
